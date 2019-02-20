@@ -1,0 +1,14 @@
+<62fff3ea0e1d517f8a41af8d9e87cc74>
+width : 459
+height : 640
+thick_max : 10
+thick_min : 1
+max_stroke : 10
+min_stroke : 4
+window_diff_border : 1
+color_diff_border : 0
+ratio : 60
+histogram_partition : 31
+loop_cont : 1
+CompareImage : Origin
+
