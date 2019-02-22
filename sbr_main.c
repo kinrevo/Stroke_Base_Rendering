@@ -29,15 +29,15 @@ int main(int argc, char *argv[])
 	name = argv[1];
 	ext = get_extension(name);
 	if (strcmp("ppm", ext) == 0 || strcmp("pnm", ext) == 0) {
-      in_ppm = read_ppm(name);
+		in_ppm = read_ppm(name);
 	} else if (strcmp("jpg", ext) == 0 || strcmp("jpeg", ext) == 0) {
-      in_img = read_jpeg_file(name);
-	  dump_image_info(in_img);	//画像情報出力
-	  in_ppm = image_to_PPM(in_img);		//扱いやすいデータ構造に変換
+		in_img = read_jpeg_file(name);
+		dump_image_info(in_img);	//画像情報出力
+		in_ppm = image_to_PPM(in_img);		//扱いやすいデータ構造に変換
 	} else if (strcmp("png", ext) == 0) {
-      in_img = read_png_file(name);
-   	  dump_image_info(in_img);	//画像情報出力
-	  in_ppm = image_to_PPM(in_img);		//扱いやすいデータ構造に変換
+		in_img = read_png_file(name);
+		dump_image_info(in_img);	//画像情報出力
+		in_ppm = image_to_PPM(in_img);		//扱いやすいデータ構造に変換
 	}
 	
 	free_image(in_img);
