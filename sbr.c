@@ -56,7 +56,7 @@ void multi_file_CIB(char** list, int list_num){
 		printf("out_dir_name:%s\n",out_dir_name);
 		printf("list[i]:%s\n",list[i]);
 		
-		if((in_img = read_jpeg_file(list[i])) == NULL){  // <<<<<====need modification
+		if((in_img = read_jpeg_file(list[i])) == NULL){  // <<<<<====対象ファイルの拡張子によって変更が必要
 			printf("PNG_READ_ERROR\n");		exit(1);
 		}
 		dump_image_info(in_img);	//PNG情報出力
