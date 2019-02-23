@@ -8,8 +8,6 @@
 #include <png.h>
 #include <jpeglib.h>
 #include "sbr.h"
-#include "ImageIO/image.h"
-#include "other_func.h"
 //#define _CRTDBG_MAP_ALLOC #include <stdlib.h> #include <crtdbg.h>  
 //#define malloc _malloc_dbg
 //#define _DEBUG

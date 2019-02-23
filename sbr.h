@@ -60,6 +60,8 @@ void format_ally(int **ally, int w, int h, int bright);
 
 void display_ally(int *ally, int num);
 
+void Free_dally(double **ally, int w);
+
 PGM *copy_pgm(PGM *pgm);
 
 PGM *gaucian_filter(PGM *pgm);
@@ -153,4 +155,7 @@ void Add_dictionary_to_sentence(char* sentence, char *name, int value);
 char** make_file_list(int* file_num, char* search_path, int Search_TYPE);
 void multi_file_CIB(char** list, int list_num);
 void multi_dir_CIB(char* in_path);
+
+char *get_extension(char *name);
+
 #endif

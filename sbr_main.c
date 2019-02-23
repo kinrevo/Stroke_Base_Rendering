@@ -1,4 +1,5 @@
 #include "sbr.h"
+//#include "other_func.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -9,16 +10,16 @@
 
 #define p(s,a) printf("%s:%d\n",s,a)
 
-static char *get_extension(char *name);
+
 
 int main(int argc, char *argv[])
 {
+	clock_t start = clock();
+
 	if(argc>4 || argc<2){
 		fprintf(stderr, "Usage: program <inputfile> <outputfile>\n");
 		exit(1);
 	}
-
-	clock_t start = clock();
 	
 	image_t *in_img;
 	PPM *in_ppm, *trans_ppm;
@@ -38,13 +39,17 @@ int main(int argc, char *argv[])
 		in_img = read_png_file(name);
 		dump_image_info(in_img);	//画像情報出力
 		in_ppm = image_to_PPM(in_img);		//扱いやすいデータ構造に変換
+	} else {
+		printf("Plese use JPEG,PNG or PPM!\n");
+		exit(1);
 	}
-	
 	free_image(in_img);
 	
+	//入力画像の絵画化
 	trans_ppm = c_Illust_brush(in_ppm, argv[2]);
 	
 	//if(write_jpeg_file(argv[2], trans_ppm)){ printf("WRITE PNG ERROR.");}
+	//if(write_png_file(argv[2], trans_ppm)){ printf("WRITE PNG ERROR."); exit(1); }
 	if(write_ppm(argv[2], trans_ppm)){ printf("WRITE_PPM_ERROR (main)\n");};
 	
 	FreePPM(in_ppm);
@@ -61,21 +66,6 @@ int main(int argc, char *argv[])
 	free(file_list);
 	*/
 	
-	
-	//if(write_png_file(argv[2], out_img)){ printf("WRITE PNG ERROR."); exit(1); }
 	pd("TOTAL_TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
 	return 0;
-}
-
-
-
-// 文字列から拡張子を取得
-static char *get_extension(char *name) {
-  int i;
-  for (i = strlen(name) - 1; i >= 0; i--) {
-    if (name[i] == '.') {
-      return &name[i + 1];
-    }
-  }
-  return NULL;
 }

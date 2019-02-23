@@ -1,7 +1,7 @@
-#include<stdio.h>
-#include<string.h>
-#include<math.h>
-#include<time.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <time.h>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <png.h>
@@ -150,7 +150,6 @@ PPM *read_ppm(char *filename)
 }
 
 
-
 //PGM画像ファイルを読み込みPGM構造体を返す
 PGM *read_pgm(char *filename)
 {
@@ -216,7 +215,7 @@ int write_pgm(char* filename, PGM *pgm)
 	FILE* fp;
 	
 	if((fp = fopen(filename, "w")) == NULL){
-		fprintf(stderr, "W_Open_Error");
+		fprintf(stderr, "W_Open_Error(write_pgm)\n");
 		return -1;
 	}
 	
@@ -246,7 +245,7 @@ int write_ppm(char* filename, PPM *pgm)
 	FILE* fp;
 	
 	if((fp = fopen(filename, "w")) == NULL){
-		fprintf(stderr, "W_Open_Error");
+		fprintf(stderr, "W_Open_Error(write_ppm)\n");
 		return -1;
 	}
 	
@@ -388,6 +387,7 @@ PGM *copy_pgm(PGM *pgm){
 	return img;
 }
 
+
 //　PPMデータを画素値を除いて複製する関数
 PPM *copy_ppm(PPM *ppm, int bright){
 	PPM *img = (PPM *)malloc(sizeof(PPM));
@@ -463,8 +463,6 @@ PGM *gaussian_filter(PGM *pgm, double sigma)
 }
 
 
-
-
 //バイラテラルフィルタ
 PGM *bilateral_filter(PGM *pgm, double sigma, int loopc)
 {
@@ -520,7 +518,6 @@ PGM *bilateral_filter(PGM *pgm, double sigma, int loopc)
 	
 	return nimg;
 }
-
 
 
 //キャニーエッジ検出器
@@ -701,8 +698,6 @@ PGM *cannyedge_detector(PGM *pgm, double maxValue, double minValue, int thick_mi
 }
 
 
-
-
 //sobelフィルタを適応した計算結果を返す
 void sobel_calcu(PGM *pgm, double **sobel_abs, double **sobel_angle)
 {
@@ -743,6 +738,8 @@ void sobel_calcu(PGM *pgm, double **sobel_abs, double **sobel_angle)
 	}
 }
 
+
+
 /////////////////////////////////////////////
 //			その他の関数群			   
 /////////////////////////////////////////////
@@ -764,7 +761,7 @@ int log_print(char* filename, char *sentence){
 	FILE* fp;
 	
 	if((fp = fopen(filename, "w")) == NULL){
-		fprintf(stderr, "W_Open_Error");
+		fprintf(stderr, "W_Open_Error(log_print)\n");
 		return -1;
 	}
 	
@@ -772,4 +769,16 @@ int log_print(char* filename, char *sentence){
 	
 	fclose(fp);
 	return 0;
+}
+
+
+// 文字列から拡張子を取得
+char *get_extension(char *name) {
+  int i;
+  for (i = strlen(name) - 1; i >= 0; i--) {
+    if (name[i] == '.') {
+      return &name[i + 1];
+    }
+  }
+  return NULL;
 }

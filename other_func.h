@@ -12,7 +12,6 @@
 #define Free_ally(ally, w) do {	for(i=0; i < w; i++) { free(ally[i]);}	free(ally);}while(0)
 
 #include "ImageIO/image.h"
-#include "sbr.h"
 
 
 typedef struct {
@@ -53,6 +52,8 @@ void format_ally(int **ally, int w, int h, int bright);
 
 void display_ally(int *ally, int num);
 
+void Free_dally(double **ally, int w);
+
 PGM *copy_pgm(PGM *pgm);
 
 PGM *gaucian_filter(PGM *pgm);
@@ -89,4 +90,5 @@ image_t *PPM_to_image(PPM *ppm);
 int log_print(char* filename, char *sentence);
 void Add_dictionary_to_sentence(char* sentence, char *name, int value);
 
+char *get_extension(char *name);
 #endif
