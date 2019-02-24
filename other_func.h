@@ -91,4 +91,7 @@ int log_print(char* filename, char *sentence);
 void Add_dictionary_to_sentence(char* sentence, char *name, int value);
 
 char *get_extension(char *name);
+
+PGM *create_pgm(int width, int height, int bright);
+PPM *create_ppm(int width, int height, int bright);
 #endif

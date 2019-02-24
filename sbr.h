@@ -158,4 +158,6 @@ void multi_dir_CIB(char* in_path);
 
 char *get_extension(char *name);
 
+PGM *create_pgm(int width, int height, int bright);
+PPM *create_ppm(int width, int height, int bright);
 #endif

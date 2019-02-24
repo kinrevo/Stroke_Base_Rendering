@@ -553,7 +553,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	char input_char='i';
 	int loop_cont=opt_loop_cont, lc=0, x_defo=0, y_defo=0;
 	double maxValue, minValue;
-	double canvas_scaling_retio = 2.0;
+	double canvas_scaling_ratio = 2.0;
 	
 	//最大小ストローク半径（自動化：画面の1/10,最大の1/10）
 	int thick_max = opt_thick_max;//(in->height < in->width ? in->height : in->width)/10;
@@ -610,15 +610,12 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	
 	//カラー画像分割
 	PGM *gray = color_gray_conversion(in);
-	PGM *nimgR = copy_pgm(gray);
-	PGM *nimgG = copy_pgm(gray);
-	PGM *nimgB = copy_pgm(gray);
-	format_ally(nimgR->data, nimgR->width, nimgR->height, 255);
-	format_ally(nimgG->data, nimgG->width, nimgG->height, 255);
-	format_ally(nimgB->data, nimgB->width, nimgB->height, 255);
-	PGM *inR = copy_pgm(gray);
-	PGM *inG = copy_pgm(gray);
-	PGM *inB = copy_pgm(gray);
+	PGM *nimgR = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
+	PGM *nimgG = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
+	PGM *nimgB = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
+	PGM *inR = create_pgm(gray->width, gray->height, gray->bright); 
+	PGM *inG = create_pgm(gray->width, gray->height, gray->bright); 
+	PGM *inB = create_pgm(gray->width, gray->height, gray->bright); 
 	devide_ppm(in, inR, inG, inB);
 	//比較用のイメージ生成
 	//PGM *gauss = gaussian_filter(gray, thick_min);
@@ -636,12 +633,11 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	PGM *cmprG = inG;  
 	PGM *cmprB = inB;  
 	//printf("Birateral Filtar done.\n");
-	PGM *nimgV = copy_pgm(gray);  //描画用イメージ生成
-	PPM *nimgC = copy_ppm(in, 255);
+	PGM *nimgV = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright);  //描画用イメージ生成
+	PPM *nimgC = create_ppm(in->width*canvas_scaling_ratio, in->height*canvas_scaling_ratio, in->bright);
 	nimgC->dataR = nimgR->data;
 	nimgC->dataG = nimgG->data;
-	nimgC->dataB = nimgB->data;	
-	format_ally(nimgG->data, nimgG->width, nimgG->height, 255); //最大輝度で初期化
+	nimgC->dataB = nimgB->data;
 	
 	
 	//sobelフィルタを適応した計算結果を予め格納しておく

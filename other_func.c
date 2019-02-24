@@ -324,7 +324,7 @@ PPM *image_to_PPM(image_t *img){
 image_t *PPM_to_image(PPM *ppm){
 	int i,j;
 	//image_t *nimg = clone_image(img);
-	image_t *nimg = allocate_image(ppm->width, ppm->height, 2);
+	image_t *nimg = allocate_image(ppm->width, ppm->height, COLOR_TYPE_RGB);
 	if (nimg == NULL) {
 	  return NULL;
 	}
@@ -388,6 +388,20 @@ PGM *copy_pgm(PGM *pgm){
 }
 
 
+//　PGM画像領域を確保（最大輝度で初期化）
+PGM *create_pgm(int width, int height, int bright){
+	PGM *img = (PGM *)malloc(sizeof(PGM));
+	memcpy(img->descriptor, "P3", 3);
+	img->height = height;
+	img->width = width;
+	img->bright = bright;
+	img->data = create_ally(width, height);
+	format_ally(img->data, img->width, img->height, bright);
+	
+	return img;
+}
+
+
 //　PPMデータを画素値を除いて複製する関数
 PPM *copy_ppm(PPM *ppm, int bright){
 	PPM *img = (PPM *)malloc(sizeof(PPM));
@@ -401,6 +415,24 @@ PPM *copy_ppm(PPM *ppm, int bright){
 	format_ally(img->dataR, ppm->width, ppm->height, bright);
 	format_ally(img->dataG, ppm->width, ppm->height, bright);
 	format_ally(img->dataB, ppm->width, ppm->height, bright);
+	
+	return img;
+}
+
+
+// PPM画像領域を確保（最大輝度で初期化）
+PPM *create_ppm(int width, int height, int bright){
+	PPM *img = (PPM *)malloc(sizeof(PPM));
+	memcpy(img->descriptor, "P3", 3);
+	img->height = height;
+	img->width = width;
+	img->bright = bright;
+	img->dataR = create_ally(width, height);
+	img->dataG = create_ally(width, height);
+	img->dataB = create_ally(width, height);
+	format_ally(img->dataR, img->width, img->height, bright);
+	format_ally(img->dataG, img->width, img->height, bright);
+	format_ally(img->dataB, img->width, img->height, bright);
 	
 	return img;
 }
