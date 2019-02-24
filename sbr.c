@@ -8,6 +8,7 @@
 #include <png.h>
 #include <jpeglib.h>
 #include "sbr.h"
+#include "sbr_opt.h"
 //#define _CRTDBG_MAP_ALLOC #include <stdlib.h> #include <crtdbg.h>  
 //#define malloc _malloc_dbg
 //#define _DEBUG
@@ -534,28 +535,28 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	int i,j,x,y,xc,yc,t,bright,brightR,brightG,brightB,break_flag,pnum, offscrn_count;
 	int P2a_count, P2b_count, inapp_count, direct_count;
 	P2a_count = P2b_count = inapp_count = direct_count = 0;
-	int window_diff_border = 1; 	//ストローク位置探索のしきい値
-	int color_diff_border = 0;  	//描画色の差異のしきい値
-	int max_stroke = 10;
-	int min_stroke = 4;
+	int window_diff_border = opt_window_diff_border; 	//ストローク位置探索のしきい値
+	int color_diff_border = opt_color_diff_border;  	//描画色の差異のしきい値
+	int max_stroke = opt_max_stroke;
+	int min_stroke = opt_min_stroke;
 	Point p[max_stroke];
 	int stroke_histogram[max_stroke+1];
 	for(i=0; i<max_stroke+1; i++){stroke_histogram[i]=0;}
-	double ratio=0.60;		//ストロークの濃度
+	double ratio=opt_ratio;		//ストロークの濃度
 	double theta, former_theta;		//sumx, sumy, sumsumx, sumsumy;
 	//Point p1,p2,p3;
 	double **gauce_filter;
 	double sigma, diff_sum, sum;
-	int histogram_partition=31;
+	int histogram_partition=opt_histogram_partition;
 	int histogram_direct[31]={};  int histogram_direct2[31]={};
 	int paint_count=0, nc=0, tc=-1;
 	char input_char='i';
-	int loop_cont=1, lc=0, x_defo=0, y_defo=0;
+	int loop_cont=opt_loop_cont, lc=0, x_defo=0, y_defo=0;
 	double maxValue, minValue;
 	
-	//最大ストローク半径（画面の十分の一） 最小（最大の10分の一）
-	int thick_max = 10;//(in->height < in->width ? in->height : in->width)/10;
-	int thick_min = 1;//(thick_max/15 > 3 ? thick_max/15 : 3);
+	//最大小ストローク半径（自動化：画面の1/10,最大の1/10）
+	int thick_max = opt_thick_max;//(in->height < in->width ? in->height : in->width)/10;
+	int thick_min = opt_thick_min;//(thick_max/15 > 3 ? thick_max/15 : 3);
 	
 	
 	//出力ファイル名のサイズを取得

@@ -1,5 +1,5 @@
-#ifndef __PGM_H_INCLUDED__
-#define __PGM_H_INCLUDED__
+#ifndef __SBR_H_INCLUDED__
+#define __SBR_H_INCLUDED__
 
 #define PI 3.14159265359
 #define Search_DIRECTRY 1
