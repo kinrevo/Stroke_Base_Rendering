@@ -553,6 +553,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	char input_char='i';
 	int loop_cont=opt_loop_cont, lc=0, x_defo=0, y_defo=0;
 	double maxValue, minValue;
+	double canvas_scaling_retio = 2.0;
 	
 	//最大小ストローク半径（自動化：画面の1/10,最大の1/10）
 	int thick_max = opt_thick_max;//(in->height < in->width ? in->height : in->width)/10;
