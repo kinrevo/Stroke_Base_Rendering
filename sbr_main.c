@@ -1,5 +1,4 @@
 #include "sbr.h"
-//#include "other_func.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -28,6 +27,8 @@ int main(int argc, char *argv[])
 	char *name;
 	char *ext;
 	name = argv[1];
+	
+	//出力ファイル名に従って画像を出力
 	ext = get_extension(name);
 	if (strcmp("ppm", ext) == 0 || strcmp("pnm", ext) == 0) {
 		in_ppm = read_ppm(name);
@@ -48,9 +49,15 @@ int main(int argc, char *argv[])
 	//入力画像の絵画化
 	trans_ppm = c_Illust_brush(in_ppm, argv[2]);
 	
-	//if(write_jpeg_file(argv[2], trans_ppm)){ printf("WRITE PNG ERROR.");}
-	//if(write_png_file(argv[2], trans_ppm)){ printf("WRITE PNG ERROR."); exit(1); }
-	if(write_ppm(argv[2], trans_ppm)){ printf("WRITE_PPM_ERROR (main)\n");};
+	//出力ファイル名に従って画像を出力
+	ext = get_extension(argv[2]);
+	if (strcmp("ppm", ext) == 0 || strcmp("pnm", ext) == 0) {
+		if(write_ppm(argv[2], trans_ppm)){ printf("WRITE_PPM_ERROR (main)\n");}
+	} else if (strcmp("jpg", ext) == 0 || strcmp("jpeg", ext) == 0) {
+		if(write_jpeg_file(argv[2], PPM_to_image(trans_ppm))){ printf("WRITE JPG ERROR.");}
+	} else if (strcmp("png", ext) == 0) {
+		if(write_png_file(argv[2], PPM_to_image(trans_ppm))){ printf("WRITE PNG ERROR.");}
+	}
 	
 	FreePPM(in_ppm);
 	FreePPM(trans_ppm);

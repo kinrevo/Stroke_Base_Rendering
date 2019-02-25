@@ -320,7 +320,7 @@ PPM *image_to_PPM(image_t *img){
 }
 
 
-//PPM形式データ（自定義）をimage形式データ（png用）に変換
+//PPM形式データ（自定義）をimage形式データ（汎用）に変換
 image_t *PPM_to_image(PPM *ppm){
 	int i,j;
 	//image_t *nimg = clone_image(img);

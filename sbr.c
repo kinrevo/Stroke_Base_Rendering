@@ -552,14 +552,13 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	int stroke_histogram[max_stroke+1];
 	for(i=0; i<max_stroke+1; i++){stroke_histogram[i]=0;}
 	double ratio=opt_ratio;		//ストロークの濃度
-	double theta, former_theta;		//sumx, sumy, sumsumx, sumsumy;
-	//Point p1,p2,p3;
+	double theta, former_theta;	
 	double **gauce_filter;
 	double sigma, diff_sum, sum;
 	int histogram_partition=opt_histogram_partition;
 	int histogram_direct[31]={};  int histogram_direct2[31]={};
 	int paint_count=0, nc=0, tc=-1;
-	char input_char='i';
+	//char input_char='i';
 	int loop_cont=opt_loop_cont, lc=0, x_defo=0, y_defo=0;
 	double maxValue, minValue;
 	double canvas_scaling_ratio = 1.0;
@@ -825,23 +824,19 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				
 				
 				
-				//ストロークごとに画像ファイルに書き出す
+				//一定ストロークごとに途中経過画像を書き出す
 				nc++;
-				//if(nc==500)exit(0);
 				//if(nc%1000==0)
 				//if(0)
 				if(t!=tc){
-					if(t!=10 && t!=9 && t!=8 && t!=4){
+					if(t%2==0){ //ブラシ半径が2変わるごと
 						paint_count++;
 						tc=t;	
 						snprintf(count_name, 16, "%03d", tc+1);
-						//snprintf(count_name, 16, "%03d", paint_count);
 						strcpy(out_filename, dir_path);
 						strcat(out_filename, in_filename);
 						strcat(out_filename, "_t");
 						strcat(out_filename, count_name);
-						//strcat(out_filename, ".pnm");
-						//if(write_ppm(out_filename, nimgC)){	exit(1);}
 						strcat(out_filename, ".jpg");
 						out_png = PPM_to_image(nimgC_Scaling);
 						if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
@@ -851,8 +846,8 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 						pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
 					}
 				}
-				if(0)//デバッグ用
-				//if(bright>200 || y>230)
+				//デバッグ用
+				/*
 				if(input_char!='c'){
 					do{
 						if((input_char = getchar())=='e')exit(0);
@@ -867,7 +862,8 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 						}
 					}while(input_char != '\n' && input_char != 'c');
 				}
-				//pn;
+				pn;
+				*/
 			}
 		}
 		
@@ -895,11 +891,9 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	strcat(out_filename, in_filename);
 	strcat(out_filename, "_t");
 	strcat(out_filename, count_name);
-	//strcat(out_filename, ".pnm");
-	//if(write_ppm(out_filename, nimgC)){	exit(1);}
 	strcat(out_filename, ".jpg");
 	out_png = PPM_to_image(nimgC_Scaling);
-	if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+	if(write_jpeg_file(out_filename, out_png)){ printf("WRITE JPG ERROR.");}
 	free_image(out_png);
 	printf("%s\n",out_filename);
 	tc=t;
@@ -912,23 +906,23 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	//---------------------------
 	//エッジマップを計算し、エッジの複雑な周辺だけに描画を行う
 	//---------------------------
-	color_diff_border = 0;
-	min_stroke = 4;
-	window_diff_border = 2;
-	ratio = 0.30;
+	//color_diff_border = 0;
+	//min_stroke = 4;
+	//window_diff_border = 2;
+	//ratio = 0.30;
 	loop_cont = 2;
 	tc=-1;
 	maxValue=0.30, minValue=0.10;
 	PGM *canny;
 	PGM *EdgeMap;
 	
-	thick_max = 0;	thick_min=20;
+	thick_max = opt2_thick_max;
 	if(thick_max){
 		canny = cannyedge_detector(gray, maxValue, minValue, thick_min);
 		EdgeMap = calcu_EdgeMap(canny, thick_min, sobel_angle);
 		//EdgeMap = expand_Edge(canny, thick_min);
 	}
-	thick_min = 1;
+	thick_min = opt2_thick_min;
 	
 	for(t=thick_max; t>=thick_min; t--){
 		color_diff_border = color_diff_border*(2*t+1)*(2*t+1);
@@ -1090,9 +1084,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				
 				//ストロークごとに画像ファイルに書き出す
 				nc++;
-				//if(nc==500)exit(0);
 				//if(nc%1000==0)
-				//if(0)
 				if(t!=tc)
 				if(1){
 					paint_count++;
@@ -1106,8 +1098,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					tc=t;
 				}
 				
-				if(0)
-				//if(bright>200 || y>230)
+				/*
 				if(input_char!='c'){
 					do{
 						if((input_char = getchar())=='e')exit(0);
@@ -1123,6 +1114,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					}while(input_char != '\n' && input_char != 'c');
 				}
 				pn;
+				*/
 			}
 		}
 		
