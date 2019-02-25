@@ -29,10 +29,10 @@
 #define opt_loop_cont 1
 
 // ストローク半径の最大値。この大きさからストロークを始める
-#define opt_thick_max 12
+#define opt_thick_max 10
 
 // ストローク半径の最小値。この大きさでストロークを終える
-#define opt_thick_min 4
+#define opt_thick_min 2
 
 
 ////////////////	第二段階のパラメータ	/////////////////
