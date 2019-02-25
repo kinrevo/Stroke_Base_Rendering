@@ -12,7 +12,7 @@ gcc -o sbr -lm ImageIO/png.c ImageIO/image.c ImageIO/jpeg.c other_func.c sbr.c s
 ```
 下記のコマンドで実行を行います。　　
 ```
-./sbr "Input file name" "Outputfilename"
+./sbr "Inputfilename" "Outputfilename"
 ```
 入出力ファイルは"PPM","JPG","PNG"のみに対応しています。  
 ファイル名は拡張子まで含めて記述して下さい。  
