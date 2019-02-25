@@ -524,10 +524,18 @@ int edge_detect(PGM *canny, PGM *map, double **sobel_angle, int x, int y, int t,
 }
 
 
-
-
-
-
+//与えられた倍率で点位置をスケーリング
+Point *scaling_point(Point p[], int pnum, double canvas_scaling_ratio){
+	int i;
+	Point *new_p = (Point *)malloc(sizeof(Point)*(pnum));
+	
+	for(i=0; i<pnum; i++){
+		new_p[i].x = p[i].x * canvas_scaling_ratio;
+		new_p[i].y = p[i].y * canvas_scaling_ratio;
+	}
+	
+	return new_p;
+}
 
 //与えられたイメージからブラッシングによる絵画を作る
 PPM *c_Illust_brush(PPM *in, char *filename) {
@@ -540,6 +548,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	int max_stroke = opt_max_stroke;
 	int min_stroke = opt_min_stroke;
 	Point p[max_stroke];
+	Point *scaling_p;
 	int stroke_histogram[max_stroke+1];
 	for(i=0; i<max_stroke+1; i++){stroke_histogram[i]=0;}
 	double ratio=opt_ratio;		//ストロークの濃度
@@ -553,7 +562,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	char input_char='i';
 	int loop_cont=opt_loop_cont, lc=0, x_defo=0, y_defo=0;
 	double maxValue, minValue;
-	double canvas_scaling_ratio = 2.0;
+	double canvas_scaling_ratio = 1.0;
 	
 	//最大小ストローク半径（自動化：画面の1/10,最大の1/10）
 	int thick_max = opt_thick_max;//(in->height < in->width ? in->height : in->width)/10;
@@ -610,9 +619,12 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	
 	//カラー画像分割
 	PGM *gray = color_gray_conversion(in);
-	PGM *nimgR = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
-	PGM *nimgG = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
-	PGM *nimgB = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
+	PGM *nimgR = create_pgm(gray->width, gray->height, gray->bright); 
+	PGM *nimgG = create_pgm(gray->width, gray->height, gray->bright); 
+	PGM *nimgB = create_pgm(gray->width, gray->height, gray->bright); 
+	PGM *nimgR_Scaling = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
+	PGM *nimgG_Scaling = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
+	PGM *nimgB_Scaling = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
 	PGM *inR = create_pgm(gray->width, gray->height, gray->bright); 
 	PGM *inG = create_pgm(gray->width, gray->height, gray->bright); 
 	PGM *inB = create_pgm(gray->width, gray->height, gray->bright); 
@@ -633,11 +645,16 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	PGM *cmprG = inG;  
 	PGM *cmprB = inB;  
 	//printf("Birateral Filtar done.\n");
-	PGM *nimgV = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright);  //描画用イメージ生成
-	PPM *nimgC = create_ppm(in->width*canvas_scaling_ratio, in->height*canvas_scaling_ratio, in->bright);
+	//キャンバスイメージ生成
+	PGM *nimgV = create_pgm(gray->width, gray->height, gray->bright); //明度のみのキャンバス（比較用）  
+	PPM *nimgC = create_ppm(in->width, in->height, in->bright); //実際に描画するキャンバス
 	nimgC->dataR = nimgR->data;
 	nimgC->dataG = nimgG->data;
 	nimgC->dataB = nimgB->data;
+	PPM *nimgC_Scaling = create_ppm(in->width*canvas_scaling_ratio, in->height*canvas_scaling_ratio, in->bright); //実際に描画するキャンバス（拡縮描画用）
+	nimgC_Scaling->dataR = nimgR_Scaling->data;
+	nimgC_Scaling->dataG = nimgG_Scaling->data;
+	nimgC_Scaling->dataB = nimgB_Scaling->data;
 	
 	
 	//sobelフィルタを適応した計算結果を予め格納しておく
@@ -648,8 +665,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	
 	//太いストロークから順番にストロークを小さくしておおまかに絵の形を取っていく
 	for(t=thick_max; t>=thick_min; t--){
-		//if(t==7 || t==5) continue;
-		//if(t==3)  min_stroke = 2;
+		//if(t!=12 && t!=8 && t!=4) continue;
 			
 		//ストロークサイズのガウスフィルタを生成
 		gauce_filter = create_dally(2*t+1, 2*t+1);
@@ -787,20 +803,25 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					
 				}
 				
+				//算出したpnum個の制御点を用いてストロークを描画
 				if(pnum>=min_stroke) { 
-					//算出したpnum個の制御点を用いてストロークを描画
 					//printf("C%d: (%d:%d)",pnum,p[0].x,p[0].y);
-					for(i=1; i<pnum; i++){
+					//for(i=1; i<pnum; i++){
 						//printf("->(%d:%d)", p[i].x, p[i].y);
-					}
-					//pn;
+					//}
+					
 					Paint_Bezier_ex(p, pnum, nimgV, t, bright, ratio);	
 					Paint_Bezier_ex(p, pnum, nimgR, t, brightR, ratio);	
 					Paint_Bezier_ex(p, pnum, nimgG, t, brightG, ratio);	
 					Paint_Bezier_ex(p, pnum, nimgB, t, brightB, ratio);	
 					stroke_histogram[pnum]++;  
+					
+					// 制御点を全てとブラシサイズを拡大率に従いスケーリングし、拡大キャンバスに描画
+					scaling_p = scaling_point(p, pnum, canvas_scaling_ratio);
+					Paint_Bezier_ex(scaling_p, pnum, nimgR_Scaling, t*canvas_scaling_ratio, brightR, ratio);	
+					Paint_Bezier_ex(scaling_p, pnum, nimgG_Scaling, t*canvas_scaling_ratio, brightG, ratio);	
+					Paint_Bezier_ex(scaling_p, pnum, nimgB_Scaling, t*canvas_scaling_ratio, brightB, ratio);	
 				}
-				
 				
 				
 				
@@ -822,7 +843,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 						//strcat(out_filename, ".pnm");
 						//if(write_ppm(out_filename, nimgC)){	exit(1);}
 						strcat(out_filename, ".jpg");
-						out_png = PPM_to_image(nimgC);
+						out_png = PPM_to_image(nimgC_Scaling);
 						if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
 						free_image(out_png);
 						printf("%s\n",out_filename);
@@ -877,7 +898,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	//strcat(out_filename, ".pnm");
 	//if(write_ppm(out_filename, nimgC)){	exit(1);}
 	strcat(out_filename, ".jpg");
-	out_png = PPM_to_image(nimgC);
+	out_png = PPM_to_image(nimgC_Scaling);
 	if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
 	free_image(out_png);
 	printf("%s\n",out_filename);
@@ -889,7 +910,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	
 	
 	//---------------------------
-	//得られたエッジマップからエッジの複雑な周辺だけを書き込む
+	//エッジマップを計算し、エッジの複雑な周辺だけに描画を行う
 	//---------------------------
 	color_diff_border = 0;
 	min_stroke = 4;

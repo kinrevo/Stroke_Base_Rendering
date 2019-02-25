@@ -160,4 +160,6 @@ char *get_extension(char *name);
 
 PGM *create_pgm(int width, int height, int bright);
 PPM *create_ppm(int width, int height, int bright);
+
+Point *scaling_point(Point p[], int pnum, double canvas_scaling_ratio);
 #endif
