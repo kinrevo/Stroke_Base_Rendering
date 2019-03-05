@@ -32,7 +32,7 @@
 #define opt_thick_max 10
 
 // ストローク半径の最小値。この大きさでストロークを終える
-#define opt_thick_min 2
+#define opt_thick_min 1
 
 
 ////////////////	第二段階のパラメータ	/////////////////
