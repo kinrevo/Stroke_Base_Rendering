@@ -302,9 +302,9 @@ void light_dot(int x, int y, PGM* in_img, int bright) {
 //ａから角度theta方向に距離tの点を求める
 Point calcu_point(PGM *in, Point a, int t, double theta){
 	Point b;
-	b.x = round(t*cos(theta)+a.x);  
+	b.x = t*cos(theta)+a.x;  
 	if(b.x<0) b.x=0;  if(b.x>=in->width) b.x=in->width-1; 
-	b.y = round(t*sin(theta)+a.y);
+	b.y = t*sin(theta)+a.y;
 	if(b.y<0) b.y=0; if(b.y>=in->height) b.y=in->height-1;
 	
 	return b;
@@ -443,6 +443,7 @@ PGM *calcu_EdgeMap(PGM *canny, int thick_min, double **sobel_angle){
 	PGM *map = copy_pgm(canny);
 	Point p;
 	int x,y,xc,yc ,t=thick_min, flag1, flag2a=0,flag2b=0;
+	int px,py;
 	int flag1_c=0,flag2_c=0;
 	format_ally(map->data, canny->width, canny->height, 0);
 	format_ally(nimg->data, canny->width, canny->height, 0);
@@ -465,7 +466,8 @@ PGM *calcu_EdgeMap(PGM *canny, int thick_min, double **sobel_angle){
 						flag2_c++;printf("flag2\n");
 						break;
 					}
-					map->data[p.x][p.y]=255;
+					px=p.x; py=p.y;
+					map->data[px][py]=255;
 					if(flag2a!=1){
 						//見つけたエッジの場所を記録
 						pp(p); //getchar();
@@ -500,17 +502,17 @@ int edge_detect(PGM *canny, PGM *map, double **sobel_angle, int x, int y, int t,
 	Point p;
 	if(s.x==0 || s.x==canny->width-1 || s.y==0 || s.y==canny->height-1) return 0; //画面端に到達
 	if(s.x<(x-t) || s.x>(x+t) || s.y<(y-t) || s.y>(y+t)) return 0;		//ウィンドウ端に到達
-	map->data[s.x][s.y] = 255;
+	map->data[(int)s.x][(int)s.y] = 255;
 	
 	//与えられたエッジの周辺のエッジを探索
 	for(i=-1; i<=1; i++) {
 		if((s.x+i)<0 || (s.x+i)>canny->width-1) continue;
 		for(j=-1; j<=1; j++) {
 			if((s.y+j)<0 || (s.y+j)>canny->height-1) continue;
-			if(canny->data[s.x+i][s.y+j] == canny->bright){
-				if(map->data[s.x+i][s.y+j]!=255)	{
+			if(canny->data[(int)s.x+i][(int)s.y+j] == canny->bright){
+				if(map->data[(int)s.x+i][(int)s.y+j]!=255)	{
 					ec=1;	//二つ以上エッジがつながっている
-					map->data[s.x+i][s.y+j]=255;
+					map->data[(int)s.x+i][(int)s.y+j]=255;
 					p.x=s.x+i;	p.y=s.y+j;	
 					count += edge_detect(canny, map, sobel_angle, x, y, t, p, flag, 1);
 				}
@@ -561,7 +563,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	//char input_char='i';
 	int loop_cont=opt_loop_cont, lc=0, x_defo=0, y_defo=0;
 	double maxValue, minValue;
-	double canvas_scaling_ratio = 1.0;
+	double canvas_scaling_ratio = 4.0;
 	
 	//最大小ストローク半径（自動化：画面の1/10,最大の1/10）
 	int thick_max = opt_thick_max;//(in->height < in->width ? in->height : in->width)/10;
@@ -570,10 +572,12 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	
 	//出力ファイル名のサイズを取得
 	int namesize = strlen(filename)*2 + 16;
-	char out_filename[namesize], log_filename[namesize], dir_path[namesize];
+	char out_filename[namesize], log_filename[namesize], dir_path[namesize], vec_filename[namesize];
 	char in_filename[namesize-16];
 	char count_name[16];
 	char log_sentence[2028] = "";
+	char vec_sentence[128] = "";
+	char tmp_sentence[32] = "";
 	image_t *out_png;
 	//パスから入力ファイル名（拡張子含まない）を取得
 	char tmp[namesize];
@@ -615,6 +619,18 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	Add_dictionary_to_sentence(log_sentence, "histogram_partition", histogram_partition);
 	Add_dictionary_to_sentence(log_sentence, "loop_cont", loop_cont);
 	strcat(log_sentence, "CompareImage : Origin\r\n");
+	
+	//vectorデータのヘッダを格納
+	snprintf(tmp_sentence, 32, "%d", in->width);
+	strcat(vec_sentence, tmp_sentence);
+	strcat(vec_sentence, " ");
+	snprintf(tmp_sentence, 32, "%d", in->height);
+	strcat(vec_sentence, tmp_sentence);
+	strcpy(vec_filename, dir_path);
+	strcat(vec_filename, in_filename);
+	strcat(vec_filename, ".vec");
+	log_print(vec_filename, vec_sentence, "w");
+	
 	
 	//カラー画像分割
 	PGM *gray = color_gray_conversion(in);
@@ -675,6 +691,13 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	        }
 	    }
 		
+		//vecデータ書き込み
+		strcpy(vec_sentence, "t");
+		snprintf(tmp_sentence, 32, "%d", t);
+		strcat(vec_sentence, tmp_sentence);
+		log_print(vec_filename, vec_sentence, "a");
+		
+		
 		for(y=y_defo; y<in->height; y=y+t) {  //ウィンドウの大きさに合わせて
 			for(x=x_defo; x<in->width; x=x+t) {  //ウィンドウをずらす距離を変えとく
 				//ウィンドウの中の差分の合計を取る
@@ -703,6 +726,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					continue;
 				}
 				pnum=1;		//第一点確定
+				p[0].x=x+0.5; p[0].y=y+0.5;
 				
 				//一つ目の描画領域から描画色を平均を取って取得
 			//	bright  = calcu_color(cmpr->data, cmpr->width, cmpr->height, x, y, t);
@@ -715,21 +739,19 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				brightB = calcu_color_bi(cmprB->data, in->width, in->height, x, y, t, 50, gauce_filter);
 				//p("bright",bright);
 				
-				
 				theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition, 
 						gauce_filter, p[0].x, p[0].y, t, histogram_direct, &break_flag);
 				
-				if(0){//if(break_flag) {}
-					stroke_histogram[pnum]++;
-					direct_count++;
-					printf("DIRECTION IS UNSTABLE.\n");
-					continue;
-				}
+				// if(0){//if(break_flag) {}
+					// stroke_histogram[pnum]++;
+					// direct_count++;
+					// printf("DIRECTION IS UNSTABLE.\n");
+					// continue;
+				// }
 				
 				//pd("theta1",theta* 180.0 / PI);
 				
 				//制御点を方向から計算し代入
-				p[0].x=x; p[0].y=y;
 				p[1] = calcu_point(cmpr, p[0], t, theta);
 				
 				
@@ -804,10 +826,10 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				
 				//算出したpnum個の制御点を用いてストロークを描画
 				if(pnum>=min_stroke) { 
-					//printf("C%d: (%d:%d)",pnum,p[0].x,p[0].y);
-					//for(i=1; i<pnum; i++){
-						//printf("->(%d:%d)", p[i].x, p[i].y);
-					//}
+					// printf("C%f: (%f:%f)",pnum,p[0].x,p[0].y);
+					// for(i=1; i<pnum; i++){
+						// printf("->(%f:%f)", p[i].x, p[i].y);
+					// }
 					
 					Paint_Bezier_ex(p, pnum, nimgV, t, bright, ratio);	
 					Paint_Bezier_ex(p, pnum, nimgR, t, brightR, ratio);	
@@ -817,9 +839,13 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					
 					// 制御点を全てとブラシサイズを拡大率に従いスケーリングし、拡大キャンバスに描画
 					scaling_p = scaling_point(p, pnum, canvas_scaling_ratio);
+
 					Paint_Bezier_ex(scaling_p, pnum, nimgR_Scaling, t*canvas_scaling_ratio, brightR, ratio);	
 					Paint_Bezier_ex(scaling_p, pnum, nimgG_Scaling, t*canvas_scaling_ratio, brightG, ratio);	
-					Paint_Bezier_ex(scaling_p, pnum, nimgB_Scaling, t*canvas_scaling_ratio, brightB, ratio);	
+					Paint_Bezier_ex(scaling_p, pnum, nimgB_Scaling, t*canvas_scaling_ratio, brightB, ratio);
+					
+					//ストロークデータをファイルに追加
+					vec_print(vec_filename, p, pnum, brightR, brightG, brightB, nimgV->width, nimgV->height);
 				}
 				
 				
@@ -1160,7 +1186,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	
 	
 	printf("%s\n", log_filename);
-	if(log_print(log_filename, log_sentence) ){ printf("LOG_PRINTING_FAIL\n"); }
+	if(log_print(log_filename, log_sentence, "w") ){ printf("LOG_PRINTING_FAIL\n"); }
 	
 	//p("diffsum_border",window_diff_border);
 	//p("color_border",color_diff_border);
