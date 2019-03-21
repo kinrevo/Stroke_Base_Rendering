@@ -8,7 +8,8 @@
 #include <jpeglib.h>
 #include "ImageIO/image.h"
 #include <stdlib.h>
-#include "other_func.h"
+#include "sbr.h"
+// #include "other_func.h"
 
 
 
@@ -789,10 +790,10 @@ void Add_dictionary_to_sentence(char* sentence, char *name, int value){
 
 
 //logテキストファイルを生成する
-int log_print(char* filename, char *sentence){
+int log_print(char* filename, char *sentence, char *mode){
 	FILE* fp;
 	
-	if((fp = fopen(filename, "w")) == NULL){
+	if((fp = fopen(filename, mode)) == NULL){
 		fprintf(stderr, "W_Open_Error(log_print)\n");
 		return -1;
 	}
@@ -800,6 +801,36 @@ int log_print(char* filename, char *sentence){
 	fprintf(fp, "%s\n", sentence);
 	
 	fclose(fp);
+	return 0;
+}
+
+
+//ストロークデータをファイルに追加
+int vec_print(char* filename, Point *p, int pnum, int brightR, int brightG, int brightB, int width, int height){
+	char vec_sentence[256] = "";
+	char tmp_sentence[64] = "";
+	int i;
+	
+	snprintf(tmp_sentence, 32, "%d", brightR);
+	strcat(vec_sentence, tmp_sentence);
+	strcat(vec_sentence, ",");
+	snprintf(tmp_sentence, 32, "%d", brightG);
+	strcat(vec_sentence, tmp_sentence);
+	strcat(vec_sentence, ",");
+	snprintf(tmp_sentence, 32, "%d", brightB);
+	strcat(vec_sentence, tmp_sentence);
+	strcat(vec_sentence, " ");
+	
+	for(i=0; i<pnum; i++){
+		snprintf(tmp_sentence, 32, "%f", p[i].x/(double)width);
+		strcat(vec_sentence, tmp_sentence);
+		strcat(vec_sentence, ",");
+		snprintf(tmp_sentence, 32, "%f", p[i].y/(double)height);
+		strcat(vec_sentence, tmp_sentence);
+		strcat(vec_sentence, " ");
+	}
+	
+	log_print(filename, vec_sentence, "a");
 	return 0;
 }
 
