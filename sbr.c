@@ -621,15 +621,15 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	strcat(log_sentence, "CompareImage : Origin\r\n");
 	
 	//vectorデータのヘッダを格納
-	snprintf(tmp_sentence, 32, "%d", in->width);
-	strcat(vec_sentence, tmp_sentence);
-	strcat(vec_sentence, " ");
-	snprintf(tmp_sentence, 32, "%d", in->height);
-	strcat(vec_sentence, tmp_sentence);
-	strcpy(vec_filename, dir_path);
-	strcat(vec_filename, in_filename);
-	strcat(vec_filename, ".vec");
-	log_print(vec_filename, vec_sentence, "w");
+	// snprintf(tmp_sentence, 32, "%d", in->width);
+	// strcat(vec_sentence, tmp_sentence);
+	// strcat(vec_sentence, " ");
+	// snprintf(tmp_sentence, 32, "%d", in->height);
+	// strcat(vec_sentence, tmp_sentence);
+	// strcpy(vec_filename, dir_path);
+	// strcat(vec_filename, in_filename);
+	// strcat(vec_filename, ".vec");
+	// log_print(vec_filename, vec_sentence, "w");
 	
 	
 	//カラー画像分割
@@ -637,9 +637,9 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	PGM *nimgR = create_pgm(gray->width, gray->height, gray->bright); 
 	PGM *nimgG = create_pgm(gray->width, gray->height, gray->bright); 
 	PGM *nimgB = create_pgm(gray->width, gray->height, gray->bright); 
-	PGM *nimgR_Scaling = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
-	PGM *nimgG_Scaling = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
-	PGM *nimgB_Scaling = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
+	// PGM *nimgR_Scaling = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
+	// PGM *nimgG_Scaling = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
+	// PGM *nimgB_Scaling = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
 	PGM *inR = create_pgm(gray->width, gray->height, gray->bright); 
 	PGM *inG = create_pgm(gray->width, gray->height, gray->bright); 
 	PGM *inB = create_pgm(gray->width, gray->height, gray->bright); 
@@ -666,10 +666,10 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	nimgC->dataR = nimgR->data;
 	nimgC->dataG = nimgG->data;
 	nimgC->dataB = nimgB->data;
-	PPM *nimgC_Scaling = create_ppm(in->width*canvas_scaling_ratio, in->height*canvas_scaling_ratio, in->bright); //実際に描画するキャンバス（拡縮描画用）
-	nimgC_Scaling->dataR = nimgR_Scaling->data;
-	nimgC_Scaling->dataG = nimgG_Scaling->data;
-	nimgC_Scaling->dataB = nimgB_Scaling->data;
+	// PPM *nimgC_Scaling = create_ppm(in->width*canvas_scaling_ratio, in->height*canvas_scaling_ratio, in->bright); //実際に描画するキャンバス（拡縮描画用）
+	// nimgC_Scaling->dataR = nimgR_Scaling->data;
+	// nimgC_Scaling->dataG = nimgG_Scaling->data;
+	// nimgC_Scaling->dataB = nimgB_Scaling->data;
 	
 	
 	//sobelフィルタを適応した計算結果を予め格納しておく
@@ -692,10 +692,10 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	    }
 		
 		//vecデータ書き込み
-		strcpy(vec_sentence, "t");
-		snprintf(tmp_sentence, 32, "%d", t);
-		strcat(vec_sentence, tmp_sentence);
-		log_print(vec_filename, vec_sentence, "a");
+		// strcpy(vec_sentence, "t");
+		// snprintf(tmp_sentence, 32, "%d", t);
+		// strcat(vec_sentence, tmp_sentence);
+		// log_print(vec_filename, vec_sentence, "a");
 		
 		
 		for(y=y_defo; y<in->height; y=y+t) {  //ウィンドウの大きさに合わせて
@@ -838,14 +838,14 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					stroke_histogram[pnum]++;  
 					
 					// 制御点を全てとブラシサイズを拡大率に従いスケーリングし、拡大キャンバスに描画
-					scaling_p = scaling_point(p, pnum, canvas_scaling_ratio);
+					// scaling_p = scaling_point(p, pnum, canvas_scaling_ratio);
 
-					Paint_Bezier_ex(scaling_p, pnum, nimgR_Scaling, t*canvas_scaling_ratio, brightR, ratio);	
-					Paint_Bezier_ex(scaling_p, pnum, nimgG_Scaling, t*canvas_scaling_ratio, brightG, ratio);	
-					Paint_Bezier_ex(scaling_p, pnum, nimgB_Scaling, t*canvas_scaling_ratio, brightB, ratio);
+					// Paint_Bezier_ex(scaling_p, pnum, nimgR_Scaling, t*canvas_scaling_ratio, brightR, ratio);	
+					// Paint_Bezier_ex(scaling_p, pnum, nimgG_Scaling, t*canvas_scaling_ratio, brightG, ratio);	
+					// Paint_Bezier_ex(scaling_p, pnum, nimgB_Scaling, t*canvas_scaling_ratio, brightB, ratio);
 					
 					//ストロークデータをファイルに追加
-					vec_print(vec_filename, p, pnum, brightR, brightG, brightB, nimgV->width, nimgV->height);
+					// vec_print(vec_filename, p, pnum, brightR, brightG, brightB, nimgV->width, nimgV->height);
 				}
 				
 				
@@ -864,7 +864,8 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 						strcat(out_filename, "_t");
 						strcat(out_filename, count_name);
 						strcat(out_filename, ".jpg");
-						out_png = PPM_to_image(nimgC_Scaling);
+						out_png = PPM_to_image(nimgC);
+						// out_png = PPM_to_image(nimgC_Scaling);
 						if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
 						free_image(out_png);
 						printf("%s\n",out_filename);
@@ -918,7 +919,8 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	strcat(out_filename, "_t");
 	strcat(out_filename, count_name);
 	strcat(out_filename, ".jpg");
-	out_png = PPM_to_image(nimgC_Scaling);
+	out_png = PPM_to_image(nimgC);
+	// out_png = PPM_to_image(nimgC_Scaling);
 	if(write_jpeg_file(out_filename, out_png)){ printf("WRITE JPG ERROR.");}
 	free_image(out_png);
 	printf("%s\n",out_filename);
