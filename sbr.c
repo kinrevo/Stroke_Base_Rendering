@@ -201,8 +201,9 @@ void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, do
 		Paint_line(p[0], p[1], in_img, thick, bright, ratio);
 		return;
 	}
+	
 	Point p0={2*p[0].x-p[1].x, 2*p[0].y-p[1].y}, 	//両端の一つ外の制御点を適当に決める
-		p_np1={2*p[pnum-1].x-p[pnum-2].x, 2*p[pnum-1].y-p[pnum-2].y};
+	p_np1={2*p[pnum-1].x-p[pnum-2].x, 2*p[pnum-1].y-p[pnum-2].y};
 	//light_dot(p0.x, p0.y, in_img, 0);
 	//light_dot(p_np1.x, p_np1.y, in_img, 0);
 	//printf("%d,%d\n",p_np1.x, p_np1.y);
@@ -572,12 +573,11 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	
 	//出力ファイル名のサイズを取得
 	int namesize = strlen(filename)*2 + 16;
-	char out_filename[namesize], log_filename[namesize], dir_path[namesize], vec_filename[namesize];
+	char out_filename[namesize], log_filename[namesize], dir_path[namesize];
 	char in_filename[namesize-16];
 	char count_name[16];
 	char log_sentence[2028] = "";
-	char vec_sentence[128] = "";
-	char tmp_sentence[32] = "";
+	// char vec_sentence[128] = "", tmp_sentence[32] = "", vec_filename[namesize];
 	image_t *out_png;
 	//パスから入力ファイル名（拡張子含まない）を取得
 	char tmp[namesize];
@@ -697,206 +697,228 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 		// strcat(vec_sentence, tmp_sentence);
 		// log_print(vec_filename, vec_sentence, "a");
 		
+		//Greedyアプローチ
+		int s_count,stroke_num, best_bright, best_brightR, best_brightG, best_brightB, best_pnum;
+		int diff_stroke=0, diff_stroke_max=0;
+		Point best_stroke_P[max_stroke];
+		stroke_num = in->width/t * in->height/t / (max_stroke+min_stroke)/2;
+		p("stroke_num", stroke_num);
 		
-		for(y=y_defo; y<in->height; y=y+t) {  //ウィンドウの大きさに合わせて
-			for(x=x_defo; x<in->width; x=x+t) {  //ウィンドウをずらす距離を変えとく
-				//ウィンドウの中の差分の合計を取る
-				diff_sum = break_flag = pnum = 0;
-				//printf("x:%d y:%d   ",x,y);
-				
-				offscrn_count = 0;
-				for(xc=-t; xc<=t; xc++) {
-					if((x+xc)<0 || (x+xc)>in->width-1) {offscrn_count += 2*t+1;		continue;	}
-					for(yc=-t; yc<=t; yc++) {
-						if((y+yc)<0 || (y+yc)>in->height-1) {	offscrn_count++;
-						}else{
-							//diff_sum += abs(nimgV->data[x+xc][y+yc] - cmpr->data[x+xc][y+yc]);
-							diff_sum += abs(nimgR->data[x+xc][y+yc] - cmprR->data[x+xc][y+yc]);
-							diff_sum += abs(nimgG->data[x+xc][y+yc] - cmprG->data[x+xc][y+yc]);
-							diff_sum += abs(nimgB->data[x+xc][y+yc] - cmprB->data[x+xc][y+yc]);
+		for(s_count=0; s_count<stroke_num; s_count++) {  //ある半径におけるストローク回数
+			diff_stroke_max=0;
+			
+			for(y=y_defo; y<in->height; y=y+t/2+1) {  //ウィンドウの大きさに合わせて
+				for(x=x_defo; x<in->width; x=x+t/2+1) {  //ウィンドウをずらす距離を変えとく
+					//ウィンドウの中の差分の合計を取る
+					diff_sum = break_flag = pnum = 0;
+					diff_stroke=0;	//Greedyアプローチ
+					
+					offscrn_count = 0;
+					for(xc=-t; xc<=t; xc++) {
+						if((x+xc)<0 || (x+xc)>in->width-1) {offscrn_count += 2*t+1;		continue;	}
+						for(yc=-t; yc<=t; yc++) {
+							if((y+yc)<0 || (y+yc)>in->height-1) {	offscrn_count++;
+							}else{
+								//diff_sum += abs(nimgV->data[x+xc][y+yc] - cmpr->data[x+xc][y+yc]);
+								diff_sum += abs(nimgR->data[x+xc][y+yc] - cmprR->data[x+xc][y+yc]);
+								diff_sum += abs(nimgG->data[x+xc][y+yc] - cmprG->data[x+xc][y+yc]);
+								diff_sum += abs(nimgB->data[x+xc][y+yc] - cmprB->data[x+xc][y+yc]);
+							}
 						}
 					}
-				}
-				diff_sum = diff_sum/((2*t+1)*(2*t+1)-offscrn_count)/3;
-				//printf("diffsum:%f \n", diff_sum);
-				
-				//差分の合計平均(画素当たりの差分)が一定以上ならストローク開始位置とする
-				if(diff_sum < window_diff_border) {
-					stroke_histogram[pnum]++;
-					continue;
-				}
-				pnum=1;		//第一点確定
-				p[0].x=x+0.5; p[0].y=y+0.5;
-				
-				//一つ目の描画領域から描画色を平均を取って取得
-			//	bright  = calcu_color(cmpr->data, cmpr->width, cmpr->height, x, y, t);
-			//	brightR = calcu_color(in->dataR, in->width, in->height, x, y, t);
-			//	brightG = calcu_color(in->dataG, in->width, in->height, x, y, t);
-			//	brightB = calcu_color(in->dataB, in->width, in->height, x, y, t);
-				bright  = calcu_color_bi(cmpr->data, cmpr->width, cmpr->height, x, y, t, 50, gauce_filter);
-				brightR = calcu_color_bi(cmprR->data, in->width, in->height, x, y, t, 50, gauce_filter);
-				brightG = calcu_color_bi(cmprG->data, in->width, in->height, x, y, t, 50, gauce_filter);
-				brightB = calcu_color_bi(cmprB->data, in->width, in->height, x, y, t, 50, gauce_filter);
-				//p("bright",bright);
-				
-				theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition, 
-						gauce_filter, p[0].x, p[0].y, t, histogram_direct, &break_flag);
-				
-				// if(0){//if(break_flag) {}
-					// stroke_histogram[pnum]++;
-					// direct_count++;
-					// printf("DIRECTION IS UNSTABLE.\n");
-					// continue;
-				// }
-				
-				//pd("theta1",theta* 180.0 / PI);
-				
-				//制御点を方向から計算し代入
-				p[1] = calcu_point(cmpr, p[0], t, theta);
-				
-				
-				//二つ目の描画点周りの色が描画色と一致するか確認する
-				sum = 0;
-				sum += diffsum_clr(cmprR, nimgR, p[1], t, brightR);
-				sum += diffsum_clr(cmprG, nimgG, p[1], t, brightG);
-				sum += diffsum_clr(cmprB, nimgB, p[1], t, brightB);
-				//pd("sum1",sum);
-				
-				//二つ目の制御点周りの色が描画色としきい値以上の差を持つなら描画せず反対方向の制御点を見る
-				if( sum < color_diff_border){
-					//もう一つの勾配垂直の点を代入
-					theta += PI; 	//printf("+PI\n");
+					diff_sum = diff_sum/((2*t+1)*(2*t+1)-offscrn_count)/3;
+					//printf("diffsum:%f \n", diff_sum);
+					
+					//差分の合計平均(画素当たりの差分)が一定以上ならストローク開始位置とする
+					if(diff_sum < window_diff_border) {
+						stroke_histogram[pnum]++;
+						continue;
+					}
+					pnum=1;		//第一点確定
+					p[0].x=x+0.5; p[0].y=y+0.5;
+					
+					//一つ目の描画領域から描画色を平均を取って取得
+				//	bright  = calcu_color(cmpr->data, cmpr->width, cmpr->height, x, y, t);
+				//	brightR = calcu_color(in->dataR, in->width, in->height, x, y, t);
+				//	brightG = calcu_color(in->dataG, in->width, in->height, x, y, t);
+				//	brightB = calcu_color(in->dataB, in->width, in->height, x, y, t);
+					bright  = calcu_color_bi(cmpr->data, cmpr->width, cmpr->height, x, y, t, 50, gauce_filter);
+					brightR = calcu_color_bi(cmprR->data, in->width, in->height, x, y, t, 50, gauce_filter);
+					brightG = calcu_color_bi(cmprG->data, in->width, in->height, x, y, t, 50, gauce_filter);
+					brightB = calcu_color_bi(cmprB->data, in->width, in->height, x, y, t, 50, gauce_filter);
+					//p("bright",bright);
+					
+					//1つ目の描画点周りの色と描画色の差をGreedyアプローチのストローク誤差に加算
+					diff_stroke += diffsum_clr(cmprR, nimgR, p[0], t, brightR);
+					diff_stroke += diffsum_clr(cmprG, nimgG, p[0], t, brightG);
+					diff_stroke += diffsum_clr(cmprB, nimgB, p[0], t, brightB);
+					
+					
+					theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition, 
+							gauce_filter, p[0].x, p[0].y, t, histogram_direct, &break_flag);
+					
+					//pd("theta1",theta* 180.0 / PI);
+					
+					//制御点を方向から計算し代入
 					p[1] = calcu_point(cmpr, p[0], t, theta);
 					
-					//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
-					//sum = diffsum_clr(cmpr, nimgV, p[1], t, bright);  //点当たりの差異平均
+					
+					//二つ目の描画点周りの色が描画色と一致するか確認する
 					sum = 0;
 					sum += diffsum_clr(cmprR, nimgR, p[1], t, brightR);
 					sum += diffsum_clr(cmprG, nimgG, p[1], t, brightG);
 					sum += diffsum_clr(cmprB, nimgB, p[1], t, brightB);
-					//pd("sum1.2",sum);
 					
-					//どちらの第二点も不適切なら描画をせず次のループへ
-					if( sum < color_diff_border) {
-						//printf("BOTH POINT2 IS INAPRROPRIATE\n");
-						inapp_count++;
-						stroke_histogram[pnum]++;
-						continue;
+					
+					//二つ目の制御点周りの色が描画色としきい値以上の差を持つなら描画せず反対方向の制御点を見る
+					if( sum < color_diff_border){
+						//もう一つの勾配垂直の点を代入
+						theta += PI; 	//printf("+PI\n");
+						p[1] = calcu_point(cmpr, p[0], t, theta);
+						
+						//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
+						//sum = diffsum_clr(cmpr, nimgV, p[1], t, bright);  //点当たりの差異平均
+						sum = 0;
+						sum += diffsum_clr(cmprR, nimgR, p[1], t, brightR);
+						sum += diffsum_clr(cmprG, nimgG, p[1], t, brightG);
+						sum += diffsum_clr(cmprB, nimgB, p[1], t, brightB);
+						//pd("sum1.2",sum);
+						
+						//どちらの第二点も不適切なら描画をせず次のループへ
+						if( sum < color_diff_border) {
+							//printf("BOTH POINT2 IS INAPRROPRIATE\n");
+							inapp_count++;
+							stroke_histogram[pnum]++;
+							continue;
+						}
+						else{ P2b_count++;}
 					}
-					else{ P2b_count++;}
-				}
-				//適切な第二点が見つかれば次へ
-				else{  P2a_count++; }
-				pnum=2;		//第二点確定
-				
-				
-				/*
-					POINT2から勾配により次の制御点を探していく
-				*/
-				
-				while(pnum!=(max_stroke)){
-					former_theta=theta;
+					//適切な第二点が見つかれば次へ
+					else{  P2a_count++; }
+					pnum=2;		//第二点確定
+					diff_stroke +=sum;	//Greedyアプローチにおける誤差計算
 					
-					//第pnum点周りにおいて、sobelからヒストグラムを作成し最大のものを勾配とする
-					theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition, 
-											gauce_filter, p[pnum-1].x, p[pnum-1].y, t, histogram_direct2, &break_flag);
-					//if(break_flag==1) break;
-					
-					//制御点の為す角が急峻になるようなら逆方向に角度を取る
-					if( (theta < former_theta-PI/2) || (theta > former_theta+PI/2) ) {theta += PI;} 
-					p[pnum] = calcu_point(cmpr, p[pnum-1], t, theta);
-					//printf("theta%d:%f\n",pnum,theta* 180.0 / PI);
-					
-					//pnum+1目の描画点周りの色が描画色と一致するか確認する
-					//sum = diffsum_clr(cmpr, nimgV, p[pnum], t, bright);  //点当たりの差異平均
-					sum = 0;
-					sum += diffsum_clr(cmprR, nimgR, p[pnum], t, brightR);
-					sum += diffsum_clr(cmprG, nimgG, p[pnum], t, brightG);
-					sum += diffsum_clr(cmprB, nimgB, p[pnum], t, brightB);
-					//printf("sum%d:%f\n",pnum,sum);
 					
 					/*
-						pnum+1目の(次の)制御点周りの色が描画色としきい値以上の差を持つなら
-						それまでの制御点を用いて線を描画
+						POINT2から勾配により次の制御点を探していく
 					*/
-					if( sum < color_diff_border) {break_flag=1; break;}
-					else {pnum++;}
 					
-				}
-				
-				//算出したpnum個の制御点を用いてストロークを描画
-				if(pnum>=min_stroke) { 
-					// printf("C%f: (%f:%f)",pnum,p[0].x,p[0].y);
-					// for(i=1; i<pnum; i++){
-						// printf("->(%f:%f)", p[i].x, p[i].y);
-					// }
-					
-					Paint_Bezier_ex(p, pnum, nimgV, t, bright, ratio);	
-					Paint_Bezier_ex(p, pnum, nimgR, t, brightR, ratio);	
-					Paint_Bezier_ex(p, pnum, nimgG, t, brightG, ratio);	
-					Paint_Bezier_ex(p, pnum, nimgB, t, brightB, ratio);	
-					stroke_histogram[pnum]++;  
-					
-					// 制御点を全てとブラシサイズを拡大率に従いスケーリングし、拡大キャンバスに描画
-					// scaling_p = scaling_point(p, pnum, canvas_scaling_ratio);
-
-					// Paint_Bezier_ex(scaling_p, pnum, nimgR_Scaling, t*canvas_scaling_ratio, brightR, ratio);	
-					// Paint_Bezier_ex(scaling_p, pnum, nimgG_Scaling, t*canvas_scaling_ratio, brightG, ratio);	
-					// Paint_Bezier_ex(scaling_p, pnum, nimgB_Scaling, t*canvas_scaling_ratio, brightB, ratio);
-					
-					//ストロークデータをファイルに追加
-					// vec_print(vec_filename, p, pnum, brightR, brightG, brightB, nimgV->width, nimgV->height);
-				}
-				
-				
-				
-				//一定ストロークごとに途中経過画像を書き出す
-				nc++;
-				//if(nc%1000==0)
-				//if(0)
-				if(t!=tc){
-					if(t%2==0){ //ブラシ半径が2変わるごと
-						paint_count++;
-						tc=t;	
-						snprintf(count_name, 16, "%03d", tc+1);
-						strcpy(out_filename, dir_path);
-						strcat(out_filename, in_filename);
-						strcat(out_filename, "_t");
-						strcat(out_filename, count_name);
-						strcat(out_filename, ".jpg");
-						out_png = PPM_to_image(nimgC);
-						// out_png = PPM_to_image(nimgC_Scaling);
-						if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
-						free_image(out_png);
-						printf("%s\n",out_filename);
-						printf("%d:",t);
-						pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
+					while(pnum!=(max_stroke)){
+						former_theta=theta;
+						
+						//第pnum点周りにおいて、sobelからヒストグラムを作成し最大のものを勾配とする
+						theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition, 
+												gauce_filter, p[pnum-1].x, p[pnum-1].y, t, histogram_direct2, &break_flag);
+						//if(break_flag==1) break;
+						
+						//制御点の為す角が急峻になるようなら逆方向に角度を取る
+						if( (theta < former_theta-PI/2) || (theta > former_theta+PI/2) ) {theta += PI;} 
+						p[pnum] = calcu_point(cmpr, p[pnum-1], t, theta);
+						//printf("theta%d:%f\n",pnum,theta* 180.0 / PI);
+						
+						//pnum+1目の描画点周りの色が描画色と一致するか確認する
+						//sum = diffsum_clr(cmpr, nimgV, p[pnum], t, bright);  //点当たりの差異平均
+						sum = 0;
+						sum += diffsum_clr(cmprR, nimgR, p[pnum], t, brightR);
+						sum += diffsum_clr(cmprG, nimgG, p[pnum], t, brightG);
+						sum += diffsum_clr(cmprB, nimgB, p[pnum], t, brightB);
+						//printf("sum%d:%f\n",pnum,sum);
+						
+						/*
+							pnum+1目の(次の)制御点周りの色が描画色としきい値以上の差を持つなら
+							それまでの制御点を用いて線を描画
+						*/
+						if( sum < color_diff_border) {break_flag=1; break;}
+						else {pnum++;}
+						
+						diff_stroke +=sum;	//Greedyアプローチにおける誤差の加算
 					}
-				}
-				//デバッグ用
-				/*
-				if(input_char!='c'){
-					do{
-						if((input_char = getchar())=='e')exit(0);
-						if(input_char == 'p'){
-							for(i=x-t; i<=x+t; i++) {
-								for(j=y-t; j<=y+t; j++) {
-									if(i<0 || i>cmpr->width-1 || j<0 || j>cmpr->height-1) continue;
-									printf("%d ",cmpr->data[i][j]);
-								}
-								pn;
-							}
+					
+					//現在のストロークが保存している開始点のものより良いなら更新
+					if( (diff_stroke>diff_stroke_max) && (pnum>min_stroke) ){
+						// best_stroke_P.x=p[0].x; best_stroke_P.y=p[0].y;
+						for(i=0; i<pnum; i++){
+							best_stroke_P[i].x=p[i].x; best_stroke_P[i].y=p[i].y;
 						}
-					}while(input_char != '\n' && input_char != 'c');
+						best_bright=bright; best_brightR=brightR; best_brightG=brightG; best_brightB=brightB; best_pnum=pnum;
+						diff_stroke_max = diff_stroke;
+					}
+					
+					
+					//デバッグ用
+					/*
+					if(input_char!='c'){
+						do{
+							if((input_char = getchar())=='e')exit(0);
+							if(input_char == 'p'){
+								for(i=x-t; i<=x+t; i++) {
+									for(j=y-t; j<=y+t; j++) {
+										if(i<0 || i>cmpr->width-1 || j<0 || j>cmpr->height-1) continue;
+										printf("%d ",cmpr->data[i][j]);
+									}
+									pn;
+								}
+							}
+						}while(input_char != '\n' && input_char != 'c');
+					}
+					pn;
+					*/
 				}
-				pn;
-				*/
 			}
+			
+			printf("Best_stroke_Point:%3.0f,%3.0f\n", best_stroke_P[0].x,best_stroke_P[0].y);
+			p("max_diff", diff_stroke_max);
+			
+			//算出したpnum個の制御点を用いてストロークを描画
+			printf("C%d: (%3.0f:%3.0f)",s_count, best_stroke_P[0].x, best_stroke_P[0].y);
+			for(i=1; i<best_pnum; i++){
+				printf("->(%3.0f:%3.0f)", best_stroke_P[i].x, best_stroke_P[i].y);
+			}
+			p("bright", best_bright);
+			
+			Paint_Bezier_ex(best_stroke_P, best_pnum, nimgV, t, best_bright, ratio);	
+			Paint_Bezier_ex(best_stroke_P, best_pnum, nimgR, t, best_brightR, ratio);	
+			Paint_Bezier_ex(best_stroke_P, best_pnum, nimgG, t, best_brightG, ratio);	
+			Paint_Bezier_ex(best_stroke_P, best_pnum, nimgB, t, best_brightB, ratio);	
+			stroke_histogram[best_pnum]++;  
+			
+			// 制御点を全てとブラシサイズを拡大率に従いスケーリングし、拡大キャンバスに描画
+			// scaling_p = scaling_point(p, pnum, canvas_scaling_ratio);
+
+			// Paint_Bezier_ex(scaling_p, pnum, nimgR_Scaling, t*canvas_scaling_ratio, brightR, ratio);	
+			// Paint_Bezier_ex(scaling_p, pnum, nimgG_Scaling, t*canvas_scaling_ratio, brightG, ratio);	
+			// Paint_Bezier_ex(scaling_p, pnum, nimgB_Scaling, t*canvas_scaling_ratio, brightB, ratio);
+			
+			//ストロークデータをファイルに追加
+			// vec_print(vec_filename, p, pnum, brightR, brightG, brightB, nimgV->width, nimgV->height);
+			
 		}
 		
+		//一定ストロークごとに途中経過画像を書き出す
+		// nc++;
+		//if(nc%1000==0)
+		//if(0)
+		if(t!=tc){
+			if(t%2==0){ //ブラシ半径が2変わるごと
+				paint_count++;
+				tc=t;	
+				snprintf(count_name, 16, "%03d", tc+1);
+				strcpy(out_filename, dir_path);
+				strcat(out_filename, in_filename);
+				strcat(out_filename, "_t");
+				strcat(out_filename, count_name);
+				strcat(out_filename, ".jpg");
+				out_png = PPM_to_image(nimgC);
+				// out_png = PPM_to_image(nimgC_Scaling);
+				if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+				free_image(out_png);
+				printf("%s\n",out_filename);
+				printf("%d:",t);
+				pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
+			}
+		}
 	
 		printf("////////////////////\nt%d done.\n////////////////////\n\n",t);
-		Free_dally(gauce_filter, 2*t+1);
 		
 		lc++;		//同じ半径でのループをcont回する
 		if((lc%loop_cont) != 0){
@@ -909,6 +931,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 			}
 		}
 		
+		Free_dally(gauce_filter, 2*t+1);
 	}
 	
 	//第一段階描画後の中間画像を出力
@@ -1095,9 +1118,9 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				
 				if(pnum>=min_stroke) { 
 					//算出したpnum個の制御点を用いてストロークを描画
-					printf("C%d: (%d:%d)",pnum,p[0].x,p[0].y);
+					// printf("C%d: (%d:%d)",pnum,p[0].x,p[0].y);
 					for(i=1; i<pnum; i++){
-						printf("->(%d:%d)", p[i].x, p[i].y);
+						// printf("->(%d:%d)", p[i].x, p[i].y);
 					}
 					pn;
 					Paint_Bezier_ex(p, pnum, nimgV, t, bright, ratio);	

@@ -9,7 +9,7 @@
 #define p(s,a) printf("%s:%d\n",s,a)
 #define ps(s,a) printf("%s:%s\n",s,a)
 #define pd(s,a) printf("%s:%f\n",s,a)
-#define pp(p) printf("x:%d y:%d\n",p.x,p.y)
+#define pp(p) printf("x:%f y:%f\n",p.x,p.y)
 #define pn printf("\n")
 #define Free_ally(ally, w) do {	for(i=0; i < w; i++) { free(ally[i]);}	free(ally);}while(0)
 
