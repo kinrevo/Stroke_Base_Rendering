@@ -87,7 +87,7 @@ void normalize_pgm(PGM* in);
 
 PPM *image_to_PPM(image_t *img);
 image_t *PPM_to_image(PPM *ppm);
-int log_print(char* filename, char *sentence);
+int log_print(char* filename, char *sentence, char *mode);
 void Add_dictionary_to_sentence(char* sentence, char *name, int value);
 
 char *get_extension(char *name);
