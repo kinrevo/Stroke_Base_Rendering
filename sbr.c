@@ -846,12 +846,13 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					
 					//ストロークデータをファイルに追加
 					// vec_print(vec_filename, p, pnum, brightR, brightG, brightB, nimgV->width, nimgV->height);
+					
+					nc++;
 				}
 				
 				
 				
 				//一定ストロークごとに途中経過画像を書き出す
-				nc++;
 				//if(nc%1000==0)
 				//if(0)
 				if(t!=tc){
@@ -894,7 +895,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 			}
 		}
 		
-	
+		printf("t:%d , paint_num:%d\n", t,nc);
 		printf("////////////////////\nt%d done.\n////////////////////\n\n",t);
 		Free_dally(gauce_filter, 2*t+1);
 		
