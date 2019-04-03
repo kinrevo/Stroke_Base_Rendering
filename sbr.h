@@ -169,4 +169,6 @@ PPM *create_ppm(int width, int height, int bright);
 Point *scaling_point(Point p[], int pnum, double canvas_scaling_ratio);
 
 int vec_print(char* filename, Point *p, int pnum, int brightR, int brightG, int brightB, int width, int height);
+
+int test_stroke(PGM* test_Canvas, PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimgG, PGM* nimgB, Point p[], int pnum, int t, int brightR, int brightG, int brightB, int ratio);
 #endif

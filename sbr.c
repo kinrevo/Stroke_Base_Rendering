@@ -169,7 +169,7 @@ Point BezierCurve_P(Point p1, Point p2, Point p3, Point p4, float t){
 void Paint_Bezier(Point p1, Point s, Point p4, PGM* in_img, int thick, int bright) {
 	int i,r;
 	int partition = abs(p1.x-p4.x) + abs(p1.y-p4.y); //線分の分割数
-	p("parti",partition);
+	//p("parti",partition);
 	float t;
 	Point temp, p2, p3;
 	
@@ -260,7 +260,7 @@ void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, do
 void Paint_line(Point p1, Point p4, PGM* in_img, int thick, int bright, double ratio) {
 	int i,r;
 	int partition = abs(p1.x-p4.x) + abs(p1.y-p4.y); //線分の分割数
-	p("parti",partition);
+	//p("parti",partition);
 	float t;
 	Point temp;
 	
@@ -304,9 +304,11 @@ void light_dot(int x, int y, PGM* in_img, int bright) {
 Point calcu_point(PGM *in, Point a, int t, double theta){
 	Point b;
 	b.x = t*cos(theta)+a.x;  
-	if(b.x<0) b.x=0;  if(b.x>=in->width) b.x=in->width-1; 
+	if(b.x<0) b.x=0;  
+	if(b.x>=in->width) b.x=in->width-1; 
 	b.y = t*sin(theta)+a.y;
-	if(b.y<0) b.y=0; if(b.y>=in->height) b.y=in->height-1;
+	if(b.y<0) b.y=0; 
+	if(b.y>=in->height) b.y=in->height-1;
 	
 	return b;
 }
@@ -540,6 +542,81 @@ Point *scaling_point(Point p[], int pnum, double canvas_scaling_ratio){
 	return new_p;
 }
 
+//　試しに描いてみて誤差を確認
+int test_stroke(PGM* test_Canvas, PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimgG, PGM* nimgB, Point p[], int pnum, int t, int brightR, int brightG, int brightB, int ratio)
+{
+	int i,j,diffsum=0;
+	double left_end,right_end,upper_end,lower_end;//upper,lowerは見かけの位置（値ではない）
+	
+	//ストローク点を囲む端の座標を特定
+	left_end=right_end=p[0].x;
+	upper_end=lower_end=p[0].y;
+	for(i=1; i<pnum; i++){
+		if(p[i].x < left_end) left_end=p[i].x;
+		if(right_end < p[i].x) right_end=p[i].x;
+		if(upper_end < p[i].y) upper_end=p[i].y;
+		if(p[i].y < lower_end) lower_end=p[i].y;
+	}
+	//ストローク半径分、端座標を膨張
+	left_end-=2*t; right_end+=2*t; upper_end-=2*t; lower_end+=2*t;
+	
+	
+	//テストキャンバスにおけるストロークによる影響箇所をコピー
+	for(i=left_end-1; i<=right_end+1; i++) {
+		for(j=upper_end-1; j<=lower_end+1; j++) {
+			if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
+			test_Canvas->data[i][j] = nimgR->data[i][j];
+		}
+	}
+	//試し描き
+	Paint_Bezier_ex(p, pnum, test_Canvas, t, brightR, ratio);
+	//試し描きによる変化を確認
+	for(i=left_end; i<=right_end; i++) {
+		for(j=upper_end; j<=lower_end; j++) {
+			if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
+			diffsum += abs(cmprR->data[i][j]-nimgR->data[i][j]) - abs(cmprR->data[i][j]-test_Canvas->data[i][j]);
+		}
+	}
+	
+	//テストキャンバスにおけるストロークによる影響箇所をコピー
+	for(i=left_end-1; i<=right_end+1; i++) {
+		for(j=upper_end-1; j<=lower_end+1; j++) {
+			if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
+			test_Canvas->data[i][j] = nimgG->data[i][j];
+		}
+	}
+	//試し描き
+	Paint_Bezier_ex(p, pnum, test_Canvas, t, brightG, ratio);
+	//試し描きによる変化を確認
+	for(i=left_end; i<=right_end; i++) {
+		for(j=upper_end; j<=lower_end; j++) {
+			if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
+			diffsum += abs(cmprG->data[i][j]-nimgG->data[i][j]) - abs(cmprG->data[i][j]-test_Canvas->data[i][j]);
+		}
+	}
+	
+	//テストキャンバスにおけるストロークによる影響箇所をコピー
+	for(i=left_end-1; i<=right_end+1; i++) {
+		for(j=upper_end-1; j<=lower_end+1; j++) {
+			if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
+			test_Canvas->data[i][j] = nimgB->data[i][j];
+		}
+	}
+	//試し描き
+	Paint_Bezier_ex(p, pnum, test_Canvas, t, brightB, ratio);
+	//試し描きによる変化を確認
+	for(i=left_end; i<=right_end; i++) {
+		for(j=upper_end; j<=lower_end; j++) {
+			if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
+			diffsum += abs(cmprB->data[i][j]-nimgB->data[i][j]) - abs(cmprB->data[i][j]-test_Canvas->data[i][j]);
+		}
+	}
+	
+	return diffsum;
+}
+
+
+
 //与えられたイメージからブラッシングによる絵画を作る
 PPM *c_Illust_brush(PPM *in, char *filename) {
 	clock_t start = clock();
@@ -666,6 +743,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	nimgC->dataR = nimgR->data;
 	nimgC->dataG = nimgG->data;
 	nimgC->dataB = nimgB->data;
+	PGM *test_Canvas = create_pgm(in->width, in->height, in->bright); //実際に描画するキャンバス
 	// PPM *nimgC_Scaling = create_ppm(in->width*canvas_scaling_ratio, in->height*canvas_scaling_ratio, in->bright); //実際に描画するキャンバス（拡縮描画用）
 	// nimgC_Scaling->dataR = nimgR_Scaling->data;
 	// nimgC_Scaling->dataG = nimgG_Scaling->data;
@@ -701,7 +779,11 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 		int s_count,stroke_num, best_bright, best_brightR, best_brightG, best_brightB, best_pnum;
 		int diff_stroke=0, diff_stroke_max=0;
 		Point best_stroke_P[max_stroke];
-		stroke_num = in->width/t * in->height/t / (max_stroke+min_stroke)/2;
+		// stroke_num = in->width/t * in->height/t / (max_stroke+min_stroke)/2;
+		if(t==10) stroke_num=1636;
+		if(t==9) stroke_num=2911;
+		if(t==8) stroke_num=4663;
+		if(t==7) stroke_num=7284;
 		p("stroke_num", stroke_num);
 		
 		for(s_count=0; s_count<stroke_num; s_count++) {  //ある半径におけるストローク回数
@@ -834,6 +916,10 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 						diff_stroke +=sum;	//Greedyアプローチにおける誤差の加算
 					}
 					
+					//　試しに描いてみて誤差を確認
+					// diff_stroke = test_stroke(test_Canvas, cmprR, cmprG, cmprB, nimgR, nimgG, nimgB, p, pnum, t, brightR, brightG, brightB, ratio);
+					
+					
 					//現在のストロークが保存している開始点のものより良いなら更新
 					if( (diff_stroke>diff_stroke_max) && (pnum>min_stroke) ){
 						// best_stroke_P.x=p[0].x; best_stroke_P.y=p[0].y;
@@ -892,31 +978,32 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 			//ストロークデータをファイルに追加
 			// vec_print(vec_filename, p, pnum, brightR, brightG, brightB, nimgV->width, nimgV->height);
 			
-		}
-		
-		//一定ストロークごとに途中経過画像を書き出す
-		// nc++;
-		//if(nc%1000==0)
-		//if(0)
-		if(t!=tc){
-			if(t%2==0){ //ブラシ半径が2変わるごと
-				paint_count++;
-				tc=t;	
-				snprintf(count_name, 16, "%03d", tc+1);
-				strcpy(out_filename, dir_path);
-				strcat(out_filename, in_filename);
-				strcat(out_filename, "_t");
-				strcat(out_filename, count_name);
-				strcat(out_filename, ".jpg");
-				out_png = PPM_to_image(nimgC);
-				// out_png = PPM_to_image(nimgC_Scaling);
-				if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
-				free_image(out_png);
-				printf("%s\n",out_filename);
-				printf("%d:",t);
-				pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
+					//一定ストロークごとに途中経過画像を書き出す
+			nc++;
+			if(nc%4==0)
+			//if(t!=tc)
+			{
+				//if(t%2==0){ //ブラシ半径が2変わるごと
+					paint_count++;
+					tc=t;	
+					snprintf(count_name, 16, "%03d", nc+1);
+					strcpy(out_filename, dir_path);
+					strcat(out_filename, in_filename);
+					strcat(out_filename, "_t");
+					strcat(out_filename, count_name);
+					strcat(out_filename, ".jpg");
+					out_png = PPM_to_image(nimgC);
+					// out_png = PPM_to_image(nimgC_Scaling);
+					if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+					free_image(out_png);
+					printf("%s\n",out_filename);
+					printf("%d:",t);
+					pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
+				//}
 			}
 		}
+		
+
 	
 		printf("////////////////////\nt%d done.\n////////////////////\n\n",t);
 		

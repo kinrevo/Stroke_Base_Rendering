@@ -26,7 +26,7 @@
 #define opt_histogram_partition 31
 
 // ストロークの半径ごとの繰り返し数。多いと丁寧に塗りつぶす
-#define opt_loop_cont 1
+#define opt_loop_cont 7
 
 // ストローク半径の最大値。この大きさからストロークを始める
 #define opt_thick_max 10
