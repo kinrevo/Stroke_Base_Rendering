@@ -264,7 +264,6 @@ void Paint_line(Point p1, Point p4, PGM* in_img, int thick, int bright, double r
 	float t;
 	Point temp;
 	
-	p("b",bright);
 	for(i=0; i <= partition; i++) {
 		t = (double)i/partition;
 		r = thick*sin((10*t<PI/2 ? 10*t:PI/2));
@@ -789,8 +788,8 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 		for(s_count=0; s_count<stroke_num; s_count++) {  //ある半径におけるストローク回数
 			diff_stroke_max=0;
 			
-			for(y=y_defo; y<in->height; y=y+t/2+1) {  //ウィンドウの大きさに合わせて
-				for(x=x_defo; x<in->width; x=x+t/2+1) {  //ウィンドウをずらす距離を変えとく
+			for(y=y_defo; y<in->height; y=y+t/2+0.5) {  //ウィンドウの大きさに合わせて
+				for(x=x_defo; x<in->width; x=x+t/2+0.5) {  //ウィンドウをずらす距離を変えとく
 					//ウィンドウの中の差分の合計を取る
 					diff_sum = break_flag = pnum = 0;
 					diff_stroke=0;	//Greedyアプローチ
@@ -917,7 +916,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					}
 					
 					//　試しに描いてみて誤差を確認
-					// diff_stroke = test_stroke(test_Canvas, cmprR, cmprG, cmprB, nimgR, nimgG, nimgB, p, pnum, t, brightR, brightG, brightB, ratio);
+					diff_stroke = test_stroke(test_Canvas, cmprR, cmprG, cmprB, nimgR, nimgG, nimgB, p, pnum, t, brightR, brightG, brightB, ratio);
 					
 					
 					//現在のストロークが保存している開始点のものより良いなら更新
@@ -960,7 +959,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 			for(i=1; i<best_pnum; i++){
 				printf("->(%3.0f:%3.0f)", best_stroke_P[i].x, best_stroke_P[i].y);
 			}
-			p("bright", best_bright);
+			printf("\nbrightRGB:%d,%d,%d\n", best_brightR,best_brightG,best_brightB);
 			
 			Paint_Bezier_ex(best_stroke_P, best_pnum, nimgV, t, best_bright, ratio);	
 			Paint_Bezier_ex(best_stroke_P, best_pnum, nimgR, t, best_brightR, ratio);	
@@ -1007,6 +1006,13 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	
 		printf("////////////////////\nt%d done.\n////////////////////\n\n",t);
 		
+		Free_dally(gauce_filter, 2*t+1);
+		
+		// Greedyアプローチ：最適ストロークを探索するごとに探索位置をずらす
+		x_defo += 1;	y_defo += 1;
+		if(x_defo>t) x_defo-=t;
+		if(y_defo>t) y_defo-=t;
+		
 		lc++;		//同じ半径でのループをcont回する
 		if((lc%loop_cont) != 0){
 			p("lc",lc);
@@ -1017,8 +1023,6 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				x_defo++;	y_defo++;
 			}
 		}
-		
-		Free_dally(gauce_filter, 2*t+1);
 	}
 	
 	//第一段階描画後の中間画像を出力

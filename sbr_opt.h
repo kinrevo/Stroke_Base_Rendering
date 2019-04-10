@@ -20,19 +20,19 @@
 #define opt_min_stroke 3
 
 // ストロークの描画の濃さ。この値が大きいほど下地の色を無視して塗りつぶす
-#define opt_ratio 0.6
+#define opt_ratio 1.0
 
 // ストローク方向を決定する際の、方向の種類の数。小さいと大雑把な方向に線を引く
 #define opt_histogram_partition 31
 
 // ストロークの半径ごとの繰り返し数。多いと丁寧に塗りつぶす
-#define opt_loop_cont 7
+#define opt_loop_cont 1
 
 // ストローク半径の最大値。この大きさからストロークを始める
 #define opt_thick_max 10
 
 // ストローク半径の最小値。この大きさでストロークを終える
-#define opt_thick_min 1
+#define opt_thick_min 7
 
 
 ////////////////	第二段階のパラメータ	/////////////////
