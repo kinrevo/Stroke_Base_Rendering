@@ -218,7 +218,7 @@ void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, do
 		t = (double)i/partition;
 		r = thick*sin((10*t<PI/2 ? 10*t:PI/2));
 		temp = BezierCurve_P(p[0], bp0, bp1, p[1], t);
-		Circle_fill(temp.x, temp.y, r, in_img, bright, 0.03);
+		Circle_fill(temp.x, temp.y, r, in_img, bright, ratio);
 		//light_dot(temp.x, temp.y, in_img, 0);
 	}
 	//light_dot(p[0].x, p[0].y, in_img, 0);
@@ -231,7 +231,7 @@ void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, do
 			t = (double)j/partition;
 			r = thick;
 			temp = BezierCurve_P(p[i], bp0, bp1, p[i+1], t);
-			Circle_fill(temp.x, temp.y, r, in_img, bright, 0.03);
+			Circle_fill(temp.x, temp.y, r, in_img, bright, ratio);
 			//light_dot(temp.x, temp.y, in_img, 0);
 		}
 		//light_dot(p[i].x, p[i].y, in_img, 0);
@@ -247,7 +247,7 @@ void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, do
 		t = (double)i/partition;
 		r = thick;
 		temp = BezierCurve_P(p[pnum-2], bp0, bp1, p[pnum-1], t);
-		Circle_fill(temp.x, temp.y, r, in_img, bright, 0.03);
+		Circle_fill(temp.x, temp.y, r, in_img, bright, ratio);
 		//light_dot(temp.x, temp.y, in_img, 0);
 	}
 	//light_dot(p[pnum-2].x, p[pnum-2].y, in_img, 0);
@@ -388,7 +388,8 @@ double calcu_histogram(PGM* cmpr, double **sobel_abs, double **sobel_angle, int 
 		for(j=y-t; j<=y+t; j++) {
 			if(i<1 || i>cmpr->width-2 || j<1 || j>cmpr->height-2) continue;
 			Farg = (sobel_angle[i][j]/PI)*partition;
-			histogram[Farg] += sobel_abs[i][j]*gauce_filter[i-(x-t)][j-(y-t)];
+			histogram[Farg] += sobel_abs[i][j];
+			if(opt_USE_gause_histogram) histogram[Farg] *= gauce_filter[i-(x-t)][j-(y-t)];
 		}
 	}
 	
@@ -542,10 +543,10 @@ Point *scaling_point(Point p[], int pnum, double canvas_scaling_ratio){
 }
 
 //　試しに描いてみて誤差を確認
-int test_stroke(PGM* test_Canvas, PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimgG, PGM* nimgB, Point p[], int pnum, int t, int brightR, int brightG, int brightB, int ratio)
+int test_stroke(PGM* test_Canvas, PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimgG, PGM* nimgB, Point p[], int pnum, int t, int brightR, int brightG, int brightB, double ratio)
 {
 	int i,j,diffsum=0;
-	double left_end,right_end,upper_end,lower_end;//upper,lowerは見かけの位置（値ではない）
+	double left_end,right_end,upper_end,lower_end;//upper,lowerは画像の見かけの上下（値の上下ではない）
 	
 	//ストローク点を囲む端の座標を特定
 	left_end=right_end=p[0].x;
@@ -553,17 +554,24 @@ int test_stroke(PGM* test_Canvas, PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR
 	for(i=1; i<pnum; i++){
 		if(p[i].x < left_end) left_end=p[i].x;
 		if(right_end < p[i].x) right_end=p[i].x;
-		if(upper_end < p[i].y) upper_end=p[i].y;
-		if(p[i].y < lower_end) lower_end=p[i].y;
+		if(p[i].y < upper_end) upper_end=p[i].y;
+		if(lower_end < p[i].y) lower_end=p[i].y;
 	}
 	//ストローク半径分、端座標を膨張
 	left_end-=2*t; right_end+=2*t; upper_end-=2*t; lower_end+=2*t;
+	if(left_end<0)left_end=0; if(cmprR->width <= right_end)right_end=cmprR->width-1; 
+	if(upper_end<0)upper_end=0; if(cmprR->height <= lower_end)lower_end=cmprR->height-1; 
 	
+	// printf("Test: (%3.0f:%3.0f)", p[0].x, p[0].y);
+	// for(i=1; i<pnum; i++){
+		// printf("->(%3.0f:%3.0f)", p[i].x, p[i].y);
+	// }
+	// printf("l:%3.0f,r:%3.0f,u:%3.0f,l:%3.0f\n", left_end,right_end,upper_end,lower_end);
 	
 	//テストキャンバスにおけるストロークによる影響箇所をコピー
-	for(i=left_end-1; i<=right_end+1; i++) {
-		for(j=upper_end-1; j<=lower_end+1; j++) {
-			if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
+	for(i=left_end; i<=right_end; i++) {
+		for(j=upper_end; j<=lower_end; j++) {
+			//if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
 			test_Canvas->data[i][j] = nimgR->data[i][j];
 		}
 	}
@@ -578,9 +586,8 @@ int test_stroke(PGM* test_Canvas, PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR
 	}
 	
 	//テストキャンバスにおけるストロークによる影響箇所をコピー
-	for(i=left_end-1; i<=right_end+1; i++) {
-		for(j=upper_end-1; j<=lower_end+1; j++) {
-			if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
+	for(i=left_end; i<=right_end; i++) {
+		for(j=upper_end; j<=lower_end; j++) {
 			test_Canvas->data[i][j] = nimgG->data[i][j];
 		}
 	}
@@ -589,15 +596,13 @@ int test_stroke(PGM* test_Canvas, PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR
 	//試し描きによる変化を確認
 	for(i=left_end; i<=right_end; i++) {
 		for(j=upper_end; j<=lower_end; j++) {
-			if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
 			diffsum += abs(cmprG->data[i][j]-nimgG->data[i][j]) - abs(cmprG->data[i][j]-test_Canvas->data[i][j]);
 		}
 	}
 	
 	//テストキャンバスにおけるストロークによる影響箇所をコピー
-	for(i=left_end-1; i<=right_end+1; i++) {
-		for(j=upper_end-1; j<=lower_end+1; j++) {
-			if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
+	for(i=left_end; i<=right_end; i++) {
+		for(j=upper_end; j<=lower_end; j++) {
 			test_Canvas->data[i][j] = nimgB->data[i][j];
 		}
 	}
@@ -606,7 +611,6 @@ int test_stroke(PGM* test_Canvas, PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR
 	//試し描きによる変化を確認
 	for(i=left_end; i<=right_end; i++) {
 		for(j=upper_end; j<=lower_end; j++) {
-			if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
 			diffsum += abs(cmprB->data[i][j]-nimgB->data[i][j]) - abs(cmprB->data[i][j]-test_Canvas->data[i][j]);
 		}
 	}
@@ -777,6 +781,8 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 		//Greedyアプローチ
 		int s_count,stroke_num, best_bright, best_brightR, best_brightG, best_brightB, best_pnum;
 		int diff_stroke=0, diff_stroke_max=0;
+		int tmp_num;
+		int diff_stroke_max_ave[50]={};
 		Point best_stroke_P[max_stroke];
 		// stroke_num = in->width/t * in->height/t / (max_stroke+min_stroke)/2;
 		if(t==10) stroke_num=1636;
@@ -788,8 +794,8 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 		for(s_count=0; s_count<stroke_num; s_count++) {  //ある半径におけるストローク回数
 			diff_stroke_max=0;
 			
-			for(y=y_defo; y<in->height; y=y+t/2+0.5) {  //ウィンドウの大きさに合わせて
-				for(x=x_defo; x<in->width; x=x+t/2+0.5) {  //ウィンドウをずらす距離を変えとく
+			for(y=y_defo; y<in->height; y=y+t) {  //ウィンドウの大きさに合わせて
+				for(x=x_defo; x<in->width; x=x+t) {  //ウィンドウをずらす距離を変えとく
 					//ウィンドウの中の差分の合計を取る
 					diff_sum = break_flag = pnum = 0;
 					diff_stroke=0;	//Greedyアプローチ
@@ -818,16 +824,19 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					pnum=1;		//第一点確定
 					p[0].x=x+0.5; p[0].y=y+0.5;
 					
-					//一つ目の描画領域から描画色を平均を取って取得
-				//	bright  = calcu_color(cmpr->data, cmpr->width, cmpr->height, x, y, t);
-				//	brightR = calcu_color(in->dataR, in->width, in->height, x, y, t);
-				//	brightG = calcu_color(in->dataG, in->width, in->height, x, y, t);
-				//	brightB = calcu_color(in->dataB, in->width, in->height, x, y, t);
-					bright  = calcu_color_bi(cmpr->data, cmpr->width, cmpr->height, x, y, t, 50, gauce_filter);
-					brightR = calcu_color_bi(cmprR->data, in->width, in->height, x, y, t, 50, gauce_filter);
-					brightG = calcu_color_bi(cmprG->data, in->width, in->height, x, y, t, 50, gauce_filter);
-					brightB = calcu_color_bi(cmprB->data, in->width, in->height, x, y, t, 50, gauce_filter);
-					//p("bright",bright);
+					//一つ目の描画領域から描画色を取得
+					if(opt_USE_calcu_color_bi){
+						bright  = calcu_color_bi(cmpr->data, cmpr->width, cmpr->height, x, y, t, 50, gauce_filter);
+						brightR = calcu_color_bi(cmprR->data, in->width, in->height, x, y, t, 50, gauce_filter);
+						brightG = calcu_color_bi(cmprG->data, in->width, in->height, x, y, t, 50, gauce_filter);
+						brightB = calcu_color_bi(cmprB->data, in->width, in->height, x, y, t, 50, gauce_filter);
+					} else{
+						bright  = calcu_color(cmpr->data, cmpr->width, cmpr->height, x, y, t);
+						brightR = calcu_color(in->dataR, in->width, in->height, x, y, t);
+						brightG = calcu_color(in->dataG, in->width, in->height, x, y, t);
+						brightB = calcu_color(in->dataB, in->width, in->height, x, y, t);
+					}
+
 					
 					//1つ目の描画点周りの色と描画色の差をGreedyアプローチのストローク誤差に加算
 					diff_stroke += diffsum_clr(cmprR, nimgR, p[0], t, brightR);
@@ -920,7 +929,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					
 					
 					//現在のストロークが保存している開始点のものより良いなら更新
-					if( (diff_stroke>diff_stroke_max) && (pnum>min_stroke) ){
+					if( (diff_stroke>diff_stroke_max) && (pnum>=min_stroke) ){
 						// best_stroke_P.x=p[0].x; best_stroke_P.y=p[0].y;
 						for(i=0; i<pnum; i++){
 							best_stroke_P[i].x=p[i].x; best_stroke_P[i].y=p[i].y;
@@ -953,6 +962,18 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 			
 			printf("Best_stroke_Point:%3.0f,%3.0f\n", best_stroke_P[0].x,best_stroke_P[0].y);
 			p("max_diff", diff_stroke_max);
+			//直近の50のストロークでの変化がほとんどなければ次の半径ステップに移行
+			diff_stroke_max_ave[s_count%50] = diff_stroke_max;
+			if(s_count%50 == 49){
+				tmp_num=0;
+				for(i=0; i<50; i++) tmp_num+=diff_stroke_max_ave[i];
+				if(tmp_num/50 < 5) {
+					Add_dictionary_to_sentence(log_sentence, "t", t);
+					Add_dictionary_to_sentence(log_sentence, "s_count", s_count);
+					break;
+				}
+			}
+			
 			
 			//算出したpnum個の制御点を用いてストロークを描画
 			printf("C%d: (%3.0f:%3.0f)",s_count, best_stroke_P[0].x, best_stroke_P[0].y);
@@ -979,7 +1000,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 			
 					//一定ストロークごとに途中経過画像を書き出す
 			nc++;
-			if(nc%4==0)
+			if(nc%100==0)
 			//if(t!=tc)
 			{
 				//if(t%2==0){ //ブラシ半径が2変わるごと
@@ -1000,6 +1021,14 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
 				//}
 			}
+			
+			// Greedyアプローチ：最適ストロークを探索するごとに探索位置をずらす
+			x_defo += 1;
+			if(x_defo>t) {
+				x_defo -= t;
+				y_defo += 1;
+				if(y_defo>t) y_defo -= t;
+			}
 		}
 		
 
@@ -1008,10 +1037,6 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 		
 		Free_dally(gauce_filter, 2*t+1);
 		
-		// Greedyアプローチ：最適ストロークを探索するごとに探索位置をずらす
-		x_defo += 1;	y_defo += 1;
-		if(x_defo>t) x_defo-=t;
-		if(y_defo>t) y_defo-=t;
 		
 		lc++;		//同じ半径でのループをcont回する
 		if((lc%loop_cont) != 0){
@@ -1301,6 +1326,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	*/	
 	
 	
+	Add_dictionary_to_sentence(log_sentence, "All_Execution_TIME", (double)(clock()-start)/CLOCKS_PER_SEC);
 	printf("%s\n", log_filename);
 	if(log_print(log_filename, log_sentence, "w") ){ printf("LOG_PRINTING_FAIL\n"); }
 	

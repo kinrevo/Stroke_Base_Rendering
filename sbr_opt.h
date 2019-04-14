@@ -20,7 +20,7 @@
 #define opt_min_stroke 3
 
 // ストロークの描画の濃さ。この値が大きいほど下地の色を無視して塗りつぶす
-#define opt_ratio 1.0
+#define opt_ratio 0.03
 
 // ストローク方向を決定する際の、方向の種類の数。小さいと大雑把な方向に線を引く
 #define opt_histogram_partition 31
@@ -32,7 +32,13 @@
 #define opt_thick_max 10
 
 // ストローク半径の最小値。この大きさでストロークを終える
-#define opt_thick_min 7
+#define opt_thick_min 1
+
+// 描画色の計算法においてバイラテラル距離を用いるか
+#define opt_USE_calcu_color_bi 0
+
+// ストローク方向の決定においてガウス重みによるヒストグラムを用いるか
+#define opt_USE_gause_histogram 0
 
 
 ////////////////	第二段階のパラメータ	/////////////////
