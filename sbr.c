@@ -384,8 +384,8 @@ double calcu_histogram(PGM* cmpr, double **sobel_abs, double **sobel_angle, int 
 	for(i=0; i<partition; i++) {histogram[i]=0;}
 	
 	//sobelからヒストグラムを作成し最大のものを勾配とする
-	for(i=x-t; i<=x+t; i++) {
-		for(j=y-t; j<=y+t; j++) {
+	for(i=x-t-1; i<=x+t+1; i++) {
+		for(j=y-t-1; j<=y+t+1; j++) {
 			if(i<1 || i>cmpr->width-2 || j<1 || j>cmpr->height-2) continue;
 			Farg = (sobel_angle[i][j]/PI)*partition;
 			histogram[Farg] += sobel_abs[i][j];
