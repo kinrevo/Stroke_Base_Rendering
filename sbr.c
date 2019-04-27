@@ -784,11 +784,12 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 		int tmp_num;
 		int diff_stroke_max_ave[50]={};
 		Point best_stroke_P[max_stroke];
+		stroke_num=9999;
 		// stroke_num = in->width/t * in->height/t / (max_stroke+min_stroke)/2;
-		if(t==10) stroke_num=1636;
-		if(t==9) stroke_num=2911;
-		if(t==8) stroke_num=4663;
-		if(t==7) stroke_num=7284;
+		// if(t==10) stroke_num=1636;
+		// if(t==9) stroke_num=2911;
+		// if(t==8) stroke_num=4663;
+		// if(t==7) stroke_num=7284;
 		p("stroke_num", stroke_num);
 		
 		for(s_count=0; s_count<stroke_num; s_count++) {  //ある半径におけるストローク回数
@@ -960,27 +961,31 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				}
 			}
 			
-			printf("Best_stroke_Point:%3.0f,%3.0f\n", best_stroke_P[0].x,best_stroke_P[0].y);
-			p("max_diff", diff_stroke_max);
+			// printf("Best_stroke_Point:%3.0f,%3.0f\n", best_stroke_P[0].x,best_stroke_P[0].y);
+			// p("max_diff", diff_stroke_max);
 			//直近の50のストロークでの変化がほとんどなければ次の半径ステップに移行
 			diff_stroke_max_ave[s_count%50] = diff_stroke_max;
 			if(s_count%50 == 49){
 				tmp_num=0;
 				for(i=0; i<50; i++) tmp_num+=diff_stroke_max_ave[i];
 				if(tmp_num/50 < 5) {
+					strcat(log_sentence, "\r\n");
 					Add_dictionary_to_sentence(log_sentence, "t", t);
 					Add_dictionary_to_sentence(log_sentence, "s_count", s_count);
+					snprintf(count_name, 16, "%f", (double)(clock()-start)/CLOCKS_PER_SEC);
+					strcat(log_sentence, count_name);
+					strcat(log_sentence, "\r\n");
 					break;
 				}
 			}
 			
 			
 			//算出したpnum個の制御点を用いてストロークを描画
-			printf("C%d: (%3.0f:%3.0f)",s_count, best_stroke_P[0].x, best_stroke_P[0].y);
-			for(i=1; i<best_pnum; i++){
-				printf("->(%3.0f:%3.0f)", best_stroke_P[i].x, best_stroke_P[i].y);
-			}
-			printf("\nbrightRGB:%d,%d,%d\n", best_brightR,best_brightG,best_brightB);
+			// printf("C%d: (%3.0f:%3.0f)",s_count, best_stroke_P[0].x, best_stroke_P[0].y);
+			// for(i=1; i<best_pnum; i++){
+				// printf("->(%3.0f:%3.0f)", best_stroke_P[i].x, best_stroke_P[i].y);
+			// }
+			// printf("\nbrightRGB:%d,%d,%d\n", best_brightR,best_brightG,best_brightB);
 			
 			Paint_Bezier_ex(best_stroke_P, best_pnum, nimgV, t, best_bright, ratio);	
 			Paint_Bezier_ex(best_stroke_P, best_pnum, nimgR, t, best_brightR, ratio);	
@@ -1000,16 +1005,18 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 			
 					//一定ストロークごとに途中経過画像を書き出す
 			nc++;
-			if(nc%100==0)
+			paint_count++;
+			if(nc%1000==0)
 			//if(t!=tc)
 			{
-				//if(t%2==0){ //ブラシ半径が2変わるごと
-					paint_count++;
 					tc=t;	
-					snprintf(count_name, 16, "%03d", nc+1);
 					strcpy(out_filename, dir_path);
 					strcat(out_filename, in_filename);
+					snprintf(count_name, 16, "%02d", t);
 					strcat(out_filename, "_t");
+					strcat(out_filename, count_name);
+					snprintf(count_name, 16, "%d", paint_count);
+					strcat(out_filename, "_s");
 					strcat(out_filename, count_name);
 					strcat(out_filename, ".jpg");
 					out_png = PPM_to_image(nimgC);
@@ -1019,7 +1026,24 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					printf("%s\n",out_filename);
 					printf("%d:",t);
 					pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
-				//}
+			}
+						
+			if(t!=tc)
+			{
+				tc=t;	
+				strcpy(out_filename, dir_path);
+				strcat(out_filename, in_filename);
+				snprintf(count_name, 16, "%02d", t+1);
+				strcat(out_filename, "__t");
+				strcat(out_filename, count_name);
+				strcat(out_filename, ".jpg");
+				out_png = PPM_to_image(nimgC);
+				// out_png = PPM_to_image(nimgC_Scaling);
+				if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+				free_image(out_png);
+				printf("%s\n",out_filename);
+				printf("%d:",t);
+				pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
 			}
 			
 			// Greedyアプローチ：最適ストロークを探索するごとに探索位置をずらす
@@ -1034,28 +1058,15 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 
 	
 		printf("////////////////////\nt%d done.\n////////////////////\n\n",t);
-		
 		Free_dally(gauce_filter, 2*t+1);
-		
-		
-		lc++;		//同じ半径でのループをcont回する
-		if((lc%loop_cont) != 0){
-			p("lc",lc);
-			t++;
-			x_defo += t/loop_cont;
-			y_defo += t/loop_cont;
-			if(t/loop_cont==0){
-				x_defo++;	y_defo++;
-			}
-		}
+		paint_count=0;		
 	}
 	
 	//第一段階描画後の中間画像を出力
-	paint_count++;
 	snprintf(count_name, 16, "%03d", tc);
 	strcpy(out_filename, dir_path);
 	strcat(out_filename, in_filename);
-	strcat(out_filename, "_t");
+	strcat(out_filename, "__t");
 	strcat(out_filename, count_name);
 	strcat(out_filename, ".jpg");
 	out_png = PPM_to_image(nimgC);
