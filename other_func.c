@@ -78,6 +78,26 @@ void Free_dally(double **ally, int w) {
 
 
 
+// 配列中の最大値を探索しPointを返す
+Point search_max_Point(int **ally, int w, int h) {
+	int i, j, max_value=0;
+	Point max;
+	max.x=0; max.y=0;
+	for(i=0; i<w; i++) {
+		for(j=0; j<h; j++) {
+			if(ally[i][j]>max_value) {
+				max.x=i;
+				max.y=j;
+				max_value=ally[i][j];
+			}
+		}
+	}
+	
+	return max;
+}
+
+
+
 
 /////////////////////////////////////////////
 //			PGM,PPM構造体を処理する関数群			   
@@ -436,6 +456,16 @@ PPM *create_ppm(int width, int height, int bright){
 	format_ally(img->dataB, img->width, img->height, bright);
 	
 	return img;
+}
+
+
+//　ストローク構造体メモリを確保
+Stroke *create_Stroke(int pnum){	
+	Stroke* sp = (Stroke *)malloc(sizeof(Stroke));
+	sp->pnum = pnum;
+	sp->p = (Point*)malloc(sizeof(Point)*(sp->pnum));
+	
+	return sp;
 }
 
 

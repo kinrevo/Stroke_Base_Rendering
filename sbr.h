@@ -4,6 +4,8 @@
 #define PI 3.14159265359
 #define Search_DIRECTRY 1
 #define Search_FILE 2
+#define Reversal_ON 1
+#define Reversal_OFF 0
 
 #define pnum(a) printf("%d\n",a)
 #define p(s,a) printf("%s:%d\n",s,a)
@@ -49,6 +51,19 @@ typedef struct {
 	double c;
 	double d;
 }S_para;
+
+typedef struct {
+	int R;
+	int G;
+	int B;
+}RGB;
+
+typedef struct {
+	int pnum;
+	Point* p;
+	RGB color;
+}Stroke;
+
 
 
 PGM *read_pgm(char *filename);
@@ -127,7 +142,7 @@ void sobel_calcu(PGM *pgm, double **sobel_abs, double **sobel_angle);
 void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, double ratio);
 
 double calcu_histogram(PGM* cmpr, double **sobel_abs, double **sobel_angle, int partition, 
-		double **gauce_filter, int x, int y, int t, int *histogram_direct, int *break_flag);
+		double **gauce_filter, int x, int y, int t, int *break_flag);
 		
 Point calcu_point(PGM *in, Point a, int t, double theta);
 
@@ -171,4 +186,11 @@ Point *scaling_point(Point p[], int pnum, double canvas_scaling_ratio);
 int vec_print(char* filename, Point *p, int pnum, int brightR, int brightG, int brightB, int width, int height);
 
 int test_stroke(PGM* test_Canvas, PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimgG, PGM* nimgB, Point p[], int pnum, int t, int brightR, int brightG, int brightB, double ratio);
+
+int calcu_Stroke_Point(PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimgG, PGM* nimgB,
+		double **sobel_abs, double **sobel_angle, double **gauce_filter, 
+		int t, int max_stroke, Point Start_P, int brightR, int brightG, int brightB,
+		Point* Stroke_P, int direct_reversal_flag);
+		
+Point search_max_Point(int **ally, int w, int h);
 #endif
