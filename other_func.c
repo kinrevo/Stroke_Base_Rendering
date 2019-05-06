@@ -80,15 +80,15 @@ void Free_dally(double **ally, int w) {
 
 // 配列中の最大値を探索しPointを返す
 Point search_max_Point(int **ally, int w, int h) {
-	int i, j, max_value=0;
+	int y, x, max_value=-999999;
 	Point max;
 	max.x=0; max.y=0;
-	for(i=0; i<w; i++) {
-		for(j=0; j<h; j++) {
-			if(ally[i][j]>max_value) {
-				max.x=i;
-				max.y=j;
-				max_value=ally[i][j];
+	for(y=0; y<h; y++) {
+		for(x=0; x<w; x++) {
+			if(ally[x][y]>max_value) {
+				max.x=x;
+				max.y=y;
+				max_value=ally[x][y];
 			}
 		}
 	}
@@ -468,6 +468,23 @@ Stroke *create_Stroke(int pnum){
 	return sp;
 }
 
+
+// Stroke構造体のアドレス変数の二重配列を生成
+Stroke ***create_Stroke_ally(int width, int height, int max_stroke) {
+	int i,j;
+	
+	Stroke*** stroke_map = (Stroke***)malloc(sizeof(Stroke**)*(width));
+	for(i=0; i<width; i++){
+		stroke_map[i] = (Stroke**)malloc(sizeof(Stroke*)*(height));
+	}
+	for(i=0; i<width; i++){
+		for(j=0; j<height; j++){
+			stroke_map[i][j]=create_Stroke(max_stroke);
+		}
+	}
+	
+	return stroke_map;
+}
 
 
 /////////////////////////////////////////////

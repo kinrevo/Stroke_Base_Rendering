@@ -6,6 +6,7 @@
 #define Search_FILE 2
 #define Reversal_ON 1
 #define Reversal_OFF 0
+#define NotYetSeach
 
 #define pnum(a) printf("%d\n",a)
 #define p(s,a) printf("%s:%d\n",s,a)
@@ -193,4 +194,8 @@ int calcu_Stroke_Point(PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimg
 		Point* Stroke_P, int direct_reversal_flag);
 		
 Point search_max_Point(int **ally, int w, int h);
+
+Stroke *create_Stroke(int pnum);
+Stroke ***create_Stroke_ally(int width, int height, int max_stroke);
+
 #endif
