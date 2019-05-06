@@ -6,7 +6,8 @@
 #define Search_FILE 2
 #define Reversal_ON 1
 #define Reversal_OFF 0
-#define NotYetSeach
+#define UNCALCULATED -999999
+#define MIN_STROKE -111111
 
 #define pnum(a) printf("%d\n",a)
 #define p(s,a) printf("%s:%d\n",s,a)
