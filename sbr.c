@@ -795,7 +795,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	strcpy(log_filename, dir_path);
 	strcat(log_filename, in_filename);
 	strcat(log_filename, ".log");
-	
+
 	//logデータ格納
 	strcat(log_sentence, "<");
 	strcat(log_sentence, in_filename);
@@ -858,7 +858,6 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	// nimgC_Scaling->dataG = nimgG_Scaling->data;
 	// nimgC_Scaling->dataB = nimgB_Scaling->data;
 	
-	
 	// sobelフィルタを適応した計算結果を予め格納しておく
 	double **sobel_abs = create_dally(in->width, in->height);
 	double **sobel_angle = create_dally(in->width, in->height);
@@ -914,8 +913,8 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 			// format_ally(improved_value_map->data, improved_value_map->width, improved_value_map->height, UNCALCULATED);
 
 			
-			for(y=0; y<in->height; y++) {
-				for(x=0; x<in->width; x++) {
+			for(y=0; y<in->height; y++) {  
+				for(x=0; x<in->width; x++) {  
 			// for(y=y_defo; y<in->height; y=y+t) {  //ウィンドウの大きさに合わせて
 				// for(x=x_defo; x<in->width; x=x+t) {  //ウィンドウをずらす距離を変えとく
 					// 改善値が計算済みならSkip
@@ -1280,23 +1279,26 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				pnum=1;		//第一点確定
 				
 				//一つ目の描画領域から描画色を平均を取って取得
-			//	brightR = calcu_color(in->dataR, in->width, in->height, x, y, t);
-			//	brightG = calcu_color(in->dataG, in->width, in->height, x, y, t);
-			//	brightB = calcu_color(in->dataB, in->width, in->height, x, y, t);
-				bright.R = calcu_color_bi(cmprR->data, in->width, in->height, x, y, t, 50, gauce_filter);
-				bright.G = calcu_color_bi(cmprG->data, in->width, in->height, x, y, t, 50, gauce_filter);
-				bright.B = calcu_color_bi(cmprB->data, in->width, in->height, x, y, t, 50, gauce_filter);
+				if(opt_USE_calcu_color_bi){
+					bright.R = calcu_color_bi(cmprR->data, cmprR->width, cmprR->height, x, y, t, 50, gauce_filter);
+					bright.G = calcu_color_bi(cmprG->data, cmprG->width, cmprG->height, x, y, t, 50, gauce_filter);
+					bright.B = calcu_color_bi(cmprB->data, cmprB->width, cmprB->height, x, y, t, 50, gauce_filter);
+				} else{
+					bright.R = calcu_color(cmprR->data, cmprR->width, cmprR->height, x, y, t);
+					bright.G = calcu_color(cmprG->data, cmprG->width, cmprG->height, x, y, t);
+					bright.B = calcu_color(cmprB->data, cmprB->width, cmprB->height, x, y, t);
+				}
 				
 				
 				theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition, 
 						gauce_filter, p[0].x, p[0].y, t, &break_flag);
 				
-				if(0){//if(break_flag) {}
-					stroke_histogram[pnum]++;
-					direct_count++;
-					printf("DIRECTION IS UNSTABLE.\n");
-					continue;
-				}
+				// if(break_flag) {
+				// 	stroke_histogram[pnum]++;
+				// 	direct_count++;
+				// 	printf("DIRECTION IS UNSTABLE.\n");
+				// 	continue;
+				// }
 				
 				pd("theta1",theta* 180.0 / PI);
 				
@@ -1310,7 +1312,6 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
 				sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
 				sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
-				pd("sum1",sum);
 				
 				//二つ目の制御点周りの色が描画色としきい値以上の差を持つなら描画せず反対方向の制御点を見る
 				if( sum < color_diff_border){
@@ -1324,11 +1325,9 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
 					sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
 					sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
-					pd("sum1.2",sum);
 					
 					//どちらの第二点も不適切なら描画をせず次のループへ
 					if( sum < color_diff_border) {
-						printf("BOTH POINT2 IS INAPRROPRIATE\n");
 						inapp_count++;
 						stroke_histogram[pnum]++;
 						continue;
@@ -1350,20 +1349,16 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					//第pnum点周りにおいて、sobelからヒストグラムを作成し最大のものを勾配とする
 					theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition, 
 											gauce_filter, p[pnum-1].x, p[pnum-1].y, t, &break_flag);
-					//if(break_flag==1) break;
 					
 					//制御点の為す角が急峻になるようなら逆方向に角度を取る
 					if( (theta < former_theta-PI/2) || (theta > former_theta+PI/2) ) {theta += PI;} 
 					p[pnum] = calcu_point(cmpr, p[pnum-1], t, theta);
-					printf("theta%d:%f\n",pnum,theta* 180.0 / PI);
 					
-					//pnum+1目の描画点周りの色が描画色と一致するか確認する
-					//sum = diffsum_clr(cmpr, nimgV, p[pnum], t, bright);  //点当たりの差異平均
+					//pnum+1目の描画点周りの色が描画色と一致するか確認する  //点当たりの差異平均
 					sum = 0;
 					sum += diffsum_clr(cmprR, nimgR, p[pnum], t, bright.R);
 					sum += diffsum_clr(cmprG, nimgG, p[pnum], t, bright.G);
 					sum += diffsum_clr(cmprB, nimgB, p[pnum], t, bright.B);
-					printf("sum%d:%f\n",pnum,sum);
 					
 					/*
 						pnum+1目の(次の)制御点周りの色が描画色としきい値以上の差を持つなら
@@ -1405,24 +1400,6 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					printf("%s\n",out_filename);
 					tc=t;
 				}
-				
-				/*
-				if(input_char!='c'){
-					do{
-						if((input_char = getchar())=='e')exit(0);
-						if(input_char == 'p'){
-							for(i=x-t; i<=x+t; i++) {
-								for(j=y-t; j<=y+t; j++) {
-									if(i<0 || i>cmpr->width-1 || j<0 || j>cmpr->height-1) continue;
-									printf("%d ",cmpr->data[i][j]);
-								}
-								pn;
-							}
-						}
-					}while(input_char != '\n' && input_char != 'c');
-				}
-				pn;
-				*/
 			}
 		}
 		
