@@ -874,6 +874,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	int miss_stroke_count=0;
 	Stroke*** best_stroke_map = create_Stroke_ally(in->width, in->height, max_stroke);
 	Point best_P;
+	int optimal_improved_value_border = opt_optimal_improved_value_border;
 
 	
 	//太いストロークから順番にストロークを小さくしておおまかに絵の形を取っていく
@@ -913,8 +914,8 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 			// format_ally(improved_value_map->data, improved_value_map->width, improved_value_map->height, UNCALCULATED);
 
 			
-			for(y=0; y<in->height; y++) {  
-				for(x=0; x<in->width; x++) {  
+			for(y=0; y<in->height; y++) {
+				for(x=0; x<in->width; x++) {
 			// for(y=y_defo; y<in->height; y=y+t) {  //ウィンドウの大きさに合わせて
 				// for(x=x_defo; x<in->width; x=x+t) {  //ウィンドウをずらす距離を変えとく
 					// 改善値が計算済みならSkip
@@ -1088,6 +1089,9 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 			
 			// printf("Best_stroke_Point:%3.0f,%3.0f diff:%d\n", best_stroke_P[0].x,best_stroke_P[0].y,diff_stroke_max);
 			// p("max_diff", diff_stroke_max2);
+			
+			if(t==1)optimal_improved_value_border = 1;
+			
 			//直近の50のストロークでの変化がほとんどなければ次の半径ステップに移行
 			diff_stroke_max_ave[s_count%50] = diff_stroke_max2;
 			// if(1)
@@ -1095,7 +1099,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 			{
 				tmp_num=0;
 				for(i=0; i<50; i++) tmp_num+=diff_stroke_max_ave[i];
-				if(tmp_num/50 < opt_optimal_improved_value_border) {
+				if(tmp_num/50 < optimal_improved_value_border) {
 					strcat(log_sentence, "\r\n");
 					Add_dictionary_to_sentence(log_sentence, "t", t);
 					Add_dictionary_to_sentence(log_sentence, "s_count", s_count);
@@ -1462,6 +1466,8 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	printf("%s\n",out_filename);
 	*/	
 	
+	double MSE = image_MSE(nimgC, in);
+	Add_dictionary_to_sentence(log_sentence, "MSE", MSE);
 	
 	Add_dictionary_to_sentence(log_sentence, "All_Execution_TIME", (double)(clock()-start)/CLOCKS_PER_SEC);
 	printf("%s\n", log_filename);

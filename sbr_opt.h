@@ -17,7 +17,7 @@
 #define opt_max_stroke 10
 
 // ストロークの最小長
-#define opt_min_stroke 3
+#define opt_min_stroke 2
 
 // ストロークの描画の濃さ。この値が大きいほど下地の色を無視して塗りつぶす
 #define opt_ratio 0.03
@@ -41,7 +41,7 @@
 #define opt_USE_gause_histogram 0
 
 // 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
-#define opt_optimal_improved_value_border 15
+#define opt_optimal_improved_value_border 5
 
 
 ////////////////	第二段階のパラメータ	/////////////////

@@ -820,6 +820,27 @@ void sobel_calcu(PGM *pgm, double **sobel_abs, double **sobel_angle)
 
 
 
+//与えられた二つのイメージの差分を取る（in2-in1）
+double image_MSE(PPM *in1, PPM *in2) {
+	
+	int i,j;
+	int error_sum=0;
+	//新しい画像データをコピーして作っておく
+	
+	for(i=0; i<in1->height; i++) {
+		for(j=0; j<in1->width; j++) {
+			error_sum += abs(in2->dataR[i][j] - in1->dataR[i][j]);
+			error_sum += abs(in2->dataG[i][j] - in1->dataG[i][j]);
+			error_sum += abs(in2->dataB[i][j] - in1->dataB[i][j]);
+		}
+	}
+	error_sum /= (in1->height * in1->width * 3);
+	
+	return error_sum;
+}
+
+
+
 /////////////////////////////////////////////
 //			その他の関数群			   
 /////////////////////////////////////////////

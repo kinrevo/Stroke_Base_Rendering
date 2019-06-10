@@ -199,4 +199,6 @@ Point search_max_Point(int **ally, int w, int h);
 Stroke *create_Stroke(int pnum);
 Stroke ***create_Stroke_ally(int width, int height, int max_stroke);
 
+double image_MSE(PPM *in1, PPM *in2);
+
 #endif

@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 	char *ext;
 	name = argv[1];
 	
-	//出力ファイル名に従って画像を出力
+	//入力画像を読み込む
 	ext = get_extension(name);
 	if (strcmp("ppm", ext) == 0 || strcmp("pnm", ext) == 0) {
 		in_ppm = read_ppm(name);
@@ -36,15 +36,16 @@ int main(int argc, char *argv[])
 		in_img = read_jpeg_file(name);
 		dump_image_info(in_img);	//画像情報出力
 		in_ppm = image_to_PPM(in_img);		//扱いやすいデータ構造に変換
+		free_image(in_img);
 	} else if (strcmp("png", ext) == 0) {
 		in_img = read_png_file(name);
 		dump_image_info(in_img);	//画像情報出力
 		in_ppm = image_to_PPM(in_img);		//扱いやすいデータ構造に変換
+		free_image(in_img);
 	} else {
 		printf("Plese use JPEG,PNG or PPM!\n");
 		exit(1);
 	}
-	free_image(in_img);
 	
 	//入力画像の絵画化
 	trans_ppm = c_Illust_brush(in_ppm, argv[2]);
