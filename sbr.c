@@ -752,7 +752,6 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	int histogram_partition=opt_histogram_partition;
 	int histogram_direct[31]={}; 
 	int paint_count=0, nc=0, tc=-1;
-	//char input_char='i';
 	int loop_cont=opt_loop_cont, lc=0, x_defo=0, y_defo=0;
 	double maxValue, minValue;
 //	double canvas_scaling_ratio = 1.0;
