@@ -826,7 +826,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	// strcat(vec_filename, ".vec");
 	// log_print(vec_filename, vec_sentence, "w");
 	
-	
+		
 	//カラー画像分割
 	PGM *gray = color_gray_conversion(in);
 	PGM *nimgR = create_pgm(gray->width, gray->height, gray->bright); 
@@ -888,6 +888,13 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	        	gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
 	        }
 	    }
+				
+		//vecデータ書き込み
+		// strcpy(vec_sentence, "t");
+		// snprintf(tmp_sentence, 32, "%d", t);
+		// strcat(vec_sentence, tmp_sentence);
+		// log_print(vec_filename, vec_sentence, "a");
+		
 		
 		//vecデータ書き込み
 		// strcpy(vec_sentence, "t");
@@ -1095,11 +1102,9 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 			
 					// 制御点を全てとブラシサイズを拡大率に従いスケーリングし、拡大キャンバスに描画
 					// scaling_p = scaling_point(p, pnum, canvas_scaling_ratio);
-
 					// Paint_Bezier_ex(scaling_p, pnum, nimgR_Scaling, t*canvas_scaling_ratio, brightR, ratio);	
 					// Paint_Bezier_ex(scaling_p, pnum, nimgG_Scaling, t*canvas_scaling_ratio, brightG, ratio);	
 					// Paint_Bezier_ex(scaling_p, pnum, nimgB_Scaling, t*canvas_scaling_ratio, brightB, ratio);
-					
 					//ストロークデータをファイルに追加
 					// vec_print(vec_filename, p, pnum, brightR, brightG, brightB, nimgV->width, nimgV->height);
 					
@@ -1156,7 +1161,8 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 		
 		// printf("miss_stroke/t%d:%d\n",t,miss_stroke_count);
 	
-		printf("////////////////////\nt%d done.\n////////////////////\n\n",t);
+		printf("\n////////////////////\nt%d done.\n////////////////////\n",t);
+		p("Paint_num",paint_count); paint_count=0;
 		Free_dally(gauce_filter, 2*t+1);
 		x_defo=y_defo=paint_count=0;		
 	}
