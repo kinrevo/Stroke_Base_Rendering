@@ -302,9 +302,9 @@ void light_dot(int x, int y, PGM* in_img, int bright) {
 //ａから角度theta方向に距離tの点を求める
 Point calcu_point(PGM *in, Point a, int t, double theta){
 	Point b;
-	b.x = round(t*cos(theta)+a.x);  
+	b.x = t*cos(theta)+a.x;  //round要る？
 	if(b.x<0) b.x=0;  if(b.x>=in->width) b.x=in->width-1; 
-	b.y = round(t*sin(theta)+a.y);
+	b.y = t*sin(theta)+a.y;
 	if(b.y<0) b.y=0; if(b.y>=in->height) b.y=in->height-1;
 	
 	return b;
@@ -570,10 +570,12 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	
 	//出力ファイル名のサイズを取得
 	int namesize = strlen(filename)*2 + 16;
-	char out_filename[namesize], log_filename[namesize], dir_path[namesize];
+	char out_filename[namesize], log_filename[namesize], dir_path[namesize], vec_filename[namesize];
 	char in_filename[namesize-16];
 	char count_name[16];
 	char log_sentence[2028] = "";
+	char vec_sentence[128] = "";
+	char tmp_sentence[32] = "";
 	image_t *out_png;
 	//パスから入力ファイル名（拡張子含まない）を取得
 	char tmp[namesize];
@@ -616,6 +618,18 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	Add_dictionary_to_sentence(log_sentence, "loop_cont", loop_cont);
 	strcat(log_sentence, "CompareImage : Origin\r\n");
 	
+	//vectorデータのヘッダを格納
+	// snprintf(tmp_sentence, 32, "%d", in->width);
+	// strcat(vec_sentence, tmp_sentence);
+	// strcat(vec_sentence, " ");
+	// snprintf(tmp_sentence, 32, "%d", in->height);
+	// strcat(vec_sentence, tmp_sentence);
+	// strcpy(vec_filename, dir_path);
+	// strcat(vec_filename, in_filename);
+	// strcat(vec_filename, ".vec");
+	// log_print(vec_filename, vec_sentence, "w");
+	
+		
 	//カラー画像分割
 	PGM *gray = color_gray_conversion(in);
 	PGM *nimgR = create_pgm(gray->width, gray->height, gray->bright); 
@@ -674,6 +688,13 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	        	gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
 	        }
 	    }
+				
+		//vecデータ書き込み
+		// strcpy(vec_sentence, "t");
+		// snprintf(tmp_sentence, 32, "%d", t);
+		// strcat(vec_sentence, tmp_sentence);
+		// log_print(vec_filename, vec_sentence, "a");
+		
 		
 		for(y=y_defo; y<in->height; y=y+t) {  //ウィンドウの大きさに合わせて
 			for(x=x_defo; x<in->width; x=x+t) {  //ウィンドウをずらす距離を変えとく
@@ -705,14 +726,14 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				pnum=1;		//第一点確定
 				
 				//一つ目の描画領域から描画色を平均を取って取得
-			//	bright  = calcu_color(cmpr->data, cmpr->width, cmpr->height, x, y, t);
-			//	brightR = calcu_color(in->dataR, in->width, in->height, x, y, t);
-			//	brightG = calcu_color(in->dataG, in->width, in->height, x, y, t);
-			//	brightB = calcu_color(in->dataB, in->width, in->height, x, y, t);
-				bright  = calcu_color_bi(cmpr->data, cmpr->width, cmpr->height, x, y, t, 50, gauce_filter);
-				brightR = calcu_color_bi(cmprR->data, in->width, in->height, x, y, t, 50, gauce_filter);
-				brightG = calcu_color_bi(cmprG->data, in->width, in->height, x, y, t, 50, gauce_filter);
-				brightB = calcu_color_bi(cmprB->data, in->width, in->height, x, y, t, 50, gauce_filter);
+				bright  = calcu_color(cmpr->data, cmpr->width, cmpr->height, x, y, t);
+				brightR = calcu_color(in->dataR, in->width, in->height, x, y, t);
+				brightG = calcu_color(in->dataG, in->width, in->height, x, y, t);
+				brightB = calcu_color(in->dataB, in->width, in->height, x, y, t);
+				// bright  = calcu_color_bi(cmpr->data, cmpr->width, cmpr->height, x, y, t, 50, gauce_filter);
+				// brightR = calcu_color_bi(cmprR->data, in->width, in->height, x, y, t, 50, gauce_filter);
+				// brightG = calcu_color_bi(cmprG->data, in->width, in->height, x, y, t, 50, gauce_filter);
+				// brightB = calcu_color_bi(cmprB->data, in->width, in->height, x, y, t, 50, gauce_filter);
 				//p("bright",bright);
 				
 				
@@ -814,6 +835,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					Paint_Bezier_ex(p, pnum, nimgG, t, brightG, ratio);	
 					Paint_Bezier_ex(p, pnum, nimgB, t, brightB, ratio);	
 					stroke_histogram[pnum]++;  
+					paint_count++;
 					
 					// 制御点を全てとブラシサイズを拡大率に従いスケーリングし、拡大キャンバスに描画
 					/*
@@ -821,6 +843,8 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					Paint_Bezier_ex(scaling_p, pnum, nimgR_Scaling, t*canvas_scaling_ratio, brightR, ratio);	
 					Paint_Bezier_ex(scaling_p, pnum, nimgG_Scaling, t*canvas_scaling_ratio, brightG, ratio);	
 					Paint_Bezier_ex(scaling_p, pnum, nimgB_Scaling, t*canvas_scaling_ratio, brightB, ratio);
+					//ストロークデータをファイルに追加
+					// vec_print(vec_filename, p, pnum, brightR, brightG, brightB, nimgV->width, nimgV->height);
 					*/
 				}
 				
@@ -831,8 +855,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				//if(nc%1000==0)
 				//if(0)
 				if(t!=tc){
-					if(t%2==0){ //ブラシ半径が2変わるごと
-						paint_count++;
+					if(t%1==0){ //ブラシ半径が2変わるごと
 						tc=t;	
 						snprintf(count_name, 16, "%03d", tc+1);
 						strcpy(out_filename, dir_path);
@@ -841,6 +864,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 						strcat(out_filename, count_name);
 						strcat(out_filename, ".jpg");
 						out_png = PPM_to_image(nimgC);
+						// out_png = PPM_to_image(nimgC_Scaling);
 						if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
 						free_image(out_png);
 						printf("%s\n",out_filename);
@@ -870,7 +894,8 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 		}
 		
 	
-		printf("////////////////////\nt%d done.\n////////////////////\n\n",t);
+		printf("\n////////////////////\nt%d done.\n////////////////////\n",t);
+		p("Paint_num",paint_count); paint_count=0;
 		Free_dally(gauce_filter, 2*t+1);
 		
 		lc++;		//同じ半径でのループをcont回する
@@ -895,6 +920,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	strcat(out_filename, count_name);
 	strcat(out_filename, ".jpg");
 	out_png = PPM_to_image(nimgC);
+	// out_png = PPM_to_image(nimgC_Scaling);
 	if(write_jpeg_file(out_filename, out_png)){ printf("WRITE JPG ERROR.");}
 	free_image(out_png);
 	printf("%s\n",out_filename);
