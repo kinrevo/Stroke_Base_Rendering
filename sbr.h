@@ -34,9 +34,14 @@ typedef struct {
 }PPM;
 
 typedef struct {
-	int x;
-	int y;
+	double x;
+	double y;
 }Point;
+
+// typedef struct {
+	// int x;
+	// int y;
+// }Point;
 
 typedef struct {
 	double a;
@@ -149,7 +154,7 @@ void normalize_pgm(PGM* in);
 
 PPM *image_to_PPM(image_t *img);
 image_t *PPM_to_image(PPM *ppm);
-int log_print(char* filename, char *sentence);
+int log_print(char* filename, char *sentence, char *mode);
 void Add_dictionary_to_sentence(char* sentence, char *name, int value);
 
 char** make_file_list(int* file_num, char* search_path, int Search_TYPE);
@@ -162,4 +167,6 @@ PGM *create_pgm(int width, int height, int bright);
 PPM *create_ppm(int width, int height, int bright);
 
 Point *scaling_point(Point p[], int pnum, double canvas_scaling_ratio);
+
+int vec_print(char* filename, Point *p, int pnum, int brightR, int brightG, int brightB, int width, int height);
 #endif
