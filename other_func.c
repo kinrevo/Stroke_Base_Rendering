@@ -600,6 +600,13 @@ PGM *bilateral_filter(PGM *pgm, double sigma, int loopc)
 }
 
 
+//内分点を返す関数
+int inner_point(int p1,int p2,float m,float n){
+	int r = ( (n*p1+m*p2)/(m+n) + 0.5);
+	return r;
+}
+
+
 //キャニーエッジ検出器
 PGM *cannyedge_detector(PGM *pgm, double maxValue, double minValue, int thick_min)
 {
@@ -840,6 +847,17 @@ double image_MSE(PPM *in1, PPM *in2) {
 }
 
 
+//与えられた座標を目立たせるように打鋲する
+void light_dot(int x, int y, PGM* in_img, int bright) {
+	if(x>(in_img->width-1) || x<1 || y>(in_img->height-1) || y<1) return;
+	in_img->data[x][y]=bright;
+	in_img->data[x+1][y]=bright;
+	in_img->data[x][y+1]=bright;
+	in_img->data[x-1][y]=bright;
+	in_img->data[x][y-1]=bright;
+}
+
+
 
 /////////////////////////////////////////////
 //			その他の関数群			   
@@ -913,3 +931,130 @@ char *get_extension(char *name) {
   }
   return NULL;
 }
+
+
+
+//与えられたパスの中のフォルダの中の画像すべてに対してC_illust_brushを実行
+void multi_dir_CIB(char* in_path){
+	int i;
+	int dir_num, file_num;
+	char** file_list;
+	
+	char** dir_list = make_file_list(&dir_num, in_path, Search_DIRECTRY); //フォルダリストを取得
+	
+	for(i=0; i<dir_num; i++) {
+		//i番目フォルダのファイルリストを取得
+		file_list = make_file_list(&file_num, dir_list[i], Search_FILE); 
+		//ファイルリストの画像それぞれに対してC_illust_brushを実行
+		multi_file_CIB(file_list, file_num);
+		
+		for(i=0; i < file_num; i++) { free(file_list[i]);}
+		free(file_list);
+	}
+	
+	for(i=0; i < dir_num; i++) { free(dir_list[i]);}
+	free(dir_list);
+}
+	
+//与えられたパスリストの画像すべてに対してC_illust_brushを実行
+void multi_file_CIB(char** list, int list_num){
+	int i;
+	PPM *in_data, *trans_data;
+	image_t *in_img;
+	char out_dir_name[256];
+	
+	for(i=0; i<list_num; i++) {
+		strcpy(out_dir_name, list[i]);	
+		strtok(out_dir_name,".");		//拡張子は取る
+		printf("out_dir_name:%s\n",out_dir_name);
+		printf("list[i]:%s\n",list[i]);
+		
+		if((in_img = read_jpeg_file(list[i])) == NULL){  // <<<<<====対象ファイルの拡張子によって変更が必要
+			printf("PNG_READ_ERROR\n");		exit(1);
+		}
+		dump_image_info(in_img);	//PNG情報出力
+		in_data = image_to_PPM(in_img);		//扱いやすいデータ構造に変換
+		free_image(in_img);
+		
+		trans_data = c_Illust_brush(in_data, list[i]);
+		FreePPM(in_data);
+		FreePPM(trans_data);
+		
+	}
+	
+}
+
+
+//与えられたパスのディレクトリ中にあるファイルもしくはディレクトリをリスト化し配列で返す
+//引数に従ってどちらかしか検索できない
+char** make_file_list(int* file_num, char* search_path, int Search_TYPE){
+	int i=0;
+	DIR *dir;
+	char path[256];
+    struct dirent *dp;
+    struct stat fi;
+	*file_num=0;
+	
+	dir = opendir(search_path);
+	p("Search_TYPE",Search_TYPE);
+    for (dp = readdir(dir); dp != NULL; dp = readdir(dir)) {
+        if (dp->d_name[0] == '.') continue;              
+        
+	    strcpy(path, search_path);
+	    strcat(path, "/");
+	    strcat(path, dp->d_name);
+        stat(path, &fi);	//pathのファイルの情報を取得
+    	
+    	switch(Search_TYPE){
+	    	case Search_FILE:
+				if (!S_ISDIR(fi.st_mode)) {
+					i++;
+		            printf("FILE[%d]:%s\n",i, path);
+		        }
+    			break;
+	    	case Search_DIRECTRY:
+		        if (S_ISDIR(fi.st_mode)) {
+					i++;
+		            printf("DIR[%d]:%s\n",i, path);
+		        }
+    			break;
+    	}
+    }
+	*file_num = i;
+	printf("file_num:%d\n", *file_num);
+	
+	char** list = (char**)malloc(sizeof(char*)*(*file_num));
+	for(i=0; i<*file_num; i++) { list[i]=(char*)malloc(sizeof(char)*(256));}
+	
+	i=0;
+	rewinddir(dir);
+	for (dp = readdir(dir); dp != NULL; dp = readdir(dir)) {
+        if (dp->d_name[0] == '.') continue;              
+        
+	    strcpy(path, search_path);
+	    strcat(path, "/");
+	    strcat(path, dp->d_name);
+        stat(path, &fi);	//pathのファイルの情報を取得
+    	
+    	switch(Search_TYPE){
+	    	case Search_FILE:
+				if (!S_ISDIR(fi.st_mode)) {
+					strcpy(list[i], path);
+					i++;
+		            printf("FILE[%d]:%s\n",i, path);
+		        }
+    			break;
+	    	case Search_DIRECTRY:
+		        if (S_ISDIR(fi.st_mode)) {
+					strcpy(list[i], path);
+					i++;
+		            printf("DIR[%d]:%s\n",i, path);
+		        }
+    			break;
+    	}
+    }
+	
+    closedir(dir);
+	return list;//file_num;
+}
+
