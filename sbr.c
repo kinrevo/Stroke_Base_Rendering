@@ -894,14 +894,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 		// snprintf(tmp_sentence, 32, "%d", t);
 		// strcat(vec_sentence, tmp_sentence);
 		// log_print(vec_filename, vec_sentence, "a");
-		
-		
-		//vecƒf[ƒ^‘‚«ž‚Ý
-		// strcpy(vec_sentence, "t");
-		// snprintf(tmp_sentence, 32, "%d", t);
-		// strcat(vec_sentence, tmp_sentence);
-		// log_print(vec_filename, vec_sentence, "a");
-		
+
 		
 		// stroke_num=9999;
 		// stroke_num = in->width/t * in->height/t / (max_stroke+min_stroke)/2;
