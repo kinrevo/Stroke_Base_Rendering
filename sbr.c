@@ -13,144 +13,10 @@
 //#define malloc _malloc_dbg
 //#define _DEBUG
 
-
-
 #define minWindow 0.25
 #define simga0 1.6
 #define BORDER 12.1
 
-
-//与えられたパスの中のフォルダの中の画像すべてに対してC_illust_brushを実行
-void multi_dir_CIB(char* in_path){
-	int i;
-	int dir_num, file_num;
-	char** file_list;
-	
-	char** dir_list = make_file_list(&dir_num, in_path, Search_DIRECTRY); //フォルダリストを取得
-	
-	for(i=0; i<dir_num; i++) {
-		//i番目フォルダのファイルリストを取得
-		file_list = make_file_list(&file_num, dir_list[i], Search_FILE); 
-		//ファイルリストの画像それぞれに対してC_illust_brushを実行
-		multi_file_CIB(file_list, file_num);
-		
-		for(i=0; i < file_num; i++) { free(file_list[i]);}
-		free(file_list);
-	}
-	
-	for(i=0; i < dir_num; i++) { free(dir_list[i]);}
-	free(dir_list);
-}
-	
-//与えられたパスリストの画像すべてに対してC_illust_brushを実行
-void multi_file_CIB(char** list, int list_num){
-	int i;
-	PPM *in_data, *trans_data;
-	image_t *in_img;
-	char out_dir_name[256];
-	
-	for(i=0; i<list_num; i++) {
-		strcpy(out_dir_name, list[i]);	
-		strtok(out_dir_name,".");		//拡張子は取る
-		printf("out_dir_name:%s\n",out_dir_name);
-		printf("list[i]:%s\n",list[i]);
-		
-		if((in_img = read_jpeg_file(list[i])) == NULL){  // <<<<<====対象ファイルの拡張子によって変更が必要
-			printf("PNG_READ_ERROR\n");		exit(1);
-		}
-		dump_image_info(in_img);	//PNG情報出力
-		in_data = image_to_PPM(in_img);		//扱いやすいデータ構造に変換
-		free_image(in_img);
-		
-		trans_data = c_Illust_brush(in_data, list[i]);
-		FreePPM(in_data);
-		FreePPM(trans_data);
-		
-	}
-	
-}
-
-
-//与えられたパスのディレクトリ中にあるファイルもしくはディレクトリをリスト化し配列で返す
-//引数に従ってどちらかしか検索できない
-char** make_file_list(int* file_num, char* search_path, int Search_TYPE){
-	int i=0;
-	DIR *dir;
-	char path[256];
-    struct dirent *dp;
-    struct stat fi;
-	*file_num=0;
-	
-	dir = opendir(search_path);
-	p("Search_TYPE",Search_TYPE);
-    for (dp = readdir(dir); dp != NULL; dp = readdir(dir)) {
-        if (dp->d_name[0] == '.') continue;              
-        
-	    strcpy(path, search_path);
-	    strcat(path, "/");
-	    strcat(path, dp->d_name);
-        stat(path, &fi);	//pathのファイルの情報を取得
-    	
-    	switch(Search_TYPE){
-	    	case Search_FILE:
-				if (!S_ISDIR(fi.st_mode)) {
-					i++;
-		            printf("FILE[%d]:%s\n",i, path);
-		        }
-    			break;
-	    	case Search_DIRECTRY:
-		        if (S_ISDIR(fi.st_mode)) {
-					i++;
-		            printf("DIR[%d]:%s\n",i, path);
-		        }
-    			break;
-    	}
-    }
-	*file_num = i;
-	printf("file_num:%d\n", *file_num);
-	
-	char** list = (char**)malloc(sizeof(char*)*(*file_num));
-	for(i=0; i<*file_num; i++) { list[i]=(char*)malloc(sizeof(char)*(256));}
-	
-	i=0;
-	rewinddir(dir);
-	for (dp = readdir(dir); dp != NULL; dp = readdir(dir)) {
-        if (dp->d_name[0] == '.') continue;              
-        
-	    strcpy(path, search_path);
-	    strcat(path, "/");
-	    strcat(path, dp->d_name);
-        stat(path, &fi);	//pathのファイルの情報を取得
-    	
-    	switch(Search_TYPE){
-	    	case Search_FILE:
-				if (!S_ISDIR(fi.st_mode)) {
-					strcpy(list[i], path);
-					i++;
-		            printf("FILE[%d]:%s\n",i, path);
-		        }
-    			break;
-	    	case Search_DIRECTRY:
-		        if (S_ISDIR(fi.st_mode)) {
-					strcpy(list[i], path);
-					i++;
-		            printf("DIR[%d]:%s\n",i, path);
-		        }
-    			break;
-    	}
-    }
-	
-    closedir(dir);
-	return list;//file_num;
-}
-
-
-
-//内分点を返す関数
-int inner_point(int p1,int p2,float m,float n){
-	int r = ( (n*p1+m*p2)/(m+n) + 0.5);
-	return r;
-}
 
 
 //ベジエ曲線の片座標を計算する関数
@@ -169,7 +35,7 @@ Point BezierCurve_P(Point p1, Point p2, Point p3, Point p4, float t){
 void Paint_Bezier(Point p1, Point s, Point p4, PGM* in_img, int thick, int bright) {
 	int i,r;
 	int partition = abs(p1.x-p4.x) + abs(p1.y-p4.y); //線分の分割数
-	p("parti",partition);
+	//p("parti",partition);
 	float t;
 	Point temp, p2, p3;
 	
@@ -201,8 +67,9 @@ void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, do
 		Paint_line(p[0], p[1], in_img, thick, bright, ratio);
 		return;
 	}
+	
 	Point p0={2*p[0].x-p[1].x, 2*p[0].y-p[1].y}, 	//両端の一つ外の制御点を適当に決める
-		p_np1={2*p[pnum-1].x-p[pnum-2].x, 2*p[pnum-1].y-p[pnum-2].y};
+	p_np1={2*p[pnum-1].x-p[pnum-2].x, 2*p[pnum-1].y-p[pnum-2].y};
 	//light_dot(p0.x, p0.y, in_img, 0);
 	//light_dot(p_np1.x, p_np1.y, in_img, 0);
 	//printf("%d,%d\n",p_np1.x, p_np1.y);
@@ -217,7 +84,7 @@ void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, do
 		t = (double)i/partition;
 		r = thick*sin((10*t<PI/2 ? 10*t:PI/2));
 		temp = BezierCurve_P(p[0], bp0, bp1, p[1], t);
-		Circle_fill(temp.x, temp.y, r, in_img, bright, 0.03);
+		Circle_fill(temp.x, temp.y, r, in_img, bright, ratio);
 		//light_dot(temp.x, temp.y, in_img, 0);
 	}
 	//light_dot(p[0].x, p[0].y, in_img, 0);
@@ -230,7 +97,7 @@ void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, do
 			t = (double)j/partition;
 			r = thick;
 			temp = BezierCurve_P(p[i], bp0, bp1, p[i+1], t);
-			Circle_fill(temp.x, temp.y, r, in_img, bright, 0.03);
+			Circle_fill(temp.x, temp.y, r, in_img, bright, ratio);
 			//light_dot(temp.x, temp.y, in_img, 0);
 		}
 		//light_dot(p[i].x, p[i].y, in_img, 0);
@@ -246,7 +113,7 @@ void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, do
 		t = (double)i/partition;
 		r = thick;
 		temp = BezierCurve_P(p[pnum-2], bp0, bp1, p[pnum-1], t);
-		Circle_fill(temp.x, temp.y, r, in_img, bright, 0.03);
+		Circle_fill(temp.x, temp.y, r, in_img, bright, ratio);
 		//light_dot(temp.x, temp.y, in_img, 0);
 	}
 	//light_dot(p[pnum-2].x, p[pnum-2].y, in_img, 0);
@@ -259,11 +126,10 @@ void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, do
 void Paint_line(Point p1, Point p4, PGM* in_img, int thick, int bright, double ratio) {
 	int i,r;
 	int partition = abs(p1.x-p4.x) + abs(p1.y-p4.y); //線分の分割数
-	p("parti",partition);
+	//p("parti",partition);
 	float t;
 	Point temp;
 	
-	p("b",bright);
 	for(i=0; i <= partition; i++) {
 		t = (double)i/partition;
 		r = thick*sin((10*t<PI/2 ? 10*t:PI/2));
@@ -288,32 +154,23 @@ void Circle_fill(int xc, int yc, int r, PGM* in_img, int bright, double ratio) {
 }
 
 
-//与えられた座標を目立たせるように打鋲する
-void light_dot(int x, int y, PGM* in_img, int bright) {
-	if(x>(in_img->width-1) || x<1 || y>(in_img->height-1) || y<1) return;
-	in_img->data[x][y]=bright;
-	in_img->data[x+1][y]=bright;
-	in_img->data[x][y+1]=bright;
-	in_img->data[x-1][y]=bright;
-	in_img->data[x][y-1]=bright;
-}
-
 
 //ａから角度theta方向に距離tの点を求める
 Point calcu_point(PGM *in, Point a, int t, double theta){
 	Point b;
 	b.x = t*cos(theta)+a.x;  
-	if(b.x<0) b.x=0;  if(b.x>=in->width) b.x=in->width-1; 
+	if(b.x<0) b.x=0;  
+	if(b.x>=in->width) b.x=in->width-1; 
 	b.y = t*sin(theta)+a.y;
-	if(b.y<0) b.y=0; if(b.y>=in->height) b.y=in->height-1;
+	if(b.y<0) b.y=0; 
+	if(b.y>=in->height) b.y=in->height-1;
 	
 	return b;
 }
 
 
-//与えられた点周りの色が描画色ともつ差異を求める
+//与えられた点周りで描画色を塗った際の改善値を求める
 double diffsum_clr(PGM* cmpr, PGM* nimg, Point p, int t, int bright){
-	//二つ目の描画点周りの色が描画色と一致するか確認する
 	int i,j, offscrn_count=0;
 	double sum=0;
 	for(i=p.x-t; i<=p.x+t; i++) {
@@ -327,7 +184,7 @@ double diffsum_clr(PGM* cmpr, PGM* nimg, Point p, int t, int bright){
 			}
 		}
 	}
-	sum = sum/((2*t+1)*(2*t+1)-offscrn_count);  //点当たりの差異平均
+	sum = sum / ((2*t+1)*(2*t+1)-offscrn_count);  //点当たりの差異平均
 	return sum;
 }
 
@@ -373,7 +230,7 @@ int calcu_color_bi(int** data, int width, int height, int x, int y, int t, doubl
 
 //　与えられた範囲における勾配のヒストグラムをとる
 double calcu_histogram(PGM* cmpr, double **sobel_abs, double **sobel_angle, int partition, 
-					double **gauce_filter, int x, int y, int t, int *histogram_direct, int *break_flag)
+					double **gauce_filter, int x, int y, int t, int *break_flag)
 {
 	int i,j,Farg, im1,ip1;//,im2,ip2;
 	int peak=partition/2+0.5;		//四捨五入
@@ -382,11 +239,12 @@ double calcu_histogram(PGM* cmpr, double **sobel_abs, double **sobel_angle, int 
 	for(i=0; i<partition; i++) {histogram[i]=0;}
 	
 	//sobelからヒストグラムを作成し最大のものを勾配とする
-	for(i=x-t; i<=x+t; i++) {
-		for(j=y-t; j<=y+t; j++) {
+	for(i=x-t-1; i<=x+t+1; i++) {
+		for(j=y-t-1; j<=y+t+1; j++) {
 			if(i<1 || i>cmpr->width-2 || j<1 || j>cmpr->height-2) continue;
 			Farg = (sobel_angle[i][j]/PI)*partition;
-			histogram[Farg] += sobel_abs[i][j]*gauce_filter[i-(x-t)][j-(y-t)];
+			histogram[Farg] += sobel_abs[i][j];
+			if(opt_USE_gause_histogram) histogram[Farg] *= gauce_filter[i-(x-t)][j-(y-t)];
 		}
 	}
 	
@@ -406,8 +264,6 @@ double calcu_histogram(PGM* cmpr, double **sobel_abs, double **sobel_angle, int 
 			break;
 		}
 	}
-	//printf("peak:%d  ",peak);
-	histogram_direct[peak]++;
 	theta = ((double)peak/partition)*PI+((PI/partition)/2);
 	
 	return theta;
@@ -539,10 +395,202 @@ Point *scaling_point(Point p[], int pnum, double canvas_scaling_ratio){
 	return new_p;
 }
 
+//　試しに描いてみて誤差を確認
+int test_stroke(PGM* test_Canvas, PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimgG, PGM* nimgB, Point p[], int pnum, int t, int brightR, int brightG, int brightB, double ratio)
+{
+	int i,j,diffsum=0;
+	double left_end,right_end,upper_end,lower_end;//upper,lowerは画像の見かけの上下（値の上下ではない）
+	
+	//ストローク点を囲む端の座標を特定
+	left_end=right_end=p[0].x;
+	upper_end=lower_end=p[0].y;
+	for(i=1; i<pnum; i++){
+		if(p[i].x < left_end) left_end=p[i].x;
+		if(right_end < p[i].x) right_end=p[i].x;
+		if(p[i].y < upper_end) upper_end=p[i].y;
+		if(lower_end < p[i].y) lower_end=p[i].y;
+	}
+	//ストローク半径分、端座標を膨張
+	left_end-=2*t; right_end+=2*t; upper_end-=2*t; lower_end+=2*t;
+	if(left_end<0)left_end=0; if(cmprR->width <= right_end)right_end=cmprR->width-1; 
+	if(upper_end<0)upper_end=0; if(cmprR->height <= lower_end)lower_end=cmprR->height-1; 
+	
+	// printf("Test: (%3.0f:%3.0f)", p[0].x, p[0].y);
+	// for(i=1; i<pnum; i++){
+		// printf("->(%3.0f:%3.0f)", p[i].x, p[i].y);
+	// }
+	// printf("l:%3.0f,r:%3.0f,u:%3.0f,l:%3.0f\n", left_end,right_end,upper_end,lower_end);
+	
+	//テストキャンバスにおけるストロークによる影響箇所をコピー
+	for(i=left_end; i<=right_end; i++) {
+		for(j=upper_end; j<=lower_end; j++) {
+			//if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
+			test_Canvas->data[i][j] = nimgR->data[i][j];
+		}
+	}
+	//試し描き
+	Paint_Bezier_ex(p, pnum, test_Canvas, t, brightR, ratio);
+	//試し描きによる変化を確認
+	for(i=left_end; i<=right_end; i++) {
+		for(j=upper_end; j<=lower_end; j++) {
+			if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
+			diffsum += abs(cmprR->data[i][j]-nimgR->data[i][j]) - abs(cmprR->data[i][j]-test_Canvas->data[i][j]);
+		}
+	}
+	
+	//テストキャンバスにおけるストロークによる影響箇所をコピー
+	for(i=left_end; i<=right_end; i++) {
+		for(j=upper_end; j<=lower_end; j++) {
+			test_Canvas->data[i][j] = nimgG->data[i][j];
+		}
+	}
+	//試し描き
+	Paint_Bezier_ex(p, pnum, test_Canvas, t, brightG, ratio);
+	//試し描きによる変化を確認
+	for(i=left_end; i<=right_end; i++) {
+		for(j=upper_end; j<=lower_end; j++) {
+			diffsum += abs(cmprG->data[i][j]-nimgG->data[i][j]) - abs(cmprG->data[i][j]-test_Canvas->data[i][j]);
+		}
+	}
+	
+	//テストキャンバスにおけるストロークによる影響箇所をコピー
+	for(i=left_end; i<=right_end; i++) {
+		for(j=upper_end; j<=lower_end; j++) {
+			test_Canvas->data[i][j] = nimgB->data[i][j];
+		}
+	}
+	//試し描き
+	Paint_Bezier_ex(p, pnum, test_Canvas, t, brightB, ratio);
+	//試し描きによる変化を確認
+	for(i=left_end; i<=right_end; i++) {
+		for(j=upper_end; j<=lower_end; j++) {
+			diffsum += abs(cmprB->data[i][j]-nimgB->data[i][j]) - abs(cmprB->data[i][j]-test_Canvas->data[i][j]);
+		}
+	}
+	
+	return diffsum;
+}
+
+
+
+// あるPointを開始点としたときの制御点の組を計算
+// フラグで初期ストローク方向が下向きか上向きか制御
+int calcu_Stroke_Point(PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimgG, PGM* nimgB,
+		double **sobel_abs, double **sobel_angle, double **gauce_filter, 
+		int t, int max_stroke, Point Start_P, int brightR, int brightG, int brightB,
+		Point* Stroke_P, int direct_reversal_flag){
+	int sum,pnum;
+	double theta,former_theta;
+	int dummy_flag;
+	
+	Stroke_P[0].x=Start_P.x; Stroke_P[0].y=Start_P.y;
+	pnum=1;		//　入力に与えられた点は正しいと考える
+	
+	// 初期点における方向を計算
+	theta =  calcu_histogram(cmprR, sobel_abs, sobel_angle, opt_histogram_partition, 
+					gauce_filter, Start_P.x, Start_P.y, t, &dummy_flag);
+	
+	//　入力設定に従い初期方向を逆転
+	// if(direct_reversal_flag){
+		// theta += PI;		
+	// }
+	
+	//制御点を方向から計算し代入
+	Stroke_P[1] = calcu_point(cmprR, Stroke_P[0], t, theta);
+	
+	
+	//二つ目の描画点周りの色が描画色と一致するか確認する
+	sum = 0;
+	sum += diffsum_clr(cmprR, nimgR, Stroke_P[1], t, brightR);
+	sum += diffsum_clr(cmprG, nimgG, Stroke_P[1], t, brightG);
+	sum += diffsum_clr(cmprB, nimgB, Stroke_P[1], t, brightB);
+	
+	
+	//二つ目の制御点周りの色が描画色としきい値以上の差を持つなら描画せず反対方向の制御点を見る
+	if(sum < opt_color_diff_border){
+		//もう一つの勾配垂直の点を代入
+		theta += PI;
+		Stroke_P[1] = calcu_point(cmprR, Stroke_P[0], t, theta);
+		
+		//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
+		//sum = diffsum_clr(cmpr, nimgV, p[1], t, bright);  //点当たりの差異平均
+		sum = 0;
+		sum += diffsum_clr(cmprR, nimgR, Stroke_P[1], t, brightR);
+		sum += diffsum_clr(cmprG, nimgG, Stroke_P[1], t, brightG);
+		sum += diffsum_clr(cmprB, nimgB, Stroke_P[1], t, brightB);
+		
+		//どちらの第二点も不適切なら描画をせず次のループへ
+		if( sum < opt_color_diff_border) {
+			return pnum;
+		}
+		else{ }
+	}
+
+	pnum=2;		//改善値が一定以上であれば第二点確定
+	
+	/*
+		POINT2から勾配により次の制御点を探していく
+	*/
+	while(pnum<max_stroke){
+		former_theta=theta;
+		
+		//第pnum点周りにおいて、sobelからヒストグラムを作成し最大のものを勾配とする
+		theta =  calcu_histogram(cmprR, sobel_abs, sobel_angle, opt_histogram_partition, 
+								gauce_filter, Stroke_P[pnum-1].x, Stroke_P[pnum-1].y, t, &dummy_flag);
+		
+		//制御点の為す角が急峻になるようなら逆方向に角度を取る
+		if( (theta < former_theta-PI/2) || (theta > former_theta+PI/2) ) {theta += PI;} 
+		Stroke_P[pnum] = calcu_point(cmprR, Stroke_P[pnum-1], t, theta);
+		
+		//pnum+1目の描画点周りの色が描画色と一致するか確認する
+		sum = 0;
+		sum += diffsum_clr(cmprR, nimgR, Stroke_P[pnum], t, brightR);
+		sum += diffsum_clr(cmprG, nimgG, Stroke_P[pnum], t, brightG);
+		sum += diffsum_clr(cmprB, nimgB, Stroke_P[pnum], t, brightB);
+		
+		/*
+			pnum+1目の(次の)制御点周りの色が描画色としきい値以上の差を持つなら
+			それまでの制御点を用いて線を描画
+		*/
+		if(sum < opt_color_diff_border) { break;
+		}else { pnum++; }
+	}
+	
+	return pnum;
+}
+
+
+// 描画したストロークの周囲のみ改善値マップをリセット
+void reset_improved_value_map(PGM* map, Point* p, int pnum, int t, int max_stroke){
+	int i,x,y;
+	int left_end,right_end,upper_end,lower_end;
+	
+	// ストロークの各制御点から最大ストローク長だけ離れた座標までリセット
+	for(i=0; i<pnum; i++){
+		// ストロークの最大長＋描画されたストロークの半径＋誤差吸収遊び
+		left_end  = p[i].x - t*max_stroke - t -2;
+		right_end = p[i].x + t*max_stroke + t +2;
+		upper_end = p[i].y - t*max_stroke - t -2;
+		lower_end = p[i].y + t*max_stroke + t +2; 
+		if(left_end<0)left_end=0; if(map->width <= right_end)right_end=map->width-1; 
+		if(upper_end<0)upper_end=0; if(map->height <= lower_end)lower_end=map->height-1; 
+		
+		for(y=upper_end; y<=lower_end; y++) { 
+			for(x=left_end; x<=right_end; x++) {  
+				map->data[x][y] = UNCALCULATED;
+			}
+		}
+	}
+	
+}
+
+
+
+
 //与えられたイメージからブラッシングによる絵画を作る
 PPM *c_Illust_brush(PPM *in, char *filename) {
 	clock_t start = clock();
-	int i,j,x,y,xc,yc,t,bright,brightR,brightG,brightB,break_flag,pnum, offscrn_count;
+	int i,j,x,y,xc,yc,t,break_flag,pnum, offscrn_count;
 	int P2a_count, P2b_count, inapp_count, direct_count;
 	P2a_count = P2b_count = inapp_count = direct_count = 0;
 	int window_diff_border = opt_window_diff_border; 	//ストローク位置探索のしきい値
@@ -558,12 +606,13 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	double **gauce_filter;
 	double sigma, diff_sum, sum;
 	int histogram_partition=opt_histogram_partition;
-	int histogram_direct[31]={};  int histogram_direct2[31]={};
+	// int histogram_direct[31]={}; 
 	int paint_count=0, nc=0, tc=-1;
-	//char input_char='i';
 	int loop_cont=opt_loop_cont, lc=0, x_defo=0, y_defo=0;
 	double maxValue, minValue;
 //	double canvas_scaling_ratio = 1.0;
+	RGB bright;
+	
 	
 	//最大小ストローク半径（自動化：画面の1/10,最大の1/10）
 	int thick_max = opt_thick_max;//(in->height < in->width ? in->height : in->width)/10;
@@ -572,12 +621,11 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	
 	//出力ファイル名のサイズを取得
 	int namesize = strlen(filename)*2 + 16;
-	char out_filename[namesize], log_filename[namesize], dir_path[namesize], vec_filename[namesize];
+	char out_filename[namesize], log_filename[namesize], dir_path[namesize];
 	char in_filename[namesize-16];
 	char count_name[16];
 	char log_sentence[2028] = "";
-	char vec_sentence[128] = "";
-	char tmp_sentence[32] = "";
+	// char vec_sentence[128] = "", tmp_sentence[32] = "", vec_filename[namesize];
 	image_t *out_png;
 	//パスから入力ファイル名（拡張子含まない）を取得
 	char tmp[namesize];
@@ -602,7 +650,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	strcpy(log_filename, dir_path);
 	strcat(log_filename, in_filename);
 	strcat(log_filename, ".log");
-	
+
 	//logデータ格納
 	strcat(log_sentence, "<");
 	strcat(log_sentence, in_filename);
@@ -618,6 +666,9 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	Add_dictionary_to_sentence(log_sentence, "ratio", (int)(ratio*100));
 	Add_dictionary_to_sentence(log_sentence, "histogram_partition", histogram_partition);
 	Add_dictionary_to_sentence(log_sentence, "loop_cont", loop_cont);
+	Add_dictionary_to_sentence(log_sentence, "USE_calcu_color_bi", opt_USE_calcu_color_bi);
+	Add_dictionary_to_sentence(log_sentence, "USE_gause_histogram", opt_USE_gause_histogram);
+	Add_dictionary_to_sentence(log_sentence, "optimal_improved_value_border", opt_optimal_improved_value_border);
 	strcat(log_sentence, "CompareImage : Origin\r\n");
 	
 	//vectorデータのヘッダを格納
@@ -631,7 +682,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	// strcat(vec_filename, ".vec");
 	// log_print(vec_filename, vec_sentence, "w");
 	
-	
+		
 	//カラー画像分割
 	PGM *gray = color_gray_conversion(in);
 	PGM *nimgR = create_pgm(gray->width, gray->height, gray->bright); 
@@ -645,38 +696,41 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	PGM *inB = create_pgm(gray->width, gray->height, gray->bright); 
 	devide_ppm(in, inR, inG, inB);
 	//比較用のイメージ生成
-	//PGM *gauss = gaussian_filter(gray, thick_min);
-	//PGM *cmpr = gauss;
-//	PGM *cmpr = bilateral_filter(gray, thick_min, 2);  
-//	PGM *cmprR = bilateral_filter(inR, thick_min, 2);  
-//	PGM *cmprG = bilateral_filter(inG, thick_min, 2);  
-//	PGM *cmprB = bilateral_filter(inB, thick_min, 2);  
-//	PGM *cmpr  = gaussian_filter(gray,thick_min);  
-//	PGM *cmprR = gaussian_filter(inR, thick_min);  
-//	PGM *cmprG = gaussian_filter(inG, thick_min);  
-//	PGM *cmprB = gaussian_filter(inB, thick_min);  
 	PGM *cmpr  = gray;  
 	PGM *cmprR = inR;  
 	PGM *cmprG = inG;  
 	PGM *cmprB = inB;  
-	//printf("Birateral Filtar done.\n");
 	//キャンバスイメージ生成
 	PGM *nimgV = create_pgm(gray->width, gray->height, gray->bright); //明度のみのキャンバス（比較用）  
 	PPM *nimgC = create_ppm(in->width, in->height, in->bright); //実際に描画するキャンバス
 	nimgC->dataR = nimgR->data;
 	nimgC->dataG = nimgG->data;
 	nimgC->dataB = nimgB->data;
+	PGM *test_Canvas = create_pgm(in->width, in->height, in->bright); //誤差予測に使うテストキャンバス
+	// PGM *improved_value_map = create_pgm(in->width, in->height, in->bright); //改善値マップ
 	// PPM *nimgC_Scaling = create_ppm(in->width*canvas_scaling_ratio, in->height*canvas_scaling_ratio, in->bright); //実際に描画するキャンバス（拡縮描画用）
 	// nimgC_Scaling->dataR = nimgR_Scaling->data;
 	// nimgC_Scaling->dataG = nimgG_Scaling->data;
 	// nimgC_Scaling->dataB = nimgB_Scaling->data;
 	
-	
-	//sobelフィルタを適応した計算結果を予め格納しておく
+	// sobelフィルタを適応した計算結果を予め格納しておく
 	double **sobel_abs = create_dally(in->width, in->height);
 	double **sobel_angle = create_dally(in->width, in->height);
 	sobel_calcu(gray, sobel_abs, sobel_angle);
 	
+	//Greedyアプローチ
+	// int s_count,stroke_num, best_pnum;
+	// int diff_stroke_max=0;
+	// int tmp_num;
+	// int diff_stroke_max_ave[50]={};
+	// int **reversal_map = create_ally(in->width, in->height);
+	// int best_x=0, best_y=0;
+	// int miss_stroke_count=0;
+	// Stroke*** best_stroke_map = create_Stroke_ally(in->width, in->height, max_stroke);
+	// Point best_P;
+	// int optimal_improved_value_border = opt_optimal_improved_value_border;
+	int diff_stroke=0;
+
 	
 	//太いストロークから順番にストロークを小さくしておおまかに絵の形を取っていく
 	for(t=thick_max; t>=thick_min; t--){
@@ -690,20 +744,38 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	        	gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
 	        }
 	    }
-		
+				
 		//vecデータ書き込み
 		// strcpy(vec_sentence, "t");
 		// snprintf(tmp_sentence, 32, "%d", t);
 		// strcat(vec_sentence, tmp_sentence);
 		// log_print(vec_filename, vec_sentence, "a");
+
 		
+		// stroke_num=9999;
+		// stroke_num = in->width/t * in->height/t / (max_stroke+min_stroke)/2;
+		// p("stroke_num", stroke_num);
 		
+		// format_ally(improved_value_map->data, improved_value_map->width, improved_value_map->height, UNCALCULATED);
+		// format_ally(reversal_map, improved_value_map->width, improved_value_map->height, Reversal_OFF);
+		
+		// for(s_count=0; s_count<stroke_num; s_count++) {  //ある半径におけるストローク回数
+			// 誤差探索の変数を初期化
+			// diff_stroke_max = UNCALCULATED;
+			// format_ally(improved_value_map->data, improved_value_map->width, improved_value_map->height, UNCALCULATED);
+
+			
+		// for(y=0; y<in->height; y++) {  
+		// 	for(x=0; x<in->width; x++) {  
 		for(y=y_defo; y<in->height; y=y+t) {  //ウィンドウの大きさに合わせて
 			for(x=x_defo; x<in->width; x=x+t) {  //ウィンドウをずらす距離を変えとく
-				//ウィンドウの中の差分の合計を取る
+				// 改善値が計算済みならSkip
+				// if(improved_value_map->data[x][y] != UNCALCULATED) continue;
+			
 				diff_sum = break_flag = pnum = 0;
-				//printf("x:%d y:%d   ",x,y);
+				// diff_stroke=0;	//Greedyアプローチ
 				
+				//ウィンドウの中の差分の合計を取る
 				offscrn_count = 0;
 				for(xc=-t; xc<=t; xc++) {
 					if((x+xc)<0 || (x+xc)>in->width-1) {offscrn_count += 2*t+1;		continue;	}
@@ -718,7 +790,6 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					}
 				}
 				diff_sum = diff_sum/((2*t+1)*(2*t+1)-offscrn_count)/3;
-				//printf("diffsum:%f \n", diff_sum);
 				
 				//差分の合計平均(画素当たりの差分)が一定以上ならストローク開始位置とする
 				if(diff_sum < window_diff_border) {
@@ -728,28 +799,21 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				pnum=1;		//第一点確定
 				p[0].x=x+0.5; p[0].y=y+0.5;
 				
-				//一つ目の描画領域から描画色を平均を取って取得
-			//	bright  = calcu_color(cmpr->data, cmpr->width, cmpr->height, x, y, t);
-			//	brightR = calcu_color(in->dataR, in->width, in->height, x, y, t);
-			//	brightG = calcu_color(in->dataG, in->width, in->height, x, y, t);
-			//	brightB = calcu_color(in->dataB, in->width, in->height, x, y, t);
-				bright  = calcu_color_bi(cmpr->data, cmpr->width, cmpr->height, x, y, t, 50, gauce_filter);
-				brightR = calcu_color_bi(cmprR->data, in->width, in->height, x, y, t, 50, gauce_filter);
-				brightG = calcu_color_bi(cmprG->data, in->width, in->height, x, y, t, 50, gauce_filter);
-				brightB = calcu_color_bi(cmprB->data, in->width, in->height, x, y, t, 50, gauce_filter);
-				//p("bright",bright);
-				
+				//一つ目の描画領域から描画色を取得
+				if(opt_USE_calcu_color_bi){
+					bright.R = calcu_color_bi(cmprR->data, cmprR->width, cmprR->height, x, y, t, 50, gauce_filter);
+					bright.G = calcu_color_bi(cmprG->data, cmprG->width, cmprG->height, x, y, t, 50, gauce_filter);
+					bright.B = calcu_color_bi(cmprB->data, cmprB->width, cmprB->height, x, y, t, 50, gauce_filter);
+				} else{
+					bright.R = calcu_color(cmprR->data, cmprR->width, cmprR->height, x, y, t);
+					bright.G = calcu_color(cmprG->data, cmprG->width, cmprG->height, x, y, t);
+					bright.B = calcu_color(cmprB->data, cmprB->width, cmprB->height, x, y, t);
+				}
+
+	
 				theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition, 
-						gauce_filter, p[0].x, p[0].y, t, histogram_direct, &break_flag);
+						gauce_filter, p[0].x, p[0].y, t, &break_flag);
 				
-				// if(0){//if(break_flag) {}
-					// stroke_histogram[pnum]++;
-					// direct_count++;
-					// printf("DIRECTION IS UNSTABLE.\n");
-					// continue;
-				// }
-				
-				//pd("theta1",theta* 180.0 / PI);
 				
 				//制御点を方向から計算し代入
 				p[1] = calcu_point(cmpr, p[0], t, theta);
@@ -757,36 +821,35 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				
 				//二つ目の描画点周りの色が描画色と一致するか確認する
 				sum = 0;
-				sum += diffsum_clr(cmprR, nimgR, p[1], t, brightR);
-				sum += diffsum_clr(cmprG, nimgG, p[1], t, brightG);
-				sum += diffsum_clr(cmprB, nimgB, p[1], t, brightB);
-				//pd("sum1",sum);
+				sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
+				sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
+				sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
+				
 				
 				//二つ目の制御点周りの色が描画色としきい値以上の差を持つなら描画せず反対方向の制御点を見る
-				if( sum < color_diff_border){
+				if(sum < color_diff_border){
 					//もう一つの勾配垂直の点を代入
-					theta += PI; 	//printf("+PI\n");
+					theta += PI;
 					p[1] = calcu_point(cmpr, p[0], t, theta);
 					
 					//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
 					//sum = diffsum_clr(cmpr, nimgV, p[1], t, bright);  //点当たりの差異平均
 					sum = 0;
-					sum += diffsum_clr(cmprR, nimgR, p[1], t, brightR);
-					sum += diffsum_clr(cmprG, nimgG, p[1], t, brightG);
-					sum += diffsum_clr(cmprB, nimgB, p[1], t, brightB);
-					//pd("sum1.2",sum);
+					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
+					sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
+					sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
 					
 					//どちらの第二点も不適切なら描画をせず次のループへ
 					if( sum < color_diff_border) {
-						//printf("BOTH POINT2 IS INAPRROPRIATE\n");
-						inapp_count++;
 						stroke_histogram[pnum]++;
+						// improved_value_map->data[x][y] = MIN_STROKE;
 						continue;
 					}
-					else{ P2b_count++;}
+					else{ 
+						// reversal_map[x][y]=Reversal_ON;
+					}
 				}
-				//適切な第二点が見つかれば次へ
-				else{  P2a_count++; }
+
 				pnum=2;		//第二点確定
 				
 				
@@ -794,26 +857,22 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					POINT2から勾配により次の制御点を探していく
 				*/
 				
-				while(pnum!=(max_stroke)){
+				while(pnum<max_stroke){
 					former_theta=theta;
 					
 					//第pnum点周りにおいて、sobelからヒストグラムを作成し最大のものを勾配とする
 					theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition, 
-											gauce_filter, p[pnum-1].x, p[pnum-1].y, t, histogram_direct2, &break_flag);
-					//if(break_flag==1) break;
+											gauce_filter, p[pnum-1].x, p[pnum-1].y, t, &break_flag);
 					
 					//制御点の為す角が急峻になるようなら逆方向に角度を取る
 					if( (theta < former_theta-PI/2) || (theta > former_theta+PI/2) ) {theta += PI;} 
 					p[pnum] = calcu_point(cmpr, p[pnum-1], t, theta);
-					//printf("theta%d:%f\n",pnum,theta* 180.0 / PI);
 					
 					//pnum+1目の描画点周りの色が描画色と一致するか確認する
-					//sum = diffsum_clr(cmpr, nimgV, p[pnum], t, bright);  //点当たりの差異平均
 					sum = 0;
-					sum += diffsum_clr(cmprR, nimgR, p[pnum], t, brightR);
-					sum += diffsum_clr(cmprG, nimgG, p[pnum], t, brightG);
-					sum += diffsum_clr(cmprB, nimgB, p[pnum], t, brightB);
-					//printf("sum%d:%f\n",pnum,sum);
+					sum += diffsum_clr(cmprR, nimgR, p[pnum], t, bright.R);
+					sum += diffsum_clr(cmprG, nimgG, p[pnum], t, bright.G);
+					sum += diffsum_clr(cmprB, nimgB, p[pnum], t, bright.B);
 					
 					/*
 						pnum+1目の(次の)制御点周りの色が描画色としきい値以上の差を持つなら
@@ -821,32 +880,84 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					*/
 					if( sum < color_diff_border) {break_flag=1; break;}
 					else {pnum++;}
-					
 				}
 				
+				//　試しに描いてみて誤差を確認
+				if(pnum>=min_stroke){
+					diff_stroke = test_stroke(test_Canvas, cmprR, cmprG, cmprB, nimgR, nimgG, nimgB, p, pnum, t, bright.R, bright.G, bright.B, ratio);
+					// improved_value_map->data[x][y] = diff_stroke;
+				}else if(pnum<min_stroke){
+					// improved_value_map->data[x][y] = MIN_STROKE;
+				}
+
 				//算出したpnum個の制御点を用いてストロークを描画
+				if(diff_stroke>0)
 				if(pnum>=min_stroke) { 
-					// printf("C%f: (%f:%f)",pnum,p[0].x,p[0].y);
-					// for(i=1; i<pnum; i++){
-						// printf("->(%f:%f)", p[i].x, p[i].y);
-					// }
-					
-					Paint_Bezier_ex(p, pnum, nimgV, t, bright, ratio);	
-					Paint_Bezier_ex(p, pnum, nimgR, t, brightR, ratio);	
-					Paint_Bezier_ex(p, pnum, nimgG, t, brightG, ratio);	
-					Paint_Bezier_ex(p, pnum, nimgB, t, brightB, ratio);	
+					Paint_Bezier_ex(p, pnum, nimgR, t, bright.R, ratio);	
+					Paint_Bezier_ex(p, pnum, nimgG, t, bright.G, ratio);	
+					Paint_Bezier_ex(p, pnum, nimgB, t, bright.B, ratio);	
 					stroke_histogram[pnum]++;  
-					
+					paint_count++;
+				}
+				//現在のストロークが保存している開始点のものより良いなら更新
+				// if(pnum>=min_stroke){
+				// 	for(i=0; i<pnum; i++){
+				// 		best_stroke_map[x][y]->p[i] = p[i];
+				// 	}
+				// 	best_stroke_map[x][y]->color=bright;
+				// 	best_stroke_map[x][y]->pnum=pnum;
+				// }
+				// if( (diff_stroke>diff_stroke_max) && (pnum>=min_stroke) ){
+					// best_x=x; best_y=y;
+					// diff_stroke_max = diff_stroke;
+				// }
+				
+			}
+		}
+			
+			// 改善値マップ中の最大値を探索
+			// best_P = search_max_Point(improved_value_map->data, improved_value_map->width, improved_value_map->height);
+			// best_x=best_P.x;  best_y=best_P.y;
+			
+			
+			//直近の50のストロークでの変化がほとんどなければ次の半径ステップに移行
+			// if(t==1)optimal_improved_value_border = 1;
+			// diff_stroke_max_ave[s_count%50] = diff_stroke_max;
+			// // if(1)
+			// if(s_count%50 == 49)
+			// {
+			// 	tmp_num=0;
+			// 	for(i=0; i<50; i++) tmp_num+=diff_stroke_max_ave[i];
+			// 	if(tmp_num/50 < optimal_improved_value_border) {
+			// 		strcat(log_sentence, "\r\n");
+			// 		Add_dictionary_to_sentence(log_sentence, "t", t);
+			// 		Add_dictionary_to_sentence(log_sentence, "s_count", s_count);
+			// 		snprintf(count_name, 16, "%f", (double)(clock()-start)/CLOCKS_PER_SEC);
+			// 		strcat(log_sentence, count_name);
+			// 		strcat(log_sentence, "\r\n");
+			// 		break;
+			// 	}
+			// }
+			
+			
+			//算出したpnum個の制御点を用いてストロークを描画
+			// Paint_Bezier_ex(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, nimgR, t, best_stroke_map[best_x][best_y]->color.R, ratio);	
+			// Paint_Bezier_ex(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, nimgG, t, best_stroke_map[best_x][best_y]->color.G, ratio);	
+			// Paint_Bezier_ex(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, nimgB, t, best_stroke_map[best_x][best_y]->color.B, ratio);	
+			// stroke_histogram[best_stroke_map[best_x][best_y]->pnum]++;  
+			
+			// 描画したストロークの周囲のみ改善値マップをリセット
+			// reset_improved_value_map(improved_value_map, best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, t, max_stroke);
+			
 					// 制御点を全てとブラシサイズを拡大率に従いスケーリングし、拡大キャンバスに描画
 					// scaling_p = scaling_point(p, pnum, canvas_scaling_ratio);
-
 					// Paint_Bezier_ex(scaling_p, pnum, nimgR_Scaling, t*canvas_scaling_ratio, brightR, ratio);	
 					// Paint_Bezier_ex(scaling_p, pnum, nimgG_Scaling, t*canvas_scaling_ratio, brightG, ratio);	
 					// Paint_Bezier_ex(scaling_p, pnum, nimgB_Scaling, t*canvas_scaling_ratio, brightB, ratio);
-					
 					//ストロークデータをファイルに追加
 					// vec_print(vec_filename, p, pnum, brightR, brightG, brightB, nimgV->width, nimgV->height);
 					
+<<<<<<< HEAD
 					nc++;
 				}
 				
@@ -893,31 +1004,77 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				pn;
 				*/
 			}
+=======
+			//一定ストロークごとに途中経過画像を書き出す
+			nc++;
+			// if(nc%100==0)
+			//if(t!=tc)
+			// {
+			// 		tc=t;	
+			// 		strcpy(out_filename, dir_path);
+			// 		strcat(out_filename, in_filename);
+			// 		snprintf(count_name, 16, "%02d", t);
+			// 		strcat(out_filename, "_t");
+			// 		strcat(out_filename, count_name);
+			// 		snprintf(count_name, 16, "%d", paint_count);
+			// 		strcat(out_filename, "_s");
+			// 		strcat(out_filename, count_name);
+			// 		strcat(out_filename, ".jpg");
+			// 		out_png = PPM_to_image(nimgC);
+			// 		// out_png = PPM_to_image(nimgC_Scaling);
+			// 		if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+			// 		free_image(out_png);
+			// 		printf("%s\n",out_filename);
+			// 		printf("%d:",t);
+			// 		pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
+			// }
+						
+		if(t!=tc)
+		{
+			tc=t;	
+			strcpy(out_filename, dir_path);
+			strcat(out_filename, in_filename);
+			snprintf(count_name, 16, "%02d", t+1);
+			strcat(out_filename, "__t");
+			strcat(out_filename, count_name);
+			strcat(out_filename, ".jpg");
+			out_png = PPM_to_image(nimgC);
+			// out_png = PPM_to_image(nimgC_Scaling);
+			if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+			free_image(out_png);
+			printf("%s\n",out_filename);
+			printf("%d:",t);
+			pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
+>>>>>>> 8f53f9168d0471abf9019198671db56397b0b2a9
 		}
+			
+			// Greedyアプローチ：最適ストロークを探索するごとに探索位置をずらす
+			// x_defo += 1;
+			// if(x_defo>t) {
+			// 	x_defo -= t;
+			// 	y_defo += 1;
+			// 	if(y_defo>t) y_defo -= t;
+			// }
+		//}
 		
+<<<<<<< HEAD
 		printf("t:%d , paint_num:%d\n", t,nc);
 		printf("////////////////////\nt%d done.\n////////////////////\n\n",t);
+=======
+		// printf("miss_stroke/t%d:%d\n",t,miss_stroke_count);
+	
+		printf("\n////////////////////\nt%d done.\n////////////////////\n",t);
+		p("Paint_num",paint_count); paint_count=0;
+>>>>>>> 8f53f9168d0471abf9019198671db56397b0b2a9
 		Free_dally(gauce_filter, 2*t+1);
-		
-		lc++;		//同じ半径でのループをcont回する
-		if((lc%loop_cont) != 0){
-			p("lc",lc);
-			t++;
-			x_defo += t/loop_cont;
-			y_defo += t/loop_cont;
-			if(t/loop_cont==0){
-				x_defo++;	y_defo++;
-			}
-		}
-		
+		x_defo=y_defo=paint_count=0;		
 	}
 	
 	//第一段階描画後の中間画像を出力
-	paint_count++;
 	snprintf(count_name, 16, "%03d", tc);
 	strcpy(out_filename, dir_path);
 	strcat(out_filename, in_filename);
-	strcat(out_filename, "_t");
+	strcat(out_filename, "__t");
 	strcat(out_filename, count_name);
 	strcat(out_filename, ".jpg");
 	out_png = PPM_to_image(nimgC);
@@ -997,26 +1154,20 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				pnum=1;		//第一点確定
 				
 				//一つ目の描画領域から描画色を平均を取って取得
-			//	bright  = calcu_color(cmpr->data, cmpr->width, cmpr->height, x, y, t);
-			//	brightR = calcu_color(in->dataR, in->width, in->height, x, y, t);
-			//	brightG = calcu_color(in->dataG, in->width, in->height, x, y, t);
-			//	brightB = calcu_color(in->dataB, in->width, in->height, x, y, t);
-				bright  = calcu_color_bi(cmpr->data, cmpr->width, cmpr->height, x, y, t, 50, gauce_filter);
-				brightR = calcu_color_bi(cmprR->data, in->width, in->height, x, y, t, 50, gauce_filter);
-				brightG = calcu_color_bi(cmprG->data, in->width, in->height, x, y, t, 50, gauce_filter);
-				brightB = calcu_color_bi(cmprB->data, in->width, in->height, x, y, t, 50, gauce_filter);
-				p("bright",bright);
+				if(opt_USE_calcu_color_bi){
+					bright.R = calcu_color_bi(cmprR->data, cmprR->width, cmprR->height, x, y, t, 50, gauce_filter);
+					bright.G = calcu_color_bi(cmprG->data, cmprG->width, cmprG->height, x, y, t, 50, gauce_filter);
+					bright.B = calcu_color_bi(cmprB->data, cmprB->width, cmprB->height, x, y, t, 50, gauce_filter);
+				} else{
+					bright.R = calcu_color(cmprR->data, cmprR->width, cmprR->height, x, y, t);
+					bright.G = calcu_color(cmprG->data, cmprG->width, cmprG->height, x, y, t);
+					bright.B = calcu_color(cmprB->data, cmprB->width, cmprB->height, x, y, t);
+				}
 				
 				
 				theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition, 
-						gauce_filter, p[0].x, p[0].y, t, histogram_direct, &break_flag);
+						gauce_filter, p[0].x, p[0].y, t, &break_flag);
 				
-				if(0){//if(break_flag) {}
-					stroke_histogram[pnum]++;
-					direct_count++;
-					printf("DIRECTION IS UNSTABLE.\n");
-					continue;
-				}
 				
 				pd("theta1",theta* 180.0 / PI);
 				
@@ -1027,10 +1178,9 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				
 				//二つ目の描画点周りの色が描画色と一致するか確認する
 				sum = 0;
-				sum += diffsum_clr(cmprR, nimgR, p[1], t, brightR);
-				sum += diffsum_clr(cmprG, nimgG, p[1], t, brightG);
-				sum += diffsum_clr(cmprB, nimgB, p[1], t, brightB);
-				pd("sum1",sum);
+				sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
+				sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
+				sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
 				
 				//二つ目の制御点周りの色が描画色としきい値以上の差を持つなら描画せず反対方向の制御点を見る
 				if( sum < color_diff_border){
@@ -1041,14 +1191,12 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
 					//sum = diffsum_clr(cmpr, nimgV, p[1], t, bright);  //点当たりの差異平均
 					sum = 0;
-					sum += diffsum_clr(cmprR, nimgR, p[1], t, brightR);
-					sum += diffsum_clr(cmprG, nimgG, p[1], t, brightG);
-					sum += diffsum_clr(cmprB, nimgB, p[1], t, brightB);
-					pd("sum1.2",sum);
+					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
+					sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
+					sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
 					
 					//どちらの第二点も不適切なら描画をせず次のループへ
 					if( sum < color_diff_border) {
-						printf("BOTH POINT2 IS INAPRROPRIATE\n");
 						inapp_count++;
 						stroke_histogram[pnum]++;
 						continue;
@@ -1069,21 +1217,17 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					
 					//第pnum点周りにおいて、sobelからヒストグラムを作成し最大のものを勾配とする
 					theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition, 
-											gauce_filter, p[pnum-1].x, p[pnum-1].y, t, histogram_direct2, &break_flag);
-					//if(break_flag==1) break;
+											gauce_filter, p[pnum-1].x, p[pnum-1].y, t, &break_flag);
 					
 					//制御点の為す角が急峻になるようなら逆方向に角度を取る
 					if( (theta < former_theta-PI/2) || (theta > former_theta+PI/2) ) {theta += PI;} 
 					p[pnum] = calcu_point(cmpr, p[pnum-1], t, theta);
-					printf("theta%d:%f\n",pnum,theta* 180.0 / PI);
 					
-					//pnum+1目の描画点周りの色が描画色と一致するか確認する
-					//sum = diffsum_clr(cmpr, nimgV, p[pnum], t, bright);  //点当たりの差異平均
+					//pnum+1目の描画点周りの色が描画色と一致するか確認する  //点当たりの差異平均
 					sum = 0;
-					sum += diffsum_clr(cmprR, nimgR, p[pnum], t, brightR);
-					sum += diffsum_clr(cmprG, nimgG, p[pnum], t, brightG);
-					sum += diffsum_clr(cmprB, nimgB, p[pnum], t, brightB);
-					printf("sum%d:%f\n",pnum,sum);
+					sum += diffsum_clr(cmprR, nimgR, p[pnum], t, bright.R);
+					sum += diffsum_clr(cmprG, nimgG, p[pnum], t, bright.G);
+					sum += diffsum_clr(cmprB, nimgB, p[pnum], t, bright.B);
 					
 					/*
 						pnum+1目の(次の)制御点周りの色が描画色としきい値以上の差を持つなら
@@ -1096,15 +1240,10 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				
 				if(pnum>=min_stroke) { 
 					//算出したpnum個の制御点を用いてストロークを描画
-					printf("C%d: (%d:%d)",pnum,p[0].x,p[0].y);
-					for(i=1; i<pnum; i++){
-						printf("->(%d:%d)", p[i].x, p[i].y);
-					}
 					pn;
-					Paint_Bezier_ex(p, pnum, nimgV, t, bright, ratio);	
-					Paint_Bezier_ex(p, pnum, nimgR, t, brightR, ratio);	
-					Paint_Bezier_ex(p, pnum, nimgG, t, brightG, ratio);	
-					Paint_Bezier_ex(p, pnum, nimgB, t, brightB, ratio);	
+					Paint_Bezier_ex(p, pnum, nimgR, t, bright.R, ratio);	
+					Paint_Bezier_ex(p, pnum, nimgG, t, bright.G, ratio);	
+					Paint_Bezier_ex(p, pnum, nimgB, t, bright.B, ratio);	
 					stroke_histogram[pnum]++;  
 				}
 				
@@ -1114,8 +1253,7 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 				//ストロークごとに画像ファイルに書き出す
 				nc++;
 				//if(nc%1000==0)
-				if(t!=tc)
-				if(1){
+				if(t!=tc){
 					paint_count++;
 					snprintf(count_name, 16, "%08d", paint_count);
 					strcpy(in_filename, filename);
@@ -1126,24 +1264,6 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					printf("%s\n",out_filename);
 					tc=t;
 				}
-				
-				/*
-				if(input_char!='c'){
-					do{
-						if((input_char = getchar())=='e')exit(0);
-						if(input_char == 'p'){
-							for(i=x-t; i<=x+t; i++) {
-								for(j=y-t; j<=y+t; j++) {
-									if(i<0 || i>cmpr->width-1 || j<0 || j>cmpr->height-1) continue;
-									printf("%d ",cmpr->data[i][j]);
-								}
-								pn;
-							}
-						}
-					}while(input_char != '\n' && input_char != 'c');
-				}
-				pn;
-				*/
 			}
 		}
 		
@@ -1187,7 +1307,10 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 	printf("%s\n",out_filename);
 	*/	
 	
+	double MSE = image_MSE(nimgC, in);
+	Add_dictionary_to_sentence(log_sentence, "MSE", MSE);
 	
+	Add_dictionary_to_sentence(log_sentence, "All_Execution_TIME", (double)(clock()-start)/CLOCKS_PER_SEC);
 	printf("%s\n", log_filename);
 	if(log_print(log_filename, log_sentence, "w") ){ printf("LOG_PRINTING_FAIL\n"); }
 	
