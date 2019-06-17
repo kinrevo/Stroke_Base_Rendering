@@ -36,8 +36,19 @@ double **create_dally(int width, int height) {
 }
 
 
-//配列をコピーする関数
+//int配列をコピーする関数
 void copy_ally(int **ally, int **ally2, int w, int h) {
+	int i, j;
+	for(i=0; i<w; i++) {
+		for(j=0; j<h; j++) {
+			ally2[i][j] = ally[i][j];
+		}
+	}
+}
+
+
+//double配列をコピーする関数
+void copy_dally(double **ally, double **ally2, int w, int h) {
 	int i, j;
 	for(i=0; i<w; i++) {
 		for(j=0; j<h; j++) {
@@ -60,6 +71,16 @@ void display_ally(int *ally, int num) {
 
 //配列を初期化する関数
 void format_ally(int **ally, int w, int h, int bright) {
+	int i, j;
+	for(i=0; i<w; i++) {
+		for(j=0; j<h; j++) {
+			ally[i][j] = bright;
+		}
+	}
+}
+
+//配列を初期化する関数
+void format_dally(double **ally, int w, int h, double bright) {
 	int i, j;
 	for(i=0; i<w; i++) {
 		for(j=0; j<h; j++) {
@@ -412,7 +433,7 @@ PGM *copy_pgm(PGM *pgm){
 //　PGM画像領域を確保（最大輝度で初期化）
 PGM *create_pgm(int width, int height, int bright){
 	PGM *img = (PGM *)malloc(sizeof(PGM));
-	memcpy(img->descriptor, "P3", 3);
+	memcpy(img->descriptor, "P2", 3);
 	img->height = height;
 	img->width = width;
 	img->bright = bright;
@@ -538,8 +559,51 @@ PGM *gaussian_filter(PGM *pgm, double sigma)
 		}
 	}
 	
-	
 	return nimg;
+}
+
+
+//ガウシアンフィルタ可変半径(double)
+double** gaussian_filter_d(double** in, double sigma, int width, int height)
+{
+	int i,j,k,l;
+	double sum=0;
+	double** new = create_dally(width, height);
+	//入力データをコピー
+	copy_dally(in, new, width, height);
+	
+	int w = (int)( ceil(3.0*sigma+0.5)*2-1 );
+	int c=(w-1)/2;
+	
+	double filter[w][w];
+	double fil_sum;
+	
+    for(i=0;i<w;i++){
+        for(j=0;j<w;j++){
+        	filter[i][j] = gause_func(i-c, j-c, sigma);
+        }
+    }
+	
+	for(i=0; i<width; i++) {
+		for(j=0; j<height; j++) {
+			//注目している周囲cピクセルの値を合計し平均する
+			for(k=-c; k<=c; k++) { 
+				for(l=-c; l<=c; l++)  {
+					//フィルタの端ピクセルがない場合分母にも分子にも加算しない
+					if( (i+k)<0 || (i+k)>=width-1 || (j+l)<0 || (j+l)>=height-1) {}
+					else {
+						sum += in[i+k][j+l] * filter[k+c][l+c];
+						fil_sum += filter[k+c][l+c];
+					}
+				}
+			}
+			new[i][j] = sum/fil_sum;
+			sum = 0;
+			fil_sum = 0;
+		}
+	}
+	
+	return new;
 }
 
 

@@ -201,4 +201,10 @@ Stroke ***create_Stroke_ally(int width, int height, int max_stroke);
 
 double image_MSE(PPM *in1, PPM *in2);
 
+void format_dally(double **ally, int w, int h, double bright);
+
+void copy_dally(double **ally, double **ally2, int w, int h);
+
+double** gaussian_filter_d(double** in, double sigma, int width, int height);
+
 #endif
