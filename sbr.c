@@ -412,8 +412,10 @@ int test_stroke(PGM* test_Canvas, PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR
 	}
 	//ストローク半径分、端座標を膨張
 	left_end-=2*t; right_end+=2*t; upper_end-=2*t; lower_end+=2*t;
-	if(left_end<0)left_end=0; if(cmprR->width <= right_end)right_end=cmprR->width-1; 
-	if(upper_end<0)upper_end=0; if(cmprR->height <= lower_end)lower_end=cmprR->height-1; 
+	if(left_end<0)left_end=0; 
+	if(cmprR->width <= right_end)right_end=cmprR->width-1; 
+	if(upper_end<0)upper_end=0; 
+	if(cmprR->height <= lower_end)lower_end=cmprR->height-1; 
 	
 	// printf("Test: (%3.0f:%3.0f)", p[0].x, p[0].y);
 	// for(i=1; i<pnum; i++){
@@ -572,8 +574,10 @@ void reset_improved_value_map(PGM* map, Point* p, int pnum, int t, int max_strok
 		right_end = p[i].x + t*max_stroke + t +2;
 		upper_end = p[i].y - t*max_stroke - t -2;
 		lower_end = p[i].y + t*max_stroke + t +2; 
-		if(left_end<0)left_end=0; if(map->width <= right_end)right_end=map->width-1; 
-		if(upper_end<0)upper_end=0; if(map->height <= lower_end)lower_end=map->height-1; 
+		if(left_end<0)left_end=0; 
+		if(map->width <= right_end)right_end=map->width-1; 
+		if(upper_end<0)upper_end=0; 
+		if(map->height <= lower_end)lower_end=map->height-1; 
 		
 		for(y=upper_end; y<=lower_end; y++) { 
 			for(x=left_end; x<=right_end; x++) {  
