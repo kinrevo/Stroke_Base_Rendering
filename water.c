@@ -11,7 +11,7 @@
 #define opt_tau 0.01
 #define opt_epsilon 0.1
 #define opt_K 10
-#define opt_eta 0.25
+#define opt_eta 0.5
 #define opt_gamma 0.5
 #define opt_rho 0.05
 #define opt_omega 1.0
@@ -24,6 +24,7 @@ void write_Vector_img(PPM* img, double** u, int width, int height);
 void FlowOutward(int** M, double** p, double var_t, int width, int height);
 void TransferPigment(int** M, double** h, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, double var_t, int width, int height);
 void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, double** gB, double var_t, int width, int height);
+void calcu_grad_h(double** h, double** grad_hx, double** grad_hy, int width, int height);
 double** perlin_img(int width, int height, double freq, int depth);
 
 // int main(int argc, char *argv[]){
@@ -51,43 +52,8 @@ void write_Vector_img(PPM* img, double** u, int width, int height)
 }
 
 
-
-
-// スタッガード格子表現から求まる値を実際の配列の値から計算
-double uf(double** u, double x, double y){
-    if(x<0 || y<0){
-       //printf("uf_MINUS:%f,%f\n",x,y);
-       return 0;
-    }
-    else if( fmod(x,1) == 0){
-        return ( uf(u, x-0.5, y) + uf(u, x+0.5, y) )/2;
-    }else if( fmod(y,1) == 0.5){
-        return ( uf(u, x, y-0.5) + uf(u, x, y+0.5) )/2;
-    }else if( fmod(x,1) == 0.5){
-        return u[(int)(x-0.5)][(int)y];
-    }
-    printf("uf_ERROR:%f\n",x);
-    return 0;
-}
-double vf(double** v, double x, double y){
-    if(x<0 || y<0){
-        //printf("vf_MINUS:%f,%f\n",x,y);
-        return 0;
-    }
-    else if( fmod(y,1) == 0){
-        return ( vf(v, x, y-0.5) + vf(v, x, y+0.5) )/2;
-    }else if( fmod(x,1) == 0.5){
-        return ( vf(v, x-0.5, y) + vf(v, x+0.5, y) )/2;
-    }else if( fmod(y,1) == 0.5){
-        return v[(int)x][(int)(y-0.5)];
-    }
-    printf("vf_ERROR:%f\n",y);
-    return 0;
-}
-
-
 // 水彩筆による顔料の移動をシミュレーション
-void Paint_Water(int** M, double** u, double** v, double** p, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, int width, int height, double** grad_hx, double** grad_hy){
+void Paint_Water(int** M, double** u, double** v, double** p, double** h, double** grad_hx, double** grad_hy, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, int width, int height){
     int i,j;
     double t, var_t;
     double max=0;
@@ -105,36 +71,72 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** gR, doubl
 
     for ( t = 0; t < 1; t=t+var_t)
     {   
-        // UpdateVelocities(M, u, v, p);
-        // MovePigment(M, u, v, gR, gG, gB, dR, dG, dB, width, height);
-        // TransferPigment();
+        UpdateVelocities(M, u, v, p, var_t, width, height);	
+        RelaxDivergence(M, u, v, p, var_t, width, height);
+        FlowOutward(M, p, var_t, width, height);
+        MovePigment(M, u, v, gR, gG, gB, var_t, width, height);
+        TransferPigment(M, h, gR, gG, gB, dR, dG, dB, var_t, width, height);
     }
 }
+
+
+
+// スタッガード格子表現から求まる値を実際の配列の値から計算
+double uf(double** u, double x, double y){
+    if(x<-0.5 || y<0){
+       printf("uf_MINUS:%f,%f\n",x,y);
+       return 0;
+    }
+    else if( fmod(x,1) == 0){
+        return ( uf(u, x-0.5, y) + uf(u, x+0.5, y) )/2;
+    }else if( fmod(y,1) == 0.5){
+        return ( uf(u, x, y-0.5) + uf(u, x, y+0.5) )/2;
+    }else if( fmod(x,1) == 0.5 || x==-0.5){
+        return u[(int)(x+0.5)][(int)y];
+    }
+    printf("uf_ERROR:%f\n",x);
+    return 0;
+}
+double vf(double** v, double x, double y){
+    if(x<0 || y<-0.5){
+        printf("vf_MINUS:%f,%f\n",x,y);
+        return 0;
+    }
+    else if( fmod(y,1) == 0){
+        return ( vf(v, x, y-0.5) + vf(v, x, y+0.5) )/2;
+    }else if( fmod(x,1) == 0.5){
+        return ( vf(v, x-0.5, y) + vf(v, x+0.5, y) )/2;
+    }else if( fmod(y,1) == 0.5 || y==-0.5){
+        return v[(int)x][(int)(y+0.5)];
+    }
+    printf("vf_ERROR:%f\n",y);
+    return 0;
+}
+
 
 
 // 一定時間経過後の速度変化を計算
 void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t, int width, int height){
     int i,j;
     double A,B;
-    double** new_u = create_dally(width-1, height);
-    double** new_v = create_dally(width, height-1);
+    double** new_u = create_dally(width+1, height);
+    double** new_v = create_dally(width, height+1);
     double mhu = opt_mhu;
     double kappa = opt_kappa;
-    format_dally(new_u, width-1, height, 0);
-    format_dally(new_v, width, height-1, 0);
+    format_dally(new_u, width+1, height, 0);
+    format_dally(new_v, width, height+1, 0);
 
-    for (i = 1; i < width-2; i++){
-        for (j = 1; j < height-1; j++)
+    for (i = 0; i < width-1; i++){    // x:[i-0.5,i+1.5]
+        for (j = 1; j < height-1; j++)    // y:[j-1.0,j+1.0]
         {
             // (uv)i+0.5,j-0.5 = uf(u, i+0.5, j)*vf(v, i, j-0.5)
             if(M[i][j]==1){
                 A = pow(uf(u,i,j), 2) - pow(uf(u,i+1.0,j), 2) + uf(u, i+0.5, j-0.5)*vf(v, i+0.5, j-0.5) - uf(u, i+0.5, j+0.5)*vf(v, i+0.5, j+0.5);
                 B = uf(u,i+1.5,j) + uf(u, i-0.5, j) + uf(u, i+0.5, j+1.0) + uf(u, i+0.5, j-1.0) - 4*uf(u, i+0.5, j);
-                new_u[i][j] = u[i][j] + var_t*(A - mhu*B + p[i][j] - p[i+1][j] - kappa*uf(u,i+0.5,j));  //u[i][j]はu[i+0.5][j]
+                new_u[i+1][j] = u[i+1][j] + var_t*(A - mhu*B + p[i][j] - p[i+1][j] - kappa*uf(u,i+0.5,j));  //u[i][j]はu[i+0.5][j]
             }else if(M[i][j]==0){   //ウェットエリア外を速度０に
                 new_u[i][j] = 0;
-                new_u[i-1][j] = 0;
-                new_u[i][j-1] = 0;
+                new_u[i+1][j] = 0;
             }else{
                 printf("UV_ERROR\n");
             }
@@ -142,30 +144,36 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
     }
 
     for (i = 1; i < width-1; i++){
-        for (j = 1; j < height-2; j++)
+        for (j = 0; j < height-1; j++)
         {
             if(M[i][j]==1){
                 A = pow(vf(v,i,j), 2) - pow(vf(v,i,j+1.0), 2) + uf(u, i-0.5, j+0.5)*vf(v, i-0.5, j+0.5) - uf(u, i+0.5, j+0.5)*vf(v, i+0.5, j+0.5);
                 B = vf(v,i+1.0,j+0.5) + vf(v, i-1.0, j+0.5) + vf(v, i, j+1.5) + vf(v, i, j-0.5) - 4*vf(v, i, j+0.5);
-                new_v[i][j] = v[i][j] + var_t*(A - mhu*B + p[i][j] - p[i][j+1] - kappa*vf(v,i,j+0.5));  //u[i][j]はu[i+0.5][j]
+                new_v[i][j+1] = v[i][j+1] + var_t*(A - mhu*B + p[i][j] - p[i][j+1] - kappa*vf(v,i,j+0.5));  //u[i][j]はu[i+0.5][j]
             }else if(M[i][j]==0){   //ウェットエリア外を速度０に
                 new_v[i][j] = 0;
-                new_v[i-1][j] = 0;
-                new_v[i][j-1] = 0;
+                new_v[i][j+1] = 0;
             }else{
                 printf("UV_ERROR\n");
             }
         }
     }
 
-    for (i = 1; i < width-1; i++){
-        for (j = 1; j < height-1; j++) {
-            if(i!=width-2) u[i][j] = new_u[i][j];
-            if(j!=height-2) v[i][j] = new_v[i][j];
-        }
-    }
+    // for (i = 0; i < width-1; i++){  //端付近は計算していないのでwidth-1にすべき？（しないと0が増殖）
+    //     for (j = 0; j < height-1; j++) {
+    //         if(j!=0) u[i][j] = new_u[i][j];
+    //         if(i!=0) v[i][j] = new_v[i][j];
+    //     }
+    // }
+    for (i = 0; i < width-2; i++){    // -2にしないと0が拡がる
+        for (j = 1; j < height-1; j++)    // 
+            {u[i+1][j] = new_u[i+1][j];}}
 
-    Free_dally(new_u, width-1);
+    for (i = 1; i < width-1; i++){
+        for (j = 0; j < height-2; j++)    // -2にしないと0が拡がる
+            {v[i][j+1] = new_v[i][j+1];}}
+
+    Free_dally(new_u, width+1);
     Free_dally(new_v, width);
 }
 
@@ -177,25 +185,25 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
     double delta, delta_MAX;
     double delta_SUM;
     double N=opt_N, tau=opt_tau, epsilon=opt_epsilon;
-    double** new_u = create_dally(width-1, height);
-    double** new_v = create_dally(width, height-1);
-    format_dally(new_u, width-1, height, 0);
-    format_dally(new_v, width, height-1, 0);
+    double** new_u = create_dally(width+1, height);
+    double** new_v = create_dally(width, height+1);
+    format_dally(new_u, width+1, height, 0);
+    format_dally(new_v, width, height+1, 0);
 
     for (t = 0; t < N; t++)
     {
         delta_MAX = delta_SUM = 0;
-        copy_dally(u, new_u, width-1, height);
-        copy_dally(v, new_v, width, height-1);
-        for(i=0; i<width-1; i++){
-            for(j=0; j<height-1; j++){
+        copy_dally(u, new_u, width+1, height);
+        copy_dally(v, new_v, width, height+1);
+        for(i=0; i<width; i++){
+            for(j=0; j<height; j++){
                 if(M[i][j]==1){
                     delta = epsilon*(uf(u, i+0.5, j) - uf(u, i-0.5, j) + vf(v, i, j+0.5) - vf(v, i, j-0.5));
                     p[i][j] =  fmax(0, p[i][j] - delta);     // 計算符号正負不明、famaxがないと水量が負になる
-                    new_u[i][j] = new_u[i][j] - delta;
-                    if(i>0) new_u[i-1][j] = new_u[i-1][j] + delta;
-                    new_v[i][j] = new_v[i][j] - delta;
-                    if(j>0) new_v[i][j-1] = new_v[i][j-1] + delta;
+                    new_u[i+1][j] = new_u[i+1][j] - delta;
+                    new_u[i][j] = new_u[i][j] + delta;
+                    new_v[i][j+1] = new_v[i][j+1] - delta;
+                    new_v[i][j] = new_v[i][j] + delta;
                     delta_MAX = fmax(fabs(delta), delta_MAX);
                     // if(isnan(new_u[i][j]) == 1) 
                         // printf("nan:%d,%d\n", i,j);
@@ -208,11 +216,11 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
         }
         // pd("deltaSUM",delta_SUM);
         pd("deltaMAX",delta_MAX);
-        copy_dally(new_u, u, width-1, height);
-        copy_dally(new_v, v, width, height-1);
+        copy_dally(new_u, u, width+1, height);
+        copy_dally(new_v, v, width, height+1);
     }
 
-    Free_dally(new_u, width-1);
+    Free_dally(new_u, width+1);
     Free_dally(new_v, width);
 }
 
@@ -335,6 +343,25 @@ void TransferPigment(int** M, double** h, double** gR, double** gG, double** gB,
 
 
 
+void calcu_grad_h(double** h, double** grad_hx, double** grad_hy, int width, int height)
+{
+    int i,j;
+
+    for(i=0; i<width+1; i++){
+        for(j=0; j<height; j++){
+            if(i==0 || i==width) grad_hx[i][j]=0;
+            else grad_hx[i][j] = h[i][j] - h[i-1][j];
+        }
+    }
+
+    for(i=0; i<width; i++){
+        for(j=0; j<height+1; j++){
+            if(j==0 || j==height) grad_hy[i][j]=0;
+            else grad_hy[i][j] = h[i][j] - h[i][j-1];            
+        }
+    }
+}
+
 
 
 /////////////////////////////
@@ -412,3 +439,4 @@ double** perlin_img(int width, int height, double freq, int depth)
 
     return perlin;
 }
+
