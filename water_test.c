@@ -1,14 +1,36 @@
-#include "sbr.h"
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <png.h>
-#include "ImageIO/image.h"
-#include <dirent.h>
-#include <sys/stat.h>
+#include <time.h>
+#include <stdlib.h>
+#include "sbr.h"
+
+#define opt_K 20
+#define opt_eta 0.25
+
+double uf(double** u, double x, double y);
+double vf(double** v, double x, double y);
+
+double** perlin_img(int width, int height, double freq, int depth);
+void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t, int width, int height);
+void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, int widht, int height);
+void write_Vector_img(PPM* img, double** u, int width, int height);
+void FlowOutward(int** M, double** p, double var_t, int width, int height);
+void TransferPigment(int** M, double** h, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, double var_t, int width, int height);
+void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, double** gB, double var_t, int width, int height);
+
+void UpdateVelocity_Test(int argc, char *argv[]);
+void RelaxDivergence_Test(int argc, char *argv[]);
+void FlowOutward_Test(int argc, char *argv[]);
+void TransferPigment_Test(int argc, char *argv[]);
 
 #define p(s,a) printf("%s:%d\n",s,a)
+
+
+int main(int argc, char *argv[]){
+    TransferPigment_Test(argc, argv);
+    return 0;
+}
 
 
 
@@ -178,7 +200,7 @@ void RelaxDivergence_Test(int argc, char *argv[]){
             write_Vector_img(u_img, u, width-1, height);
             write_ppm(filename, u_img);
         }
-        RelaxDivergence(u, v, p, var_t, width, height);		// RelaxDivergenceの変化の推移を出力
+        RelaxDivergence(M, u, v, p, var_t, width, height);		// RelaxDivergenceの変化の推移を出力
         if((int)(t/var_t) % 100 == 0 ){
             printf("%03d\n", (int)(t/var_t));
             snprintf(tmp_name, 16, "%03dRD", (int)(t/var_t));
@@ -201,11 +223,8 @@ void RelaxDivergence_Test(int argc, char *argv[]){
 void FlowOutward_Test(int argc, char *argv[]){
     int i,j;
     int width=128, height=128;
-    double t;
     int** M = create_ally(width, height);
     double** p = create_dally(width, height);
-    char filename[64]={};
-    char tmp_name[16]={};
 
     int K=opt_K;
     double eta=opt_eta;
@@ -317,8 +336,8 @@ void MovePigment_Test(int argc, char *argv[]){
     double var_t = 0.01;
     for (t = 0; t < 10; t=t+var_t) {
         UpdateVelocities(M, u, v, p, var_t, width, height);		// UpdateVelocitieの変化の推移を出力
-        RelaxDivergence(u, v, p, var_t, width, height);		// RelaxDivergenceの変化の推移を出力
-        FlowOutward(M, p, width, height);
+        RelaxDivergence(M, u, v, p, var_t, width, height);		// RelaxDivergenceの変化の推移を出力
+        FlowOutward(M, p, var_t, width, height);
         if((int)(t/var_t) % 100 == 0 ){
             printf("%03d\n", (int)(t/var_t));
             snprintf(tmp_name, 16, "%03dUV", (int)(t/var_t));
@@ -346,3 +365,118 @@ void MovePigment_Test(int argc, char *argv[]){
     }
 }
 
+
+
+void TransferPigment_Test(int argc, char *argv[])
+{
+    int i,j;
+    int width=128, height=128;
+    double t;
+    double** u = create_dally(width-1, height);
+    double** v = create_dally(width, height-1);
+    int** M = create_ally(width, height);
+    double** p = create_dally(width, height);
+    format_dally(p, 0, width, height);
+    double** h = create_dally(width, height);
+    h = perlin_img(width, height, 0.1, 4);
+    double** gR = create_dally(width, height);
+    double** gG = create_dally(width, height);
+    double** gB = create_dally(width, height);
+    format_dally(gR, 0, width, height);
+    format_dally(gG, 0, width, height);
+    format_dally(gB, 0, width, height);
+    double** dR = create_dally(width, height);
+    double** dG = create_dally(width, height);
+    double** dB = create_dally(width, height);
+    format_dally(dR, 0, width, height);
+    format_dally(dG, 0, width, height);
+    format_dally(dB, 0, width, height);
+    PPM* u_img = create_ppm(width-1, height, 255);
+    PPM* p_img = create_ppm(width, height, 255);
+    PPM* paint_img = create_ppm(width, height, 255);
+    char filename[64]={};
+    char tmp_name[16]={};
+
+
+    for (i = 0; i < width; i++) {	//u,v,pの初期化
+        for (j = 0; j < height; j++) {
+            if(i!=width-1) u[i][j] = (128-abs(64-i)-abs(64-j))/128.0;//(128-i-j)/128.0;
+            if(j!=height-1) v[i][j] = (128-abs(64-i)-abs(64-j))/128.0;//(128-i-j)/128.0;
+            if(i>30 && j>30 && i<90 && j<90){
+                M[i][j] = 1;
+                p[i][j] = 0.5;//(128-abs(64-i)-abs(64-j))/128.0; //(256-abs(256-i-j))/256;
+            }  else M[i][j]=0;
+            if(i!=0 && j!=0) gR[i][j] = 0.7;//(128-abs(64-i)-abs(64-j))/128.0; 
+        }
+    }
+
+    strcpy(filename, "0u_");		//uの初期速度を画像として出力
+    strcat(filename, argv[1]);
+    write_Vector_img(u_img, u, width-1, height);
+    write_ppm(filename, u_img);
+    strcpy(filename, "MPO_");		//顔料ｇをCMYで出力
+    strcat(filename, argv[1]);
+    for(i=0; i<width; i++){
+        for(j=0; j<height; j++){
+            paint_img->dataR[i][j] = fmax(255-gR[i][j]*255, 0);
+            paint_img->dataG[i][j] = fmax(255-gG[i][j]*255, 0);
+            paint_img->dataB[i][j] = fmax(255-gB[i][j]*255, 0);
+        }
+    }
+    write_ppm(filename, paint_img);
+
+    double var_t = 0.1;
+    for (t = 0; t < 1000; t=t+var_t) {
+        UpdateVelocities(M, u, v, p, var_t, width, height);		// UpdateVelocitieの変化の推移を出力
+        RelaxDivergence(M, u, v, p, var_t, width, height);		// RelaxDivergenceの変化の推移を出力
+        FlowOutward(M, p, var_t, width, height);
+        if((int)(t/var_t) % 10 == 0 ){
+            printf("%03d\n", (int)(t/var_t));
+            snprintf(tmp_name, 16, "%03dUV", (int)(t/var_t));
+            strcpy(filename, tmp_name);
+            strcat(filename, argv[1]);
+            write_Vector_img(u_img, u, width-1, height);
+            write_ppm(filename, u_img);
+        }
+        if((int)(t/var_t) % 10 == 0 ){
+            printf("%03d\n", (int)(t/var_t));
+            snprintf(tmp_name, 16, "p%03d", (int)(t/var_t));
+            strcpy(filename, tmp_name);
+            strcat(filename, argv[1]);
+            write_Vector_img(p_img, p, width, height);
+            write_ppm(filename, p_img);
+        }
+ 
+        MovePigment(M, u, v, gR, gG, gB, var_t, width, height);	// MovePigmentの変化の推移を出力
+        // if((int)(t/var_t) % 10 == 0 ){
+        //     printf("%03d\n", (int)(t/var_t));
+        //     snprintf(tmp_name, 16, "MP%03d", (int)(t/var_t));
+        //     strcpy(filename, tmp_name);
+        //     strcat(filename, argv[1]);
+        //     for(i=0; i<width; i++){
+        //         for(j=0; j<height; j++){
+        //             paint_img->dataR[i][j] = fmax(255-gR[i][j]*255, 0);
+        //             paint_img->dataG[i][j] = fmax(255-gG[i][j]*255, 0);
+        //             paint_img->dataB[i][j] = fmax(255-gB[i][j]*255, 0);
+        //         }
+        //     }
+        //     write_ppm(filename, paint_img);
+        // }
+
+        TransferPigment(M, h, gR, gG, gB, dR, dG, dB, var_t, width, height); // TransferPigmentの変化の推移を出力
+        if((int)(t/var_t) % 10 == 0 ){
+            printf("%03d\n", (int)(t/var_t));
+            snprintf(tmp_name, 16, "TP%03d", (int)(t/var_t));
+            strcpy(filename, tmp_name);
+            strcat(filename, argv[1]);
+            for(i=0; i<width; i++){
+                for(j=0; j<height; j++){
+                    paint_img->dataR[i][j] = fmax(255-dR[i][j]*255, 0);
+                    paint_img->dataG[i][j] = fmax(255-dG[i][j]*255, 0);
+                    paint_img->dataB[i][j] = fmax(255-dB[i][j]*255, 0);
+                }
+            }
+            write_ppm(filename, paint_img);
+        }
+    }
+}

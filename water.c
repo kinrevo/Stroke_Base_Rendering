@@ -2,11 +2,6 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <png.h>
-#include <jpeglib.h>
-#include "ImageIO/image.h"
 #include <stdlib.h>
 #include "sbr.h"
 
@@ -16,26 +11,28 @@
 #define opt_tau 0.01
 #define opt_epsilon 0.1
 #define opt_K 10
-#define opt_eta 0.025
+#define opt_eta 0.25
+#define opt_gamma 0.5
+#define opt_rho 0.05
+#define opt_omega 1.0
 
 double uf(double** u, double x, double y);
 double vf(double** v, double x, double y);
 void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t, int width, int height);
-void UpdateVelocity_Test(int argc, char *argv[]);
-void RelaxDivergence(double** u, double** v, double** p, double var_t, int widht, int height);
-void RelaxDivergence_Test(int argc, char *argv[]);
+void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, int widht, int height);
 void write_Vector_img(PPM* img, double** u, int width, int height);
-void FlowOutward_Test(int argc, char *argv[]);
-void FlowOutward(int** M, double** p, int width, int height);
-void TransferPigment_Test(int argc, char *argv[]);
+void FlowOutward(int** M, double** p, double var_t, int width, int height);
+void TransferPigment(int** M, double** h, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, double var_t, int width, int height);
+void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, double** gB, double var_t, int width, int height);
+double** perlin_img(int width, int height, double freq, int depth);
+
+// int main(int argc, char *argv[]){
+//     TransferPigment_Test(argc, argv);
+//     return 0;
+// }
 
 
-void main(int argc, char *argv[]){
-    TransferPigment_Test(argc, argv);
-}
-
-
-// ベクトルの正負範囲外を赤青緑の二次元で表現
+// ベクトルの正負範囲外を赤青緑の二次元で表現(画像出力はしない)
 void write_Vector_img(PPM* img, double** u, int width, int height)
 {
     int i,j;
@@ -136,6 +133,8 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
                 new_u[i][j] = u[i][j] + var_t*(A - mhu*B + p[i][j] - p[i+1][j] - kappa*uf(u,i+0.5,j));  //u[i][j]はu[i+0.5][j]
             }else if(M[i][j]==0){   //ウェットエリア外を速度０に
                 new_u[i][j] = 0;
+                new_u[i-1][j] = 0;
+                new_u[i][j-1] = 0;
             }else{
                 printf("UV_ERROR\n");
             }
@@ -151,6 +150,8 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
                 new_v[i][j] = v[i][j] + var_t*(A - mhu*B + p[i][j] - p[i][j+1] - kappa*vf(v,i,j+0.5));  //u[i][j]はu[i+0.5][j]
             }else if(M[i][j]==0){   //ウェットエリア外を速度０に
                 new_v[i][j] = 0;
+                new_v[i-1][j] = 0;
+                new_v[i][j-1] = 0;
             }else{
                 printf("UV_ERROR\n");
             }
@@ -170,7 +171,7 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
 
 
 // 速度ベクトルの発散をある許容範囲τ未満になるまで緩和
-void RelaxDivergence(double** u, double** v, double** p, double var_t, int width, int height)
+void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, int width, int height)
 {
     int i,j,t;
     double delta, delta_MAX;
@@ -188,16 +189,17 @@ void RelaxDivergence(double** u, double** v, double** p, double var_t, int width
         copy_dally(v, new_v, width, height-1);
         for(i=0; i<width-1; i++){
             for(j=0; j<height-1; j++){
-                delta = epsilon*(uf(u, i+0.5, j) - uf(u, i-0.5, j) + vf(v, i, j+0.5) - vf(v, i, j-0.5));
-                p[i][j] =  fmax(0, p[i][j] - delta);     // 計算符号正負不明、famaxがないと水量が負になる
-                new_u[i][j] = new_u[i][j] - delta;
-                if(i>0) new_u[i-1][j] = new_u[i-1][j] + delta;
-                new_v[i][j] = new_v[i][j] - delta;
-                if(j>0) new_v[i][j-1] = new_v[i][j-1] + delta;
-                delta_MAX = fmax(fabs(delta), delta_MAX);
-                delta_SUM += delta;
-                if(isnan(new_u[i][j]) == 1) 
-                    printf("%d,%d\n", i,j);
+                if(M[i][j]==1){
+                    delta = epsilon*(uf(u, i+0.5, j) - uf(u, i-0.5, j) + vf(v, i, j+0.5) - vf(v, i, j-0.5));
+                    p[i][j] =  fmax(0, p[i][j] - delta);     // 計算符号正負不明、famaxがないと水量が負になる
+                    new_u[i][j] = new_u[i][j] - delta;
+                    if(i>0) new_u[i-1][j] = new_u[i-1][j] + delta;
+                    new_v[i][j] = new_v[i][j] - delta;
+                    if(j>0) new_v[i][j-1] = new_v[i][j-1] + delta;
+                    delta_MAX = fmax(fabs(delta), delta_MAX);
+                    // if(isnan(new_u[i][j]) == 1) 
+                        // printf("nan:%d,%d\n", i,j);
+                }
             }
         }
         if(delta_MAX<tau) {
@@ -216,7 +218,7 @@ void RelaxDivergence(double** u, double** v, double** p, double var_t, int width
 
 
 
-void FlowOutward(int** M, double** p, int width, int height)
+void FlowOutward(int** M, double** p, double var_t, int width, int height)
 {
     int i,j;
     int K=opt_K;
@@ -234,7 +236,7 @@ void FlowOutward(int** M, double** p, int width, int height)
     
     for(i=0; i<width; i++){
         for(j=0; j<height; j++){
-            p[i][j] = p[i][j] - eta*(1-gauss_M[i][j])*M[i][j];
+            p[i][j] = p[i][j] - eta*var_t*(1-gauss_M[i][j])*M[i][j];
         }
     }
 }
@@ -286,20 +288,20 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
 }
 
 
-void TransferPigment(double** M, double** h, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, int width, int height)
+void TransferPigment(int** M, double** h, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, double var_t, int width, int height)
 {
     int i,j;
     double down, up;
-    double gamma=0.5; //gammaR=0.5, gammaG=0.5, gammaB=0.5;
-    double rho=0.05; //rhoR=0.05, rhoG=0.05, rhoB=0.05;
-    double omega=1.0; //omegaR=1.0, omegaG=1.0, omegaB=1.0;
+    double gamma=opt_gamma; //gammaR=0.5, gammaG=0.5, gammaB=0.5;
+    double rho=opt_rho; //rhoR=0.05, rhoG=0.05, rhoB=0.05;
+    double omega=opt_omega; //omegaR=1.0, omegaG=1.0, omegaB=1.0;
 
     for(i=0; i<width; i++){
         for(j=0; j<height; j++){
             if(M[i][j]==1){
                 //R
-                down = gR[i][j] * (1-h[i][j]*gamma) * rho;
-                up   = dR[i][j] * (1+(h[i][j]-1)*gamma) * rho / omega;
+                down = gR[i][j] * var_t * (1-h[i][j]*gamma) * rho;
+                up   = dR[i][j] * var_t * (1+(h[i][j]-1)*gamma) * rho / omega;
                 if(dR[i][j]+down>1)
                     down = fmax(0,1-dR[i][j]);
                 if(gR[i][j]+up>1)
@@ -308,8 +310,8 @@ void TransferPigment(double** M, double** h, double** gR, double** gG, double** 
                 gR[i][j] = gR[i][j]+up-down;
 
                 //G
-                down = gG[i][j] * (1-h[i][j]*gamma) * rho;
-                up   = dG[i][j] * (1+(h[i][j]-1)*gamma) * rho / omega;
+                down = gG[i][j] * var_t * (1-h[i][j]*gamma) * rho;
+                up   = dG[i][j] * var_t * (1+(h[i][j]-1)*gamma) * rho / omega;
                 if(dG[i][j]+down>1)
                     down = fmax(0,1-dG[i][j]);
                 if(gG[i][j]+up>1)
@@ -318,8 +320,8 @@ void TransferPigment(double** M, double** h, double** gR, double** gG, double** 
                 gG[i][j] = gG[i][j]+up-down;
 
                 //B
-                down = gB[i][j] * (1-h[i][j]*gamma) * rho;
-                up   = dB[i][j] * (1+(h[i][j]-1)*gamma) * rho / omega;
+                down = gB[i][j] * var_t * (1-h[i][j]*gamma) * rho;
+                up   = dB[i][j] * var_t * (1+(h[i][j]-1)*gamma) * rho / omega;
                 if(dB[i][j]+down>1)
                     down = fmax(0,1-dB[i][j]);
                 if(gB[i][j]+up>1)
@@ -332,97 +334,11 @@ void TransferPigment(double** M, double** h, double** gR, double** gG, double** 
 }
 
 
-void TransferPigment_Test(int argc, char *argv[])
-{
-    int i,j;
-    int width=128, height=128;
-    double t;
-    double** u = create_dally(width-1, height);
-    double** v = create_dally(width, height-1);
-    int** M = create_ally(width, height);
-    double** p = create_dally(width, height);
-    double** h = create_dally(width, height);
-    double** gR = create_dally(width, height);
-    double** gG = create_dally(width, height);
-    double** gB = create_dally(width, height);
-    format_dally(gR, 0, width, height);
-    format_dally(gG, 0, width, height);
-    format_dally(gB, 0, width, height);
-    double** dR = create_dally(width, height);
-    double** dG = create_dally(width, height);
-    double** dB = create_dally(width, height);
-    format_dally(dR, 0, width, height);
-    format_dally(dG, 0, width, height);
-    format_dally(dB, 0, width, height);
-    PPM* u_img = create_ppm(width-1, height, 255);
-    PPM* paint_img = create_ppm(width, height, 255);
-    char filename[64]={};
-    char tmp_name[16]={};
-
-
-    for (i = 0; i < width; i++) {	//u,v,pの初期化
-        for (j = 0; j < height; j++) {
-            if(i!=width-1) u[i][j] = (128-abs(64-i)-abs(64-j))/128.0;//(128-i-j)/128.0;
-            if(j!=height-1) v[i][j] = 0;//(128-abs(64-i)-abs(64-j))/128.0;//(128-i-j)/128.0;
-            if(i>0 && j>0 && i<width/1.5 && j<height/1.5){
-                M[i][j] = 1;
-            }  else M[i][j]=0;
-            p[i][j] = (128-abs(64-i)-abs(64-j))/128.0; //(256-abs(256-i-j))/256;
-            if(i!=0 && j!=0) gR[i][j] = 0.5;//(128-abs(64-i)-abs(64-j))/128.0; 
-        }
-    }
-
-    strcpy(filename, "0u_");		//uの初期速度を画像として表現
-    strcat(filename, argv[1]);
-    write_Vector_img(u_img, u, width-1, height);
-    write_ppm(filename, u_img);
-    strcpy(filename, "MPO_");		//uの初期速度を画像として表現
-    strcat(filename, argv[1]);
-    for(i=0; i<width; i++){
-        for(j=0; j<height; j++){
-            paint_img->dataR[i][j] = fmax(255-gR[i][j]*255, 0);
-            paint_img->dataG[i][j] = fmax(255-gG[i][j]*255, 0);
-            paint_img->dataB[i][j] = fmax(255-gB[i][j]*255, 0);
-        }
-    }
-    write_ppm(filename, paint_img);
-
-    double var_t = 0.01;
-    for (t = 0; t < 10; t=t+var_t) {
-        UpdateVelocities(M, u, v, p, var_t, width, height);		// UpdateVelocitieの変化の推移を出力
-        RelaxDivergence(u, v, p, var_t, width, height);		// RelaxDivergenceの変化の推移を出力
-        FlowOutward(M, p, width, height);
-        if((int)(t/var_t) % 100 == 0 ){
-            printf("%03d\n", (int)(t/var_t));
-            snprintf(tmp_name, 16, "%03dUV", (int)(t/var_t));
-            strcpy(filename, tmp_name);
-            strcat(filename, argv[1]);
-            write_Vector_img(u_img, u, width-1, height);
-            write_ppm(filename, u_img);
-        }
- 
-        MovePigment(M, u, v, gR, gG, gB, var_t, width, height);	// MovePigmentの変化の推移を出力
-        if((int)(t/var_t) % 100 == 0 ){
-            printf("%03d\n", (int)(t/var_t));
-            snprintf(tmp_name, 16, "MP%03d", (int)(t/var_t));
-            strcpy(filename, tmp_name);
-            strcat(filename, argv[1]);
-            for(i=0; i<width; i++){
-                for(j=0; j<height; j++){
-                    paint_img->dataR[i][j] = fmax(255-gR[i][j]*255, 0);
-                    paint_img->dataG[i][j] = fmax(255-gG[i][j]*255, 0);
-                    paint_img->dataB[i][j] = fmax(255-gB[i][j]*255, 0);
-                }
-            }
-            write_ppm(filename, paint_img);
-        }
-    }
-}
 
 
 
 /////////////////////////////
-//parlin関数
+//perlin関数
 /////////////////////////////
 static int SEED = 0;
 static int hash[] = {208,34,231,213,32,248,233,56,161,78,24,140,71,48,140,254,245,255,247,247,40,
@@ -486,14 +402,13 @@ float perlin2d(float x, float y, float freq, int depth)
 double** perlin_img(int width, int height, double freq, int depth)
 {
     int x,y;
-    double** parlin = create_dally(width, height);
-    PGM* img = create_pgm(width,height,255);
+    double** perlin = create_dally(width, height);
 
     for(x=0; x<width; x++){
         for(y=0; y<height; y++){
-            parlin[x][y] = perlin2d(x, y, freq, depth);//ここでノイズを調整
+            perlin[x][y] = perlin2d(x, y, freq, depth);//ここでノイズを調整
         }
     }
 
-    return parlin;
+    return perlin;
 }
