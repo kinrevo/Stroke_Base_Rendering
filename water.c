@@ -3,57 +3,56 @@
 #include <math.h>
 #include <time.h>
 #include <stdlib.h>
-#include "sbr.h"
-
-#define opt_mhu 0.1
-#define opt_kappa 0.01
-#define opt_N 50
-#define opt_tau 0.01
-#define opt_epsilon 0.1
-#define opt_K 10
-#define opt_eta 0.5
-#define opt_gamma 0.5
-#define opt_rho 0.05
-#define opt_omega 1.0
-
-double uf(double** u, double x, double y);
-double vf(double** v, double x, double y);
-void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t, int width, int height);
-void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, int widht, int height);
-void write_Vector_img(PPM* img, double** u, int width, int height);
-void FlowOutward(int** M, double** p, double var_t, int width, int height);
-void TransferPigment(int** M, double** h, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, double var_t, int width, int height);
-void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, double** gB, double var_t, int width, int height);
-void calcu_grad_h(double** h, double** grad_hx, double** grad_hy, int width, int height);
-double** perlin_img(int width, int height, double freq, int depth);
-
-// int main(int argc, char *argv[]){
-//     TransferPigment_Test(argc, argv);
-//     return 0;
-// }
+#include "water.h"
 
 
-// ベクトルの正負範囲外を赤青緑の二次元で表現(画像出力はしない)
-void write_Vector_img(PPM* img, double** u, int width, int height)
+void Paint_Water_Stroke(Point p[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, 
+                            double** h, double** grad_hx, double** grad_hy, int width, int height)
 {
     int i,j;
-	format_ally(img->dataR, img->width, img->height, 0);
-	format_ally(img->dataG, img->width, img->height, 0);
-	format_ally(img->dataB, img->width, img->height, 0);
+    double** u = create_dally(width+1, height);
+    double** v = create_dally(width, height+1);
+    format_dally(u, width+1, height, 0);
+    format_dally(v, width, height+1, 0);
+
+    int** M = create_ally(width, height);
+    double** p = create_dally(width, height);
+    format_dally(M, 0, width, height);
+    format_dally(p, 0, width, height);
+
+    double** gR = create_dally(width, height);
+    double** gG = create_dally(width, height);
+    double** gB = create_dally(width, height);
+    format_dally(gR, 0, width, height);
+    format_dally(gG, 0, width, height);
+    format_dally(gB, 0, width, height);
+
+    double** dR = create_dally(width, height);
+    double** dG = create_dally(width, height);
+    double** dB = create_dally(width, height);
+    format_dally(dR, 0, width, height);
+    format_dally(dG, 0, width, height);
+    format_dally(dB, 0, width, height);
+
+    PPM* u_img = create_ppm(width+1, height, 255);
+    PPM* p_img = create_ppm(width, height, 255);
+    PPM* paint_img = create_ppm(width, height, 255);
+
+    char filename[64]={};
+
     for(i=0; i<width; i++){
         for(j=0; j<height; j++){
-            if(fabs(u[i][j])>1 ) img->dataG[i][j] = 255;
-            if(u[i][j]>=0) img->dataR[i][j] = u[i][j]*255;
-            else if(u[i][j]<0) img->dataB[i][j] = -u[i][j]*255;
-            //else printf("UnpredictionValue_ERROR:%f\n", u[i][j]);
-            // if(img->dataR[i][j]<0 || img->dataB[i][j]<0) printf("%f\n%f\n",u[i][j], fabs(u[i][j]));
+            dR[i][j] = CanR[i][j]/255.0;
+            dG[i][j] = CanG[i][j]/255.0;
+            dB[i][j] = CanB[i][j]/255.0;
         }
     }
 }
 
 
 // 水彩筆による顔料の移動をシミュレーション
-void Paint_Water(int** M, double** u, double** v, double** p, double** h, double** grad_hx, double** grad_hy, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, int width, int height){
+void Paint_Water(int** M, double** u, double** v, double** p, double** h, double** grad_hx, double** grad_hy, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, int width, int height)
+{
     int i,j;
     double t, var_t;
     double max=0;
@@ -67,9 +66,9 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
         }
     }
 
-    var_t = 1/max;  // maxは１以下なのでおかしい・・・おかしくない？
+    var_t = fmin(1/max, 0.1);  // maxは１以下なのでおかしい・・・おかしくない？
 
-    for ( t = 0; t < 1; t=t+var_t)
+    for ( t = 0; t < 10; t=t+var_t)
     {   
         UpdateVelocities(M, u, v, p, var_t, width, height);	
         RelaxDivergence(M, u, v, p, var_t, width, height);
@@ -362,6 +361,25 @@ void calcu_grad_h(double** h, double** grad_hx, double** grad_hy, int width, int
     }
 }
 
+
+
+// ベクトルの正負範囲外を赤青緑の二次元で表現(画像出力はしない)
+void trans_Vector_img(PPM* img, double** u, int width, int height)
+{
+    int i,j;
+	format_ally(img->dataR, img->width, img->height, 0);
+	format_ally(img->dataG, img->width, img->height, 0);
+	format_ally(img->dataB, img->width, img->height, 0);
+    for(i=0; i<width; i++){
+        for(j=0; j<height; j++){
+            if(fabs(u[i][j])>1 ) img->dataG[i][j] = 255;
+            if(u[i][j]>=0) img->dataR[i][j] = u[i][j]*255;
+            else if(u[i][j]<0) img->dataB[i][j] = -u[i][j]*255;
+            //else printf("UnpredictionValue_ERROR:%f\n", u[i][j]);
+            // if(img->dataR[i][j]<0 || img->dataB[i][j]<0) printf("%f\n%f\n",u[i][j], fabs(u[i][j]));
+        }
+    }
+}
 
 
 /////////////////////////////
