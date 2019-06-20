@@ -4,22 +4,9 @@
 #include <time.h>
 #include <stdlib.h>
 #include "sbr.h"
+#include "water.h"
 
-#define opt_K 20
-#define opt_eta 0.25
 
-double uf(double** u, double x, double y);
-double vf(double** v, double x, double y);
-
-double** perlin_img(int width, int height, double freq, int depth);
-void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t, int width, int height);
-void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, int widht, int height);
-void trans_Vector_img(PPM* img, double** u, int width, int height);
-void FlowOutward(int** M, double** p, double var_t, int width, int height);
-void TransferPigment(int** M, double** h, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, double var_t, int width, int height);
-void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, double** gB, double var_t, int width, int height);
-void calcu_grad_h(double** h, double** grad_hx, double** grad_hy, int width, int height);
-void Paint_Water(int** M, double** u, double** v, double** p, double** h, double** grad_hx, double** grad_hy, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, int width, int height);
 
 
 void ufvf_Test(int argc, char *argv[]);
@@ -29,6 +16,9 @@ void FlowOutward_Test(int argc, char *argv[]);
 void TransferPigment_Test(int argc, char *argv[]);
 void calcu_grad_h_Test(int argc, char *argv[]);
 void Paint_Water_Test(int argc, char *argv[]);
+void Circle_fill_Water_Test(int argc, char *argv[]);
+void set_WetStroke_Test(int argc, char *argv[]);
+void Paint_Water_Stroke_Test(int argc, char *argv[]);
 
 
 
@@ -36,7 +26,7 @@ void Paint_Water_Test(int argc, char *argv[]);
 
 
 int main(int argc, char *argv[]){
-    Paint_Water_Test(argc, argv);
+    Paint_Water_Stroke_Test(argc, argv);
     return 0;
 }
 
@@ -317,9 +307,9 @@ void MovePigment_Test(int argc, char *argv[]){
     double** gR = create_dally(width, height);
     double** gG = create_dally(width, height);
     double** gB = create_dally(width, height);
-    format_dally(gR, 0, width, height);
-    format_dally(gG, 0, width, height);
-    format_dally(gB, 0, width, height);
+    format_dally(gR, width, height, 0);
+    format_dally(gG, width, height, 0);
+    format_dally(gB, width, height, 0);
     PPM* u_img = create_ppm(width+1, height, 255);
     PPM* paint_img = create_ppm(width, height, 255);
     char filename[64]={};
@@ -398,21 +388,21 @@ void TransferPigment_Test(int argc, char *argv[])
     format_dally(v, width, height+1, 0);
     int** M = create_ally(width, height);
     double** p = create_dally(width, height);
-    format_dally(p, 0, width, height);
+    format_dally(p, width, height, 0);
     double** h = create_dally(width, height);
     h = perlin_img(width, height, 0.1, 4);
     double** gR = create_dally(width, height);
     double** gG = create_dally(width, height);
     double** gB = create_dally(width, height);
-    format_dally(gR, 0, width, height);
-    format_dally(gG, 0, width, height);
-    format_dally(gB, 0, width, height);
+    format_dally(gR, width, height, 0);
+    format_dally(gG, width, height, 0);
+    format_dally(gB, width, height, 0);
     double** dR = create_dally(width, height);
     double** dG = create_dally(width, height);
     double** dB = create_dally(width, height);
-    format_dally(dR, 0, width, height);
-    format_dally(dG, 0, width, height);
-    format_dally(dB, 0, width, height);
+    format_dally(dR, width, height, 0);
+    format_dally(dG, width, height, 0);
+    format_dally(dB, width, height, 0);
     PPM* u_img = create_ppm(width+1, height, 255);
     PPM* p_img = create_ppm(width, height, 255);
     PPM* paint_img = create_ppm(width, height, 255);
@@ -448,7 +438,7 @@ void TransferPigment_Test(int argc, char *argv[])
     write_ppm(filename, paint_img);
 
     double var_t = 0.1;
-    for (t = 0; t < 1000; t=t+var_t) {
+    for (t = 0; t < 100; t=t+var_t) {
         UpdateVelocities(M, u, v, p, var_t, width, height);		// UpdateVelocitieの変化の推移を出力
         RelaxDivergence(M, u, v, p, var_t, width, height);		// RelaxDivergenceの変化の推移を出力
         FlowOutward(M, p, var_t, width, height);
@@ -554,7 +544,7 @@ void Paint_Water_Test(int argc, char *argv[])
     format_dally(v, width, height+1, 0);
     int** M = create_ally(width, height);
     double** p = create_dally(width, height);
-    format_dally(p, 0, width, height);
+    format_dally(p, width, height, 0);
     double** h = create_dally(width, height);
     h = perlin_img(width, height, 0.1, 4);
     double** grad_hx = create_dally(width+1, height); 
@@ -563,15 +553,15 @@ void Paint_Water_Test(int argc, char *argv[])
     double** gR = create_dally(width, height);
     double** gG = create_dally(width, height);
     double** gB = create_dally(width, height);
-    format_dally(gR, 0, width, height);
-    format_dally(gG, 0, width, height);
-    format_dally(gB, 0, width, height);
+    format_dally(gR, width, height, 0);
+    format_dally(gG, width, height, 0);
+    format_dally(gB, width, height, 0);
     double** dR = create_dally(width, height);
     double** dG = create_dally(width, height);
     double** dB = create_dally(width, height);
-    format_dally(dR, 0, width, height);
-    format_dally(dG, 0, width, height);
-    format_dally(dB, 0, width, height);
+    format_dally(dR, width, height, 0);
+    format_dally(dG, width, height, 0);
+    format_dally(dB, width, height, 0);
     PPM* u_img = create_ppm(width+1, height, 255);
     PPM* p_img = create_ppm(width, height, 255);
     PPM* paint_img = create_ppm(width, height, 255);
@@ -580,19 +570,20 @@ void Paint_Water_Test(int argc, char *argv[])
 
     for (i = 0; i < width; i++) {	//u,v,pの初期化
         for (j = 0; j < height; j++) {
-            u[i][j] = (128-abs(64-i)-abs(64-j))/128.0;//(128-i-j)/128.0;
-            v[i][j] = (128-abs(64-i)-abs(64-j))/128.0;//(128-i-j)/128.0;
+            u[i][j] = 0;//(128-abs(64-i)-abs(64-j))/128.0;//(128-i-j)/128.0;
+            v[i][j] = 0;//(128-abs(64-i)-abs(64-j))/128.0;//(128-i-j)/128.0;
             if(i>30 && j>30 && i<90 && j<90){
                 M[i][j] = 1;
-                p[i][j] = 0.5;//(128-abs(64-i)-abs(64-j))/128.0; //(256-abs(256-i-j))/256;
+                p[i][j] = (128-abs(64-i)-abs(64-j))/128.0; //(256-abs(256-i-j))/256;
             }  else M[i][j]=0;
-            if(i!=0 && j!=0) gR[i][j] = 0.7;//(128-abs(64-i)-abs(64-j))/128.0; 
+            if(i!=0 && j!=0) gR[i][j] = (128-abs(64-i)-abs(64-j))/128.0; 
         }
     }
 
     strcpy(filename, "u0_");		//uの初期速度を画像として出力
     strcat(filename, argv[1]);
     trans_Vector_img(u_img, u, width+1, height);
+    write_ppm(filename, u_img);
     strcpy(filename, "p0_");		//pの初期速度を画像として出力
     strcat(filename, argv[1]);
     trans_Vector_img(p_img, p, width, height);
@@ -628,4 +619,229 @@ void Paint_Water_Test(int argc, char *argv[])
         }
     }
     write_ppm(filename, paint_img);
+}
+
+
+void Circle_fill_Water_Test(int argc, char *argv[]) 
+{
+    int i,j;
+    int t=20;
+    RGB color = {200, 0, 100};
+    double sigma;
+    int width=128, height=128;
+    int** M = create_ally(width, height);
+    double** p = create_dally(width, height);
+    format_ally(M, width, height, 0);
+    format_dally(p, width, height, 0);
+    double** gR = create_dally(width, height);
+    double** gG = create_dally(width, height);
+    double** gB = create_dally(width, height);
+    format_dally(gR, width, height, 0);
+    format_dally(gG, width, height, 0);
+    format_dally(gB, width, height, 0);
+    PPM* p_img = create_ppm(width, height, 255);
+    Point SP = {0,0};//{width/2, height/2};
+    char filename[64]={};
+
+    double** gauce_filter = create_dally(2*t+1, 2*t+1);
+    sigma = t/3.0;
+    for(i=0; i<2*t+1; i++){
+        for(j=0; j<2*t+1; j++){
+            gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
+        }
+    }
+    
+    double** dM = create_dally(width, height);  //関数に渡すためにdouble型に変換
+
+    strcpy(filename, "p0_");		//pの初期速度を画像として出力
+    strcat(filename, argv[1]);
+    trans_Vector_img(p_img, p, width, height);
+    write_ppm(filename, p_img);
+    
+    for(i=0; i<width; i++){
+        for(j=0; j<height; j++){
+            dM[i][j] = M[i][j];
+        }
+    }
+    strcpy(filename, "M0_");		//pの初期速度を画像として出力
+    strcat(filename, argv[1]);
+    trans_Vector_img(p_img, dM, width, height);
+    write_ppm(filename, p_img);
+
+    Circle_fill_Water(M, p, gR, gG, gB, SP, t, color, gauce_filter, width, height);
+    
+    for(i=0; i<width; i++){
+        for(j=0; j<height; j++){
+            p[i][j] = p[i][j] * 2*t;    //ブラシを動かして塗り重ねないと水量が少なすぎてintだと消える
+        }
+    }
+    strcpy(filename, "p1_");		//pの初期速度を画像として出力
+    strcat(filename, argv[1]);
+    trans_Vector_img(p_img, p, width, height);
+    write_ppm(filename, p_img);
+
+    for(i=0; i<width; i++){
+        for(j=0; j<height; j++){
+            dM[i][j] = M[i][j];
+        }
+    }
+    strcpy(filename, "M1_");		//pの初期速度を画像として出力
+    strcat(filename, argv[1]);
+    trans_Vector_img(p_img, dM, width, height);
+    write_ppm(filename, p_img);
+}
+
+
+
+void set_WetStroke_Test(int argc, char *argv[])
+{
+    int i,j;
+    int t=20;
+    int pnum=5;
+    RGB color = {200, 0, 100};
+    double sigma;
+    int width=128, height=128;
+    int** M = create_ally(width, height);
+    double** p = create_dally(width, height);
+    format_ally(M, width, height, 0);
+    format_dally(p, width, height, 0);
+    double** gR = create_dally(width, height);
+    double** gG = create_dally(width, height);
+    double** gB = create_dally(width, height);
+    format_dally(gR, width, height, 0);
+    format_dally(gG, width, height, 0);
+    format_dally(gB, width, height, 0);
+    PPM* p_img = create_ppm(width, height, 255);
+    PPM* paint_img = create_ppm(width, height, 255);
+    Point SP[5]= {
+        {10,100},
+        {20,50},
+        {50,20},
+        {100,40},
+        {120,80}
+    };
+    char filename[64]={};
+
+    double** gauce_filter = create_dally(2*t+1, 2*t+1);
+    sigma = t/3.0;
+    for(i=0; i<2*t+1; i++){
+        for(j=0; j<2*t+1; j++){
+            gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
+        }
+    }
+    
+    double** dM = create_dally(width, height);  //関数に渡すためにdouble型に変換
+
+    strcpy(filename, "p0_");		//pを画像として出力
+    strcat(filename, argv[1]);
+    trans_Vector_img(p_img, p, width, height);
+    write_ppm(filename, p_img);
+    
+    for(i=0; i<width; i++){
+        for(j=0; j<height; j++){
+            dM[i][j] = M[i][j];
+        }
+    }
+    strcpy(filename, "M0_");		//Mを画像として出力
+    strcat(filename, argv[1]);
+    trans_Vector_img(p_img, dM, width, height);
+    write_ppm(filename, p_img);
+
+    set_WetStroke(M, p, gR, gG, gB, SP, pnum, t, color, gauce_filter, width, height);
+    
+    for(i=0; i<width; i++){
+        for(j=0; j<height; j++){
+            p[i][j] = p[i][j];
+        }
+    }
+    strcpy(filename, "p1_");		//pを画像として出力
+    strcat(filename, argv[1]);
+    trans_Vector_img(p_img, p, width, height);
+    write_ppm(filename, p_img);
+
+    for(i=0; i<width; i++){
+        for(j=0; j<height; j++){
+            dM[i][j] = M[i][j];
+        }
+    }
+    strcpy(filename, "M1_");		//Mを画像として出力
+    strcat(filename, argv[1]);
+    trans_Vector_img(p_img, dM, width, height);
+    write_ppm(filename, p_img);
+
+    strcpy(filename, "g1_");		//顔料ｇをCMYで出力
+    strcat(filename, argv[1]);
+    for(i=0; i<width; i++){
+        for(j=0; j<height; j++){
+            paint_img->dataR[i][j] = fmax(255-gR[i][j]*255, 0);
+            paint_img->dataG[i][j] = fmax(255-gG[i][j]*255, 0);
+            paint_img->dataB[i][j] = fmax(255-gB[i][j]*255, 0);
+        }
+    }
+    write_ppm(filename, paint_img);
+}
+
+
+
+void Paint_Water_Stroke_Test(int argc, char *argv[]) 
+{
+    int i,j;
+    int t=20;
+    int pnum=5;
+    RGB color = {0, 110, 0}, color2={250,0,0};
+    // RGB color = {200, 0, 100}, color2={0,0,0};
+    double sigma;
+    int width=128, height=128;
+    double** h = create_dally(width, height);
+    h = perlin_img(width, height, 0.1, 4);
+    double** grad_hx = create_dally(width+1, height); 
+    double** grad_hy = create_dally(width, height+1); 
+    calcu_grad_h(h, grad_hx, grad_hy, width, height);
+    PPM* Canvas_img = create_ppm(width, height, 255);
+    Point SP[5]= {
+        {10,100},
+        {20,50},
+        {50,20},
+        {100,40},
+        {120,80}
+    };
+    Point SP1[5]= {
+        {10,10},
+        {40,40},
+        {60,60},
+        {100,100},
+        {120,120}
+    };
+    Point SP2[5]= {
+        {110,10},
+        {80,40},
+        {60,60},
+        {40,100},
+        {10,120}
+    };
+    char filename[64]={};
+
+    double** gauce_filter = create_dally(2*t+1, 2*t+1);
+    sigma = t/3.0;
+    for(i=0; i<2*t+1; i++){
+        for(j=0; j<2*t+1; j++){
+            gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
+        }
+    }
+
+    strcpy(filename, "C0_");    // ペイント前のキャンバスを出力
+    strcat(filename, argv[1]);
+    write_ppm(filename, Canvas_img);
+
+    Paint_Water_Stroke(SP1, pnum, t, color, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
+
+    strcpy(filename, "C1_");    // ペイント1後のキャンバスを出力
+    strcat(filename, argv[1]);
+    write_ppm(filename, Canvas_img);
+
+    Paint_Water_Stroke(SP2, pnum, t, color2, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
+
+    strcpy(filename, "C2_");    // ペイント2後のキャンバスを出力
+    strcat(filename, argv[1]);
+    write_ppm(filename, Canvas_img);
 }

@@ -6,8 +6,9 @@
 #include "water.h"
 
 
-void Paint_Water_Stroke(Point p[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, 
-                            double** h, double** grad_hx, double** grad_hy, int width, int height)
+
+void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, 
+                            double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height)
 {
     int i,j;
     double** u = create_dally(width+1, height);
@@ -17,36 +18,123 @@ void Paint_Water_Stroke(Point p[], int pnum, int thick, RGB color, int** CanR, i
 
     int** M = create_ally(width, height);
     double** p = create_dally(width, height);
-    format_dally(M, 0, width, height);
-    format_dally(p, 0, width, height);
+    format_ally(M, width, height, 0);
+    format_dally(p, width, height, 0);
 
     double** gR = create_dally(width, height);
     double** gG = create_dally(width, height);
     double** gB = create_dally(width, height);
-    format_dally(gR, 0, width, height);
-    format_dally(gG, 0, width, height);
-    format_dally(gB, 0, width, height);
+    format_dally(gR, width, height, 0);
+    format_dally(gG, width, height, 0);
+    format_dally(gB, width, height, 0);
 
     double** dR = create_dally(width, height);
     double** dG = create_dally(width, height);
     double** dB = create_dally(width, height);
-    format_dally(dR, 0, width, height);
-    format_dally(dG, 0, width, height);
-    format_dally(dB, 0, width, height);
+    format_dally(dR, width, height, 0);
+    format_dally(dG, width, height, 0);
+    format_dally(dB, width, height, 0);
 
-    PPM* u_img = create_ppm(width+1, height, 255);
-    PPM* p_img = create_ppm(width, height, 255);
-    PPM* paint_img = create_ppm(width, height, 255);
 
-    char filename[64]={};
-
-    for(i=0; i<width; i++){
-        for(j=0; j<height; j++){
-            dR[i][j] = CanR[i][j]/255.0;
-            dG[i][j] = CanG[i][j]/255.0;
-            dB[i][j] = CanB[i][j]/255.0;
+    // キャンバスの色をCMYに変換し堆積顔料を計算
+    for(i=0; i<width; i++) {
+        for(j=0; j<height; j++) {
+            dR[i][j] = 1 - CanR[i][j]/255.0;    //RGB[0,255]->CMY[0,1]
+            dG[i][j] = 1 - CanG[i][j]/255.0;
+            dB[i][j] = 1 - CanB[i][j]/255.0;
         }
     }
+
+    set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, color, gauce_filter, width, height);   //ストロークのエリアと水量を計算
+    Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height);    //水と顔料の移動を計算
+
+    // 堆積顔料をRGBに変換しキャンバスの色を計算
+    for(i=0; i<width; i++) {
+        for(j=0; j<height; j++) {
+            CanR[i][j] = (1 - dR[i][j]) * 255;    //CMY[0,1]->RGB[0,255]
+            CanG[i][j] = (1 - dG[i][j]) * 255;
+            CanB[i][j] = (1 - dB[i][j]) * 255;
+        }
+    }
+}
+
+
+// ストローク点に従いウェットエリアと水量を計算
+void set_WetStroke(int** M, double** p, double** gR, double** gG, double** gB, Point SP[], int pnum, int thick, RGB color, double** gauce_filter, int width, int height)
+{
+    int i,j,r;
+	double t;
+	Point temp;  //描画線を通らない制御点
+
+    //二点までしか与えられなければ直線を引く
+	if(pnum==2){
+	    int partition = abs(SP[0].x-SP[1].x) + abs(SP[0].y-SP[1].y); //線分の分割数
+        for(i=0; i <= partition; i++) {
+            t = (double)i/partition;
+            r = thick*sin((10*t<PI/2 ? 10*t:PI/2));     //初期速度のみをｔに従い減衰
+            temp.x = SP[0].x+(SP[1].x-SP[0].x)*t;
+            temp.y = SP[0].y+(SP[1].y-SP[0].y)*t;
+            Circle_fill_Water(M, p, gR, gG, gB, temp, r, color, gauce_filter, width, height);
+        }
+		return;
+	}
+	
+	Point p0={2*SP[0].x-SP[1].x, 2*SP[0].y-SP[1].y}, 	//両端の一つ外の制御点を適当に決める
+	p_np1={2*SP[pnum-1].x-SP[pnum-2].x, 2*SP[pnum-1].y-SP[pnum-2].y};
+	int partition = abs(SP[0].x-SP[1].x)+abs(SP[0].y-SP[1].y); //線分の分割数
+	
+	Point bp0 = {(SP[1].x-p0.x)/6.0 + SP[0].x, (SP[1].y-p0.y)/6.0 + SP[0].y}
+		,bp1 = {(SP[0].x-SP[2].x)/6.0 + SP[1].x, (SP[0].y-SP[2].y)/6.0 + SP[1].y};
+	for(i=0; i <= partition; i++) {
+		t = (double)i/partition;
+		r = thick*sin((10*t<PI/2 ? 10*t:PI/2));
+		temp = BezierCurve_P(SP[0], bp0, bp1, SP[1], t);
+        Circle_fill_Water(M, p, gR, gG, gB, temp, r, color, gauce_filter, width, height);
+	}
+	
+	for(i=1; i<pnum-2; i++){
+		bp0.x = (SP[i+1].x-SP[i-1].x)/6.0 + SP[i].x;	bp0.y = (SP[i+1].y-SP[i-1].y)/6.0 + SP[i].y;
+		bp1.x = (SP[i].x-SP[i+2].x)/6.0 + SP[i+1].x;	bp1.y = (SP[i].y-SP[i+2].y)/6.0 + SP[i+1].y;
+		partition = abs(SP[i].x-SP[i+1].x)+abs(SP[i].y-SP[i+1].y);
+		for(j=0; j <= partition; j++) {
+			t = (double)j/partition;
+			r = thick;
+			temp = BezierCurve_P(SP[i], bp0, bp1, SP[i+1], t);
+            Circle_fill_Water(M, p, gR, gG, gB, temp, r, color, gauce_filter, width, height);
+		}
+	}
+	
+
+	bp0.x = (SP[pnum-1].x-SP[pnum-3].x)/6.0 + SP[pnum-2].x;
+	bp0.y = (SP[pnum-1].y-SP[pnum-3].y)/6.0 + SP[pnum-2].y;
+	bp1.x = (SP[pnum-2].x-p_np1.x)/6.0 + SP[pnum-1].x;
+	bp1.y = (SP[pnum-2].y-p_np1.y)/6.0 + SP[pnum-1].y;
+	partition = abs(SP[i].x-SP[i+1].x)+abs(SP[i].y-SP[i+1].y);
+	for(i=0; i <= partition; i++) {
+		t = (double)i/partition;
+		r = thick;
+		temp = BezierCurve_P(SP[pnum-2], bp0, bp1, SP[pnum-1], t);
+        Circle_fill_Water(M, p, gR, gG, gB, temp, r, color, gauce_filter, width, height);
+	}
+}
+
+
+//与えられた画像の座標を中心とする円に水を置く
+void Circle_fill_Water(int** M, double** p, double** gR, double** gG, double** gB, Point SP, int r, RGB color, double** gauce_filter, int width, int height) {
+	int x,y;
+
+	for(x=SP.x-r; x <= SP.x+r; x++) {
+		for(y=SP.y-r; y <= SP.y+r; y++) {
+			if(x<0 || x>width-1 || y<0 || y>height-1) {}
+			else if( (x-SP.x)*(x-SP.x)+(y-SP.y)*(y-SP.y) <= r*r ) {
+                M[x][y] = 1;
+                p[x][y] += gauce_filter[x-((int)SP.x-r)][y-((int)SP.y-r)]*r;    //筆の入りのときガウスフィルタの半径とｒが合わない
+                gR[x][y] = 1-color.R/255.0;     //RGB[0,255]->CMY[0,1]
+                gG[x][y] = 1-color.G/255.0;
+                gB[x][y] = 1-color.B/255.0;
+			}
+		}
+	}
 }
 
 
@@ -66,9 +154,10 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
         }
     }
 
-    var_t = fmin(1/max, 0.1);  // maxは１以下なのでおかしい・・・おかしくない？
+    var_t = fmin(1/max, 1);  // maxは１以下なのでおかしい・・・おかしくない？
+    // pd("var_t", var_t);
 
-    for ( t = 0; t < 10; t=t+var_t)
+    for ( t = 0; t < opt_SoakTme; t=t+var_t)
     {   
         UpdateVelocities(M, u, v, p, var_t, width, height);	
         RelaxDivergence(M, u, v, p, var_t, width, height);
@@ -137,7 +226,7 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
                 new_u[i][j] = 0;
                 new_u[i+1][j] = 0;
             }else{
-                printf("UV_ERROR\n");
+                printf("UV_ERROR:M=%d,x=%d,y=%d\n", M[i][j], i, j);
             }
         }
     }
@@ -153,7 +242,7 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
                 new_v[i][j] = 0;
                 new_v[i][j+1] = 0;
             }else{
-                printf("UV_ERROR\n");
+                printf("UV_ERROR:M=%d,x=%d,y=%d\n", M[i][j], i, j);
             }
         }
     }
@@ -213,8 +302,7 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
             // p("t",t);
             break;
         }
-        // pd("deltaSUM",delta_SUM);
-        pd("deltaMAX",delta_MAX);
+        // pd("deltaMAX",delta_MAX);
         copy_dally(new_u, u, width+1, height);
         copy_dally(new_v, v, width, height+1);
     }

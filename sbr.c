@@ -35,7 +35,6 @@ Point BezierCurve_P(Point p1, Point p2, Point p3, Point p4, float t){
 void Paint_Bezier(Point p1, Point s, Point p4, PGM* in_img, int thick, int bright) {
 	int i,r;
 	int partition = abs(p1.x-p4.x) + abs(p1.y-p4.y); //線分の分割数
-	//p("parti",partition);
 	float t;
 	Point temp, p2, p3;
 	
@@ -54,7 +53,6 @@ void Paint_Bezier(Point p1, Point s, Point p4, PGM* in_img, int thick, int brigh
 		r = thick*sin((10*t<PI/2 ? 10*t:PI/2));
 		temp = BezierCurve_P(p1, p2, p3, p4, t);
 		Circle_fill(temp.x, temp.y, r, in_img, bright, 0.03);
-		//light_dot(temp.x, temp.y, in_img, 255);
 	}
 }
 
@@ -70,9 +68,7 @@ void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, do
 	
 	Point p0={2*p[0].x-p[1].x, 2*p[0].y-p[1].y}, 	//両端の一つ外の制御点を適当に決める
 	p_np1={2*p[pnum-1].x-p[pnum-2].x, 2*p[pnum-1].y-p[pnum-2].y};
-	//light_dot(p0.x, p0.y, in_img, 0);
-	//light_dot(p_np1.x, p_np1.y, in_img, 0);
-	//printf("%d,%d\n",p_np1.x, p_np1.y);
+
 	Point temp;  //描画線を通らない制御点
 	int i,j,r;
 	double t;
@@ -82,12 +78,10 @@ void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, do
 		,bp1 = {(p[0].x-p[2].x)/6.0 + p[1].x, (p[0].y-p[2].y)/6.0 + p[1].y};
 	for(i=0; i <= partition; i++) {
 		t = (double)i/partition;
-		r = thick*sin((10*t<PI/2 ? 10*t:PI/2));
+		r = thick*sin((10*t<PI/2 ? 10*t:PI/2));     //初期速度のみをｔに従い減衰
 		temp = BezierCurve_P(p[0], bp0, bp1, p[1], t);
 		Circle_fill(temp.x, temp.y, r, in_img, bright, ratio);
-		//light_dot(temp.x, temp.y, in_img, 0);
 	}
-	//light_dot(p[0].x, p[0].y, in_img, 0);
 	
 	for(i=1; i<pnum-2; i++){
 		bp0.x = (p[i+1].x-p[i-1].x)/6.0 + p[i].x;	bp0.y = (p[i+1].y-p[i-1].y)/6.0 + p[i].y;
@@ -98,9 +92,7 @@ void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, do
 			r = thick;
 			temp = BezierCurve_P(p[i], bp0, bp1, p[i+1], t);
 			Circle_fill(temp.x, temp.y, r, in_img, bright, ratio);
-			//light_dot(temp.x, temp.y, in_img, 0);
 		}
-		//light_dot(p[i].x, p[i].y, in_img, 0);
 	}
 	
 
@@ -114,10 +106,7 @@ void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, do
 		r = thick;
 		temp = BezierCurve_P(p[pnum-2], bp0, bp1, p[pnum-1], t);
 		Circle_fill(temp.x, temp.y, r, in_img, bright, ratio);
-		//light_dot(temp.x, temp.y, in_img, 0);
 	}
-	//light_dot(p[pnum-2].x, p[pnum-2].y, in_img, 0);
-	//light_dot(p[pnum-1].x, p[pnum-1].y, in_img, 0);
 }
 
 
@@ -126,7 +115,6 @@ void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, do
 void Paint_line(Point p1, Point p4, PGM* in_img, int thick, int bright, double ratio) {
 	int i,r;
 	int partition = abs(p1.x-p4.x) + abs(p1.y-p4.y); //線分の分割数
-	//p("parti",partition);
 	float t;
 	Point temp;
 	
