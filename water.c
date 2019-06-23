@@ -56,6 +56,17 @@ void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** C
             CanB[i][j] = (1 - dB[i][j]) * 255;
         }
     }
+
+    Free_dally(u, width+1);
+    Free_dally(v, width);
+    Free_ally(M, width);
+    Free_dally(p, width);
+    Free_dally(gR, width);
+    Free_dally(gG, width);
+    Free_dally(gB, width);
+    Free_dally(dR, width);
+    Free_dally(dG, width);
+    Free_dally(dB, width);
 }
 
 
@@ -318,7 +329,6 @@ void FlowOutward(int** M, double** p, double var_t, int width, int height)
     int i,j;
     int K=opt_K;
     double eta=opt_eta;
-    double** gauss_M = create_dally(width, height);
     
     double** dM = create_dally(width, height);  //関数に渡すためにdouble型に変換
     for(i=0; i<width; i++){
@@ -327,13 +337,16 @@ void FlowOutward(int** M, double** p, double var_t, int width, int height)
         }
     }
     
-    gauss_M = gaussian_filter_d(dM, K/6.0, width, height);
+    double** gauss_M = gaussian_filter_d(dM, K/6.0, width, height);
     
     for(i=0; i<width; i++){
         for(j=0; j<height; j++){
             p[i][j] = p[i][j] - eta*var_t*(1-gauss_M[i][j])*M[i][j];
         }
     }
+
+    Free_dally(gauss_M, width);
+    Free_dally(dM, width);
 }
 
 

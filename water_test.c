@@ -6,7 +6,7 @@
 #include "sbr.h"
 #include "water.h"
 
-
+// #include <mcheck.h>
 
 
 void ufvf_Test(int argc, char *argv[]);
@@ -26,7 +26,9 @@ void Paint_Water_Stroke_Test(int argc, char *argv[]);
 
 
 int main(int argc, char *argv[]){
+    // mtrace();
     Paint_Water_Stroke_Test(argc, argv);
+    // muntrace();
     return 0;
 }
 
@@ -792,8 +794,7 @@ void Paint_Water_Stroke_Test(int argc, char *argv[])
     // RGB color = {200, 0, 100}, color2={0,0,0};
     double sigma;
     int width=128, height=128;
-    double** h = create_dally(width, height);
-    h = perlin_img(width, height, 0.1, 4);
+    double** h = perlin_img(width, height, 0.1, 4);
     double** grad_hx = create_dally(width+1, height); 
     double** grad_hy = create_dally(width, height+1); 
     calcu_grad_h(h, grad_hx, grad_hy, width, height);
@@ -833,6 +834,7 @@ void Paint_Water_Stroke_Test(int argc, char *argv[])
     strcat(filename, argv[1]);
     write_ppm(filename, Canvas_img);
 
+    clock_t start = clock();
     Paint_Water_Stroke(SP1, pnum, t, color, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
 
     strcpy(filename, "C1_");    // ペイント1後のキャンバスを出力
@@ -840,8 +842,15 @@ void Paint_Water_Stroke_Test(int argc, char *argv[])
     write_ppm(filename, Canvas_img);
 
     Paint_Water_Stroke(SP2, pnum, t, color2, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
+    pd("TOTAL_TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
 
     strcpy(filename, "C2_");    // ペイント2後のキャンバスを出力
     strcat(filename, argv[1]);
     write_ppm(filename, Canvas_img);
+
+    Free_dally(h,width);
+    Free_dally(grad_hx,width+1);
+    Free_dally(grad_hy,width);
+    Free_dally(gauce_filter,2*t+1);
+    FreePPM(Canvas_img);
 }
