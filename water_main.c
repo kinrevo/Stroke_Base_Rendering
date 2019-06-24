@@ -166,6 +166,8 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "rho", (int)(opt_rho*100));
 	Add_dictionary_to_sentence(log_sentence, "omega", (int)(opt_omega*100));
 	Add_dictionary_to_sentence(log_sentence, "SoakTme", opt_SoakTme);
+	Add_dictionary_to_sentence(log_sentence, "perlin_freq", (int)(opt_perlin_freq*100));
+	Add_dictionary_to_sentence(log_sentence, "perlin_depth", (int)(opt_perlin_depth));
 	
 	//vectorデータのヘッダを格納
 	// snprintf(tmp_sentence, 32, "%d", in->width);
@@ -228,8 +230,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	// int diff_stroke=0;
 
     //Water実装
-    double** h = create_dally(in->width, in->height);
-    h = perlin_img(in->width, in->height, 0.1, 4);
+    double** h = perlin_img(in->width, in->height, opt_perlin_freq, opt_perlin_depth);
     double** grad_hx = create_dally(in->width+1, in->height); 
     double** grad_hy = create_dally(in->width, in->height+1); 
     calcu_grad_h(h, grad_hx, grad_hy, in->width, in->height);

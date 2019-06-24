@@ -25,7 +25,11 @@
 // TransferPigment：染色力、これが大きいほど浮上しづらい
 #define opt_omega 1.5
 
+// 水と顔料を定着させる時間
 #define opt_SoakTme 3
+// perlinノイズのパラメータ
+#define opt_perlin_freq 0.1
+#define opt_perlin_depth 4
 
 double uf(double** u, double x, double y);
 double vf(double** v, double x, double y);
