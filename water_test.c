@@ -27,7 +27,12 @@ void Paint_Water_Stroke_Test(int argc, char *argv[]);
 
 int main(int argc, char *argv[]){
     // mtrace();
-    Paint_Water_Stroke_Test(argc, argv);
+	clock_t start = clock();
+    for (int i = 0; i < 100; i++) {
+        ufvf_Test(argc, argv);
+    }
+    pn;
+	pd("All_Execution_TIME", (double)(clock()-start)/CLOCKS_PER_SEC);
     // muntrace();
     return 0;
 }
@@ -68,49 +73,60 @@ int main(int argc, char *argv[]){
 
 void ufvf_Test(int argc, char *argv[])
 {
-    double i,j;
-    int width=8, height=8;
+    int i,j;
+    double tmp;
+    int width, height;
+    width=height=512;
     double** u = create_dally(width+1, height);
     double** v = create_dally(width, height+1);
     
 	// uf
     for (i = 0; i < width+1; i++) {  //doubleによる添字の実験
         for (j = 0; j < height; j++) {
-            u[(int)i][(int)j] = i+j;
+            u[i][j] = i+j;
         }
     }
     for (j = 0; j < height; j++) {  //uf(u, i+0.5, j)
         for (i = 0; i < width+1; i++){
-            printf("%5.1f  ", uf(u, i-0.5, j));
+            tmp = uf(u, i-0.5, j);
+            // printf("%5.1f  ", tmp);
         }
-        pn;
-    }pn;
+        // pn;
+    }
+    // pn;
     for (j = 0; j < height-1; j++) {  //uf(u, i+0.5, j+0.5)
         for (i = 0; i < width+1; i++){
-            printf("%5.2f  ", uf(u, i-0.5, j+0.5));
+            tmp = uf(u, i-0.5, j+0.5);
+            // printf("%5.2f  ", tmp);
         }
-        pn;
+        // pn;
     }
-    pn;
+    // pn;
 
 	// vf
     for (i = 0; i < width; i++) {
         for (j = 0; j < height+1; j++) {
-            v[(int)i][(int)j] = i+j;
+            v[i][j] = i+j;
         }
     }
     for (j = 0; j < height+1; j++) {
         for (i = 0; i < width; i++){
-            printf("%5.1f  ", vf(v, i, j-0.5));
+            tmp = vf(v, i, j-0.5);
+            // printf("%5.1f  ", tmp);
         }
-        pn;
-    }pn;
+        // pn;
+    }
+    // pn;
     for (j = 0; j < height; j++) {
         for (i = 0; i < width; i++){
-            printf("%5.2f  ", vf(v, i, j));
+            tmp = vf(v, i, j);
+            // printf("%5.2f  ", tmp);
         }
-        pn;
+        // pn;
     }
+    
+    Free_dally(u, width+1);
+    Free_dally(v, width);
 }
 
 
@@ -799,13 +815,13 @@ void Paint_Water_Stroke_Test(int argc, char *argv[])
     double** grad_hy = create_dally(width, height+1); 
     calcu_grad_h(h, grad_hx, grad_hy, width, height);
     PPM* Canvas_img = create_ppm(width, height, 255);
-    Point SP[5]= {
-        {10,100},
-        {20,50},
-        {50,20},
-        {100,40},
-        {120,80}
-    };
+    // Point SP[5]= {
+    //     {10,100},
+    //     {20,50},
+    //     {50,20},
+    //     {100,40},
+    //     {120,80}
+    // };
     Point SP1[5]= {
         {10,10},
         {40,40},

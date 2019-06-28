@@ -416,7 +416,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 				if(paint_count%100==0)
        			 // if(t!=tc)
 				{
-					tc=t;	
 					strcpy(out_filename, dir_path);
 					strcat(out_filename, in_filename);
 					snprintf(count_name, 16, "%02d", t);
@@ -498,10 +497,12 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 			free_image(out_png);
 			printf("%s\n",out_filename);
 			printf("%d:",t);
-            Add_dictionary_to_sentence(log_sentence, "t", t);
-            snprintf(count_name, 16, "%f", (double)(clock()-start)/CLOCKS_PER_SEC);
-            strcat(log_sentence, count_name);
-            strcat(log_sentence, "\r\n");
+			strcat(log_sentence, "\r\n");
+			Add_dictionary_to_sentence(log_sentence, "t", t);
+			Add_dictionary_to_sentence(log_sentence, "s_count", paint_count);
+			snprintf(count_name, 16, "%f", (double)(clock()-start)/CLOCKS_PER_SEC);
+			strcat(log_sentence, count_name);
+			strcat(log_sentence, "\r\n");
 			pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
 		}
 			

@@ -182,30 +182,34 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
 
 // スタッガード格子表現から求まる値を実際の配列の値から計算
 double uf(double** u, double x, double y){
-    if(x<-0.5 || y<0){
-       printf("uf_MINUS:%f,%f\n",x,y);
-       return 0;
-    }
-    else if( fmod(x,1) == 0){
+    int x_LD = (int)(x*10)%10;  //少数第一位の値を整数で取得
+    int y_LD = (int)(y*10)%10;
+    // if(x<-0.5 || y<0){
+    //    printf("uf_MINUS:%f,%f\n",x,y);
+    //    return 0;
+    // }
+    if( x_LD == 0){
         return ( uf(u, x-0.5, y) + uf(u, x+0.5, y) )/2;
-    }else if( fmod(y,1) == 0.5){
+    }else if( y_LD == 5){
         return ( uf(u, x, y-0.5) + uf(u, x, y+0.5) )/2;
-    }else if( fmod(x,1) == 0.5 || x==-0.5){
+    }else {//if( x_LD == 5 || x_LD==-5){
         return u[(int)(x+0.5)][(int)y];
     }
     printf("uf_ERROR:%f\n",x);
     return 0;
 }
 double vf(double** v, double x, double y){
-    if(x<0 || y<-0.5){
-        printf("vf_MINUS:%f,%f\n",x,y);
-        return 0;
-    }
-    else if( fmod(y,1) == 0){
+    int x_LD = (int)(x*10)%10;  //少数第一位の値を整数で取得
+    int y_LD = (int)(y*10)%10;
+    // if(x<0 || y<-0.5){
+    //     printf("vf_MINUS:%f,%f\n",x,y);
+    //     return 0;
+    // }
+    if( y_LD == 0){
         return ( vf(v, x, y-0.5) + vf(v, x, y+0.5) )/2;
-    }else if( fmod(x,1) == 0.5){
+    }else if( x_LD == 5){
         return ( vf(v, x-0.5, y) + vf(v, x+0.5, y) )/2;
-    }else if( fmod(y,1) == 0.5 || y==-0.5){
+    }else {//if( y_LD == 5 || y_LD==-5){
         return v[(int)x][(int)(y+0.5)];
     }
     printf("vf_ERROR:%f\n",y);

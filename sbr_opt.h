@@ -26,13 +26,13 @@
 #define opt_histogram_partition 31
 
 // ストロークの半径ごとの繰り返し数。多いと丁寧に塗りつぶす
-#define opt_loop_cont 10
+#define opt_loop_cont 1
 
 // ストローク半径の最大値。この大きさからストロークを始める
 #define opt_thick_max 10
 
 // ストローク半径の最小値。この大きさでストロークを終える
-#define opt_thick_min 1
+#define opt_thick_min 3
 
 // 描画色の計算法においてバイラテラル距離を用いるか
 #define opt_USE_calcu_color_bi 0
