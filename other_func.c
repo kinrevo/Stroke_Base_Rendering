@@ -898,8 +898,8 @@ double image_MSE(PPM *in1, PPM *in2) {
 	int error_sum=0;
 	//新しい画像データをコピーして作っておく
 	
-	for(i=0; i<in1->height; i++) {
-		for(j=0; j<in1->width; j++) {
+	for(i=0; i<in1->width; i++) {
+		for(j=0; j<in1->height; j++) {
 			error_sum += abs(in2->dataR[i][j] - in1->dataR[i][j]);
 			error_sum += abs(in2->dataG[i][j] - in1->dataG[i][j]);
 			error_sum += abs(in2->dataB[i][j] - in1->dataB[i][j]);
