@@ -13,7 +13,7 @@
 // RelaxDivergence：減衰の閾値
 #define opt_tau 0.01
 // RelaxDivergence：減衰の係数
-#define opt_epsilon 0.1
+#define opt_xi 0.1
 // FlowOutward：ガウスフィルタの直径
 #define opt_K 5
 // FlowOutward：減衰係数
@@ -24,13 +24,24 @@
 #define opt_rho 0.05
 // TransferPigment：染色力、これが大きいほど浮上しづらい
 #define opt_omega 1.0
+// SimulateCapillaryFlow：浅水層から毛細層に水の浸透する割合
+#define opt_alpha 0.5
+// SimulateCapillaryFlow：毛細層の水がこれより多いと隣に溢れる
+#define opt_epsilon 0.05
+// SimulateCapillaryFlow：毛細層の水がこれより多いと隣から水が来ない
+#define opt_delta 0.5
+// SimulateCapillaryFlow：毛細層の水がこれより多いとウェットエリアに加えられる
+#define opt_sigma 0.01
+
 
 // 水と顔料を定着させる時間
-#define opt_SoakTime 3
+#define opt_SoakTime 30
 #define opt_SoakTimeStep 0.5
 // perlinノイズのパラメータ
-#define opt_perlin_freq 0.4
+#define opt_perlin_freq 0.1
 #define opt_perlin_depth 6
+// Option機能
+#define opt_USE_Backrun 1
 
 double uf(double** u, double x, double y);
 double vf(double** v, double x, double y);
@@ -40,6 +51,8 @@ void write_Vector_img(PPM* img, double** u, int width, int height);
 void FlowOutward(int** M, double** p, double var_t, int width, int height);
 void TransferPigment(int** M, double** h, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, double var_t, int width, int height);
 void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, double** gB, double var_t, int width, int height);
+void SimulateCapillaryFlow(int** M, double** p, double** c, double** s, double var_t, int width, int height);
+
 
 void calcu_grad_h(double** h, double** grad_hx, double** grad_hy, int width, int height);
 void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, 

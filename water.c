@@ -203,6 +203,15 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
     int i,j;
     double t, var_t;
     double max=0;
+    double** s = create_dally(width, height);
+    format_dally(s, width, height, 0);
+
+    char count_name[8];
+    char out_name[32];
+    double** dM = create_dally(width, height);
+    int paint_count=0;
+    PPM* fig_img = create_ppm(width, height, 255);
+    PPM* Canvas_img = create_ppm(width, height, 255);
 
     for(i=0; i<width; i++){
         for(j=0; j<height; j++){
@@ -215,6 +224,8 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
 
     var_t = fmin(1/max, opt_SoakTimeStep);  // maxは１以下なのでおかしい・・・おかしくない？
     // pd("var_t", var_t);
+    
+    // format_ally(M, width, height, 1);  ///////////////////////////////////全体をウェットエリアにしても変わらない
 
     for ( t = 0; t < opt_SoakTime; t=t+var_t)
     {   
@@ -223,6 +234,37 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
         FlowOutward(M, p, var_t, width, height);
         MovePigment(M, u, v, gR, gG, gB, var_t, width, height);
         TransferPigment(M, h, gR, gG, gB, dR, dG, dB, var_t, width, height);
+        if(opt_USE_Backrun) SimulateCapillaryFlow(M, p, h, s, var_t, width, height);
+
+        for (i = 0; i < width; i++) {	
+            for (j = 0; j < height; j++) {
+                dM[i][j] = M[i][j];
+                Canvas_img->dataR[i][j] = (1 - dR[i][j]) * 255;    //CMY[0,1]->RGB[0,255]
+                Canvas_img->dataG[i][j] = (1 - dG[i][j]) * 255;
+                Canvas_img->dataB[i][j] = (1 - dB[i][j]) * 255;
+            }
+        }
+        paint_count++;
+        snprintf(count_name, 16, "%02d", paint_count);
+        strcpy(out_name, "WetArea");
+        strcat(out_name, count_name);
+        strcat(out_name, ".ppm");
+        trans_Vector_img(fig_img, dM, width, height);
+        write_ppm(out_name, fig_img);
+        strcpy(out_name, "paperWater");
+        strcat(out_name, count_name);
+        strcat(out_name, ".ppm");
+        trans_Vector_img(fig_img, p, width, height);
+        write_ppm(out_name, fig_img);
+        strcpy(out_name, "vero_u");
+        strcat(out_name, count_name);
+        strcat(out_name, ".ppm");
+        trans_Vector_img(fig_img, u, width, height);
+        write_ppm(out_name, fig_img);
+        strcpy(out_name, "Can");
+        strcat(out_name, count_name);
+        strcat(out_name, ".ppm");
+        write_ppm(out_name, Canvas_img);
     }
 }
 
@@ -335,7 +377,7 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
     int i,j,t;
     double delta, delta_MAX;
     double delta_SUM;
-    double N=opt_N, tau=opt_tau, epsilon=opt_epsilon;
+    double N=opt_N, tau=opt_tau, xi=opt_xi;
     double** new_u = create_dally(width+1, height);
     double** new_v = create_dally(width, height+1);
     format_dally(new_u, width+1, height, 0);
@@ -349,7 +391,7 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
         for(i=0; i<width; i++){
             for(j=0; j<height; j++){
                 if(M[i][j]==1){
-                    delta = epsilon*(uf(u, i+0.5, j) - uf(u, i-0.5, j) + vf(v, i, j+0.5) - vf(v, i, j-0.5));
+                    delta = xi*(uf(u, i+0.5, j) - uf(u, i-0.5, j) + vf(v, i, j+0.5) - vf(v, i, j-0.5));
                     p[i][j] =  fmax(0, p[i][j] - delta);     // 計算符号正負不明、famaxがないと水量が負になる
                     new_u[i+1][j] = new_u[i+1][j] - delta;
                     new_u[i][j] = new_u[i][j] + delta;
@@ -389,11 +431,11 @@ void FlowOutward(int** M, double** p, double var_t, int width, int height)
         }
     }
     
-    double** gauss_M = gaussian_filter_d(dM, K/6.0, width, height);
+    double** gauss_M = gaussian_filter_d(dM, K, width, height);
     
     for(i=0; i<width; i++){
         for(j=0; j<height; j++){
-            p[i][j] = p[i][j] - eta*var_t*(1-gauss_M[i][j])*M[i][j];
+            p[i][j] = fmax(0, p[i][j] - eta*var_t*(1-gauss_M[i][j])*M[i][j]);
         }
     }
 
@@ -414,7 +456,7 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
 
     for(i=1; i<width-1; i++){
         for(j=1; j<height-1; j++){
-            // if(M[i][j]==1){
+            if(M[i][j]==1){
                 // R
                 new_gR[i+1][j] = new_gR[i+1][j] + fmax(0, var_t*uf(u,i+0.5,j)*gR[i][j]);
                 new_gR[i-1][j] = new_gR[i-1][j] + fmax(0, var_t*-uf(u,i-0.5,j)*gR[i][j]);
@@ -435,7 +477,7 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
                 new_gB[i][j+1] = new_gB[i][j+1] + fmax(0, var_t*vf(v,i,j+0.5)*gB[i][j]);
                 new_gB[i][j-1] = new_gB[i][j-1] + fmax(0, var_t*-vf(v,i,j-0.5)*gB[i][j]);
                 new_gB[i][j] = new_gB[i][j] - fmax(0, var_t*uf(u,i+0.5,j)*gB[i][j]) - fmax(0, var_t*-uf(u,i-0.5,j)*gB[i][j]) - fmax(0, var_t*vf(v,i,j+0.5)*gB[i][j]) - fmax(0, var_t*-vf(v,i,j-0.5)*gB[i][j]);
-            // }
+            }
         }
     }
 
@@ -491,6 +533,51 @@ void TransferPigment(int** M, double** h, double** gR, double** gG, double** gB,
             }
         }
     }
+}
+
+
+
+// 水の浸透を計算しバックランをシミュレーション
+void SimulateCapillaryFlow(int** M, double** p, double** c, double** s, double var_t, int width, int height)
+{
+    int i,j,k,l;
+    double var_s;
+    double alpha=opt_alpha, epsilon=opt_epsilon, delta=opt_delta, sigma=opt_sigma;
+    double** new_s = create_dally(width, height);
+
+    for(i=0; i<width; i++){
+        for(j=0; j<height; j++){
+            if(M[i][j]==1){
+                s[i][j] = s[i][j] + var_t*fmax(0, fmin(alpha*p[i][j], c[i][j]-s[i][j]) );
+            }
+        }
+    }
+    copy_dally(s, new_s, width, height);
+
+    for(i=1; i<width-1; i++){
+        for(j=1; j<height-1; j++){
+            if(s[i][j] < epsilon) continue;    //水量が０であるほとんどの領域をスキップ
+            for(k=i-1; k<=i+1; k++){
+                for(l=j-1; l<=j+1; l++){
+                    if((k==i-1&&l==j-1) || (k==i-1&&l==j+1) || (k==i&&l==j) || (k==i+1&&l==j-1) || (k==i+1&&l==j+1))continue;   //４近傍以外スキップ
+                    if(s[i][j] > s[k][l] && s[k][l]<delta){
+                        var_s = fmax(0, fmin(s[i][j]-s[k][l], c[k][l]-s[k][l])/4);
+                        new_s[i][j] = new_s[i][j] - var_s;
+                        new_s[k][l] = new_s[k][l] + var_s;
+                    }
+                }
+            }
+        }
+    }
+    copy_dally(new_s, s, width, height);
+
+    for(i=0; i<width; i++){
+        for(j=0; j<height; j++){
+            if(s[i][j] > sigma) M[i][j]=1;
+        }
+    }
+
+    Free_dally(new_s, width);
 }
 
 

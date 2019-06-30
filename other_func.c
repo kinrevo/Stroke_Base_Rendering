@@ -36,7 +36,7 @@ double **create_dally(int width, int height) {
 }
 
 
-//int配列をコピーする関数
+//int配列をコピーする関数(ally2=ally)
 void copy_ally(int **ally, int **ally2, int w, int h) {
 	int i, j;
 	for(i=0; i<w; i++) {
@@ -47,7 +47,7 @@ void copy_ally(int **ally, int **ally2, int w, int h) {
 }
 
 
-//double配列をコピーする関数
+//double配列をコピーする関数(ally2=ally)
 void copy_dally(double **ally, double **ally2, int w, int h) {
 	int i, j;
 	for(i=0; i<w; i++) {
