@@ -307,17 +307,18 @@ PGM *calcu_EdgeMap(PGM *canny, int thick_min, double **sobel_angle){
 					//探索済みでない二つ目のエッジを発見したなら
 					if(flag2a==1 && map->data[x+xc][y+yc]!=255) {
 						flag2b=1;	//二つのエッジを発見
-						flag2_c++;printf("flag2\n");
+						flag2_c++;
+						// printf("flag2\n");
 						break;
 					}
 					px=p.x; py=p.y;
 					map->data[px][py]=255;
 					if(flag2a!=1){
 						//見つけたエッジの場所を記録
-						pp(p); //getchar();
+						// pp(p); 
 						//見つけたエッジの箇所からつながっているエッジを全て探索
 						edge_detect(canny, map, sobel_angle, x, y, t, p, &flag1, 0);
-						printf("detect_done\n");
+						// printf("detect_done\n");
 						
 					}
 					if(flag1) {flag1_c++; //break;

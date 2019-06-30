@@ -5,6 +5,54 @@
 #include <stdlib.h>
 #include "water.h"
 
+//　試しに描いてみて誤差を確認(water)
+int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, int t, double** h, double** grad_hx, double** grad_hy, double** gauce_filter)
+{
+	int i,j,diffsum=0;
+	double left_end,right_end,upper_end,lower_end;//upper,lowerは画像の見かけの上下（値の上下ではない）
+	
+	//ストローク点を囲む端の座標を特定
+	left_end=right_end=stroke->p[0].x;
+	upper_end=lower_end=stroke->p[0].y;
+	for(i=1; i<stroke->pnum; i++){
+		if(stroke->p[i].x < left_end) left_end=stroke->p[i].x;
+		if(right_end < stroke->p[i].x) right_end=stroke->p[i].x;
+		if(stroke->p[i].y < upper_end) upper_end=stroke->p[i].y;
+		if(lower_end < stroke->p[i].y) lower_end=stroke->p[i].y;
+	}
+	//ストローク半径分、端座標を膨張
+	left_end-=2*t; right_end+=2*t; upper_end-=2*t; lower_end+=2*t;
+	if(left_end<0)left_end=0; 
+	if(cmpr->width <= right_end)right_end=cmpr->width-1; 
+	if(upper_end<0)upper_end=0; 
+	if(cmpr->height <= lower_end)lower_end=cmpr->height-1; 
+	
+
+	//テストキャンバスにおけるストロークによる影響箇所をコピー
+	for(i=left_end; i<=right_end; i++) {
+		for(j=upper_end; j<=lower_end; j++) {
+			//if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
+			test_Canvas->dataR[i][j] = nimgC->dataR[i][j];
+			test_Canvas->dataG[i][j] = nimgC->dataG[i][j];
+			test_Canvas->dataB[i][j] = nimgC->dataB[i][j];
+		}
+	}
+	//試し描き
+	Paint_Water_Stroke(stroke->p, stroke->pnum, t, stroke->color, test_Canvas->dataR, test_Canvas->dataG, test_Canvas->dataB, h, grad_hx, grad_hy, gauce_filter, nimgC->width, nimgC->height);
+	//試し描きによる変化を確認
+	for(i=left_end; i<=right_end; i++) {
+        if(i<0 || i>cmpr->width-1)continue;
+		for(j=upper_end; j<=lower_end; j++) {
+			if(j<0 || j>cmpr->height-1)continue;
+			diffsum += abs(cmpr->dataR[i][j]-nimgC->dataR[i][j]) - abs(cmpr->dataR[i][j]-test_Canvas->dataR[i][j]);
+			diffsum += abs(cmpr->dataG[i][j]-nimgC->dataG[i][j]) - abs(cmpr->dataG[i][j]-test_Canvas->dataG[i][j]);
+			diffsum += abs(cmpr->dataB[i][j]-nimgC->dataB[i][j]) - abs(cmpr->dataB[i][j]-test_Canvas->dataB[i][j]);
+		}
+	}
+	
+	return diffsum;
+}
+
 
 
 void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, 
@@ -165,10 +213,10 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
         }
     }
 
-    var_t = fmin(1/max, 1);  // maxは１以下なのでおかしい・・・おかしくない？
+    var_t = fmin(1/max, opt_SoakTimeStep);  // maxは１以下なのでおかしい・・・おかしくない？
     // pd("var_t", var_t);
 
-    for ( t = 0; t < opt_SoakTme; t=t+var_t)
+    for ( t = 0; t < opt_SoakTime; t=t+var_t)
     {   
         UpdateVelocities(M, u, v, p, var_t, width, height);	
         RelaxDivergence(M, u, v, p, var_t, width, height);

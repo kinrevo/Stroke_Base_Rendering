@@ -15,21 +15,22 @@
 // RelaxDivergence：減衰の係数
 #define opt_epsilon 0.1
 // FlowOutward：ガウスフィルタの直径
-#define opt_K 10
+#define opt_K 5
 // FlowOutward：減衰係数
 #define opt_eta 0.5
 // TransferPigment：粒状化度、これが大きいほど沈着しづらく、浮上しづらい
-#define opt_gamma 0.5
+#define opt_gamma 0.05
 // TransferPigment：顔料の比重、これが大きいほど沈着しやすく浮上しやすい
-#define opt_rho 0.20
+#define opt_rho 0.05
 // TransferPigment：染色力、これが大きいほど浮上しづらい
-#define opt_omega 1.5
+#define opt_omega 1.0
 
 // 水と顔料を定着させる時間
-#define opt_SoakTme 3
+#define opt_SoakTime 3
+#define opt_SoakTimeStep 0.5
 // perlinノイズのパラメータ
-#define opt_perlin_freq 0.1
-#define opt_perlin_depth 4
+#define opt_perlin_freq 0.4
+#define opt_perlin_depth 6
 
 double uf(double** u, double x, double y);
 double vf(double** v, double x, double y);
@@ -48,6 +49,7 @@ void Circle_fill_Water(int** M, double** p, double** gR, double** gG, double** g
 void Paint_Water(int** M, double** u, double** v, double** p, double** h, double** grad_hx, double** grad_hy, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, int width, int height);
 PPM *c_Illust_brush_Water(PPM *in, char *filename);
 
+int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, int t, double** h, double** grad_hx, double** grad_hy, double** gauce_filter);
 
 void trans_Vector_img(PPM* img, double** u, int width, int height);
 

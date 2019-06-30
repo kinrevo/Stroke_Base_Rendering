@@ -195,6 +195,7 @@ int calcu_Stroke_Point(PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimg
 		Point* Stroke_P, int direct_reversal_flag);
 		
 Point search_max_Point(int **ally, int w, int h);
+void reset_improved_value_map(PGM* map, Point* p, int pnum, int t, int max_stroke);
 
 Stroke *create_Stroke(int pnum);
 Stroke ***create_Stroke_ally(int width, int height, int max_stroke);
