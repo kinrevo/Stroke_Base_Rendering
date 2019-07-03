@@ -4,38 +4,38 @@
 #include "sbr.h"
 
 
-// UpdateVelocities：Bの係数
+// UpdateVelocities：Bの係数(def:)
 #define opt_mhu 0.1
-// UpdateVelocities：粘性抵抗
+// UpdateVelocities：粘性抵抗(def:)
 #define opt_kappa 0.01
-// RelaxDivergence：減衰の繰り返し回数
+// RelaxDivergence：減衰の繰り返し回数(def:)
 #define opt_N 50
-// RelaxDivergence：減衰の閾値
+// RelaxDivergence：減衰の閾値(def:)
 #define opt_tau 0.01
-// RelaxDivergence：減衰の係数
-#define opt_xi 0.1
-// FlowOutward：ガウスフィルタの直径
-#define opt_K 5
-// FlowOutward：減衰係数
-#define opt_eta 0.5
-// TransferPigment：粒状化度、これが大きいほど沈着しづらく、浮上しづらい
+// RelaxDivergence：減衰の係数(def:)
+#define opt_xi 0.01
+// FlowOutward：ガウスフィルタの直径(def:10)
+#define opt_K 10
+// FlowOutward：減衰係数(def:0.01-0.05)
+#define opt_eta 0.05
+// TransferPigment：粒状化度、これが大きいほど沈着しづらく、浮上しづらい(def:0.05)
 #define opt_gamma 0.05
-// TransferPigment：顔料の比重、これが大きいほど沈着しやすく浮上しやすい
+// TransferPigment：顔料の比重、これが大きいほど沈着しやすく浮上しやすい(def:0.05)
 #define opt_rho 0.05
-// TransferPigment：染色力、これが大きいほど浮上しづらい
+// TransferPigment：染色力、これが大きいほど浮上しづらい(def:1.0)
 #define opt_omega 1.0
-// SimulateCapillaryFlow：浅水層から毛細層に水の浸透する割合
-#define opt_alpha 0.5
-// SimulateCapillaryFlow：毛細層の水がこれより多いと隣に溢れる
-#define opt_epsilon 0.05
-// SimulateCapillaryFlow：毛細層の水がこれより多いと隣から水が来ない
+// SimulateCapillaryFlow：浅水層から毛細層に水の浸透する割合(def:)
+#define opt_alpha 1.0
+// SimulateCapillaryFlow：毛細層の水がこれより多いと隣に溢れる(def:)
+#define opt_epsilon 0.2
+// SimulateCapillaryFlow：毛細層の水がこれより多いと隣から水が来ない(def:)
 #define opt_delta 0.5
-// SimulateCapillaryFlow：毛細層の水がこれより多いとウェットエリアに加えられる
-#define opt_sigma 0.01
+// SimulateCapillaryFlow：毛細層の水がこれより多いとウェットエリアに加えられる(def:)
+#define opt_sigma 0.2
 
 
 // 水と顔料を定着させる時間
-#define opt_SoakTime 30
+#define opt_SoakTime 15
 #define opt_SoakTimeStep 0.5
 // perlinノイズのパラメータ
 #define opt_perlin_freq 0.1
@@ -52,6 +52,7 @@ void FlowOutward(int** M, double** p, double var_t, int width, int height);
 void TransferPigment(int** M, double** h, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, double var_t, int width, int height);
 void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, double** gB, double var_t, int width, int height);
 void SimulateCapillaryFlow(int** M, double** p, double** c, double** s, double var_t, int width, int height);
+void MoveWater(int** M,  double** u, double** v, double** p, double var_t, int width, int height);
 
 
 void calcu_grad_h(double** h, double** grad_hx, double** grad_hy, int width, int height);

@@ -230,6 +230,7 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
     for ( t = 0; t < opt_SoakTime; t=t+var_t)
     {   
         UpdateVelocities(M, u, v, p, var_t, width, height);	
+        MoveWater(M, u, v, p, var_t, width, height);
         RelaxDivergence(M, u, v, p, var_t, width, height);
         FlowOutward(M, p, var_t, width, height);
         MovePigment(M, u, v, gR, gG, gB, var_t, width, height);
@@ -244,27 +245,35 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
                 Canvas_img->dataB[i][j] = (1 - dB[i][j]) * 255;
             }
         }
-        paint_count++;
-        snprintf(count_name, 16, "%02d", paint_count);
-        strcpy(out_name, "WetArea");
-        strcat(out_name, count_name);
-        strcat(out_name, ".ppm");
-        trans_Vector_img(fig_img, dM, width, height);
-        write_ppm(out_name, fig_img);
-        strcpy(out_name, "paperWater");
-        strcat(out_name, count_name);
-        strcat(out_name, ".ppm");
-        trans_Vector_img(fig_img, p, width, height);
-        write_ppm(out_name, fig_img);
-        strcpy(out_name, "vero_u");
-        strcat(out_name, count_name);
-        strcat(out_name, ".ppm");
-        trans_Vector_img(fig_img, u, width, height);
-        write_ppm(out_name, fig_img);
-        strcpy(out_name, "Can");
-        strcat(out_name, count_name);
-        strcat(out_name, ".ppm");
-        write_ppm(out_name, Canvas_img);
+
+        // paint_count++;
+        if((int)(t*100)%100==0){
+            snprintf(count_name, 16, "%02d", (int)t);
+            strcpy(out_name, "WetArea");
+            strcat(out_name, count_name);
+            strcat(out_name, ".ppm");
+            trans_Vector_img(fig_img, dM, width, height);
+            write_ppm(out_name, fig_img);
+            strcpy(out_name, "paperWater");
+            strcat(out_name, count_name);
+            strcat(out_name, ".ppm");
+            trans_Vector_img(fig_img, p, width, height);
+            write_ppm(out_name, fig_img);
+            strcpy(out_name, "underWater");
+            strcat(out_name, count_name);
+            strcat(out_name, ".ppm");
+            trans_Vector_img(fig_img, s, width, height);
+            write_ppm(out_name, fig_img);
+            strcpy(out_name, "vero_u");
+            strcat(out_name, count_name);
+            strcat(out_name, ".ppm");
+            trans_Vector_img(fig_img, u, width, height);
+            write_ppm(out_name, fig_img);
+            strcpy(out_name, "Can");
+            strcat(out_name, count_name);
+            strcat(out_name, ".ppm");
+            write_ppm(out_name, Canvas_img);
+        }
     }
 }
 
@@ -392,7 +401,7 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
             for(j=0; j<height; j++){
                 if(M[i][j]==1){
                     delta = xi*(uf(u, i+0.5, j) - uf(u, i-0.5, j) + vf(v, i, j+0.5) - vf(v, i, j-0.5));
-                    p[i][j] =  fmax(0, p[i][j] - delta);     // 計算符号正負不明、famaxがないと水量が負になる
+                    p[i][j] =  fmax(0, p[i][j] - delta);     // 計算符号正負不明、fmaxがないと水量が負になる
                     new_u[i+1][j] = new_u[i+1][j] - delta;
                     new_u[i][j] = new_u[i][j] + delta;
                     new_v[i][j+1] = new_v[i][j+1] - delta;
@@ -462,13 +471,15 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
                 new_gR[i-1][j] = new_gR[i-1][j] + fmax(0, var_t*-uf(u,i-0.5,j)*gR[i][j]);
                 new_gR[i][j+1] = new_gR[i][j+1] + fmax(0, var_t*vf(v,i,j+0.5)*gR[i][j]);
                 new_gR[i][j-1] = new_gR[i][j-1] + fmax(0, var_t*-vf(v,i,j-0.5)*gR[i][j]);
-                new_gR[i][j] = new_gR[i][j] - fmax(0, var_t*uf(u,i+0.5,j)*gR[i][j]) - fmax(0, var_t*-uf(u,i-0.5,j)*gR[i][j]) - fmax(0, var_t*vf(v,i,j+0.5)*gR[i][j]) - fmax(0, var_t*-vf(v,i,j-0.5)*gR[i][j]);
+                // 負の値になる可能性がありそう
+                new_gR[i][j] = new_gR[i][j] - fmax(0, var_t*uf(u,i+0.5,j)*gR[i][j]) - fmax(0, var_t*-uf(u,i-0.5,j)*gR[i][j]) - fmax(0, var_t*vf(v,i,j+0.5)*gR[i][j]) - fmax(0, var_t*-vf(v,i,j-0.5)*gR[i][j]);  
 
                 // G
                 new_gG[i+1][j] = new_gG[i+1][j] + fmax(0, var_t*uf(u,i+0.5,j)*gG[i][j]);
                 new_gG[i-1][j] = new_gG[i-1][j] + fmax(0, var_t*-uf(u,i-0.5,j)*gG[i][j]);
                 new_gG[i][j+1] = new_gG[i][j+1] + fmax(0, var_t*vf(v,i,j+0.5)*gG[i][j]);
                 new_gG[i][j-1] = new_gG[i][j-1] + fmax(0, var_t*-vf(v,i,j-0.5)*gG[i][j]);
+                // 負の値になる可能性がありそう
                 new_gG[i][j] = new_gG[i][j] - fmax(0, var_t*uf(u,i+0.5,j)*gG[i][j]) - fmax(0, var_t*-uf(u,i-0.5,j)*gG[i][j]) - fmax(0, var_t*vf(v,i,j+0.5)*gG[i][j]) - fmax(0, var_t*-vf(v,i,j-0.5)*gG[i][j]);
                 
                 // B
@@ -476,6 +487,7 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
                 new_gB[i-1][j] = new_gB[i-1][j] + fmax(0, var_t*-uf(u,i-0.5,j)*gB[i][j]);
                 new_gB[i][j+1] = new_gB[i][j+1] + fmax(0, var_t*vf(v,i,j+0.5)*gB[i][j]);
                 new_gB[i][j-1] = new_gB[i][j-1] + fmax(0, var_t*-vf(v,i,j-0.5)*gB[i][j]);
+                // 負の値になる可能性がありそう
                 new_gB[i][j] = new_gB[i][j] - fmax(0, var_t*uf(u,i+0.5,j)*gB[i][j]) - fmax(0, var_t*-uf(u,i-0.5,j)*gB[i][j]) - fmax(0, var_t*vf(v,i,j+0.5)*gB[i][j]) - fmax(0, var_t*-vf(v,i,j-0.5)*gB[i][j]);
             }
         }
@@ -578,6 +590,31 @@ void SimulateCapillaryFlow(int** M, double** p, double** c, double** s, double v
     }
 
     Free_dally(new_s, width);
+}
+
+
+// 自作関数
+void MoveWater(int** M,  double** u, double** v, double** p, double var_t, int width, int height)
+{
+    int i,j;
+    double** new_p = create_dally(width, height);
+    copy_dally(p, new_p, width, height);
+
+    for(i=1; i<width-1; i++){
+        for(j=1; j<height-1; j++){
+            if(M[i][j]==1){
+                // R
+                new_p[i+1][j] = new_p[i+1][j] + fmax(0, var_t*uf(u,i+0.5,j)*p[i][j]);
+                new_p[i-1][j] = new_p[i-1][j] + fmax(0, var_t*-uf(u,i-0.5,j)*p[i][j]);
+                new_p[i][j+1] = new_p[i][j+1] + fmax(0, var_t*vf(v,i,j+0.5)*p[i][j]);
+                new_p[i][j-1] = new_p[i][j-1] + fmax(0, var_t*-vf(v,i,j-0.5)*p[i][j]);
+                new_p[i][j] = new_p[i][j] - fmax(0, var_t*uf(u,i+0.5,j)*p[i][j]) - fmax(0, var_t*-uf(u,i-0.5,j)*p[i][j]) - fmax(0, var_t*vf(v,i,j+0.5)*p[i][j]) - fmax(0, var_t*-vf(v,i,j-0.5)*p[i][j]);
+            }
+        }
+    }
+
+    copy_dally(new_p, p, width, height);
+    Free_dally(new_p, width);
 }
 
 
