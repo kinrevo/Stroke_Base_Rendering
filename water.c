@@ -209,7 +209,7 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
     char count_name[8];
     char out_name[32];
     double** dM = create_dally(width, height);
-    int paint_count=0;
+    // int paint_count=0;
     PPM* fig_img = create_ppm(width, height, 255);
     PPM* Canvas_img = create_ppm(width, height, 255);
 
@@ -230,7 +230,7 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
     for ( t = 0; t < opt_SoakTime; t=t+var_t)
     {   
         UpdateVelocities(M, u, v, p, var_t, width, height);	
-        MoveWater(M, u, v, p, var_t, width, height);
+        if(opt_USE_MoveWater) MoveWater(M, u, v, p, var_t, width, height);
         RelaxDivergence(M, u, v, p, var_t, width, height);
         FlowOutward(M, p, var_t, width, height);
         MovePigment(M, u, v, gR, gG, gB, var_t, width, height);
@@ -247,33 +247,33 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
         }
 
         // paint_count++;
-        if((int)(t*100)%100==0){
-            snprintf(count_name, 16, "%02d", (int)t);
-            strcpy(out_name, "WetArea");
-            strcat(out_name, count_name);
-            strcat(out_name, ".ppm");
-            trans_Vector_img(fig_img, dM, width, height);
-            write_ppm(out_name, fig_img);
-            strcpy(out_name, "paperWater");
-            strcat(out_name, count_name);
-            strcat(out_name, ".ppm");
-            trans_Vector_img(fig_img, p, width, height);
-            write_ppm(out_name, fig_img);
-            strcpy(out_name, "underWater");
-            strcat(out_name, count_name);
-            strcat(out_name, ".ppm");
-            trans_Vector_img(fig_img, s, width, height);
-            write_ppm(out_name, fig_img);
-            strcpy(out_name, "vero_u");
-            strcat(out_name, count_name);
-            strcat(out_name, ".ppm");
-            trans_Vector_img(fig_img, u, width, height);
-            write_ppm(out_name, fig_img);
-            strcpy(out_name, "Can");
-            strcat(out_name, count_name);
-            strcat(out_name, ".ppm");
-            write_ppm(out_name, Canvas_img);
-        }
+        // if((int)(t*100)%100==0){
+        //     snprintf(count_name, 16, "%02d", (int)t);
+        //     strcpy(out_name, "WetArea");
+        //     strcat(out_name, count_name);
+        //     strcat(out_name, ".ppm");
+        //     trans_Vector_img(fig_img, dM, width, height);
+        //     write_ppm(out_name, fig_img);
+        //     strcpy(out_name, "paperWater");
+        //     strcat(out_name, count_name);
+        //     strcat(out_name, ".ppm");
+        //     trans_Vector_img(fig_img, p, width, height);
+        //     write_ppm(out_name, fig_img);
+        //     strcpy(out_name, "underWater");
+        //     strcat(out_name, count_name);
+        //     strcat(out_name, ".ppm");
+        //     trans_Vector_img(fig_img, s, width, height);
+        //     write_ppm(out_name, fig_img);
+        //     strcpy(out_name, "vero_u");
+        //     strcat(out_name, count_name);
+        //     strcat(out_name, ".ppm");
+        //     trans_Vector_img(fig_img, u, width, height);
+        //     write_ppm(out_name, fig_img);
+        //     strcpy(out_name, "Can");
+        //     strcat(out_name, count_name);
+        //     strcat(out_name, ".ppm");
+        //     write_ppm(out_name, Canvas_img);
+        // }
     }
 }
 

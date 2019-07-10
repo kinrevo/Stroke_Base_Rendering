@@ -162,14 +162,26 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "USE_gause_histogram", opt_USE_gause_histogram);
 	Add_dictionary_to_sentence(log_sentence, "optimal_improved_value_border", opt_optimal_improved_value_border);
 	strcat(log_sentence, "[Water Option]\r\n");
+	Add_dictionary_to_sentence(log_sentence, "mhu", (int)(opt_mhu*100));
+	Add_dictionary_to_sentence(log_sentence, "kappa", (int)(opt_kappa*100));
+	Add_dictionary_to_sentence(log_sentence, "N", opt_N);
+	Add_dictionary_to_sentence(log_sentence, "tau", (int)(opt_tau*100));
+	Add_dictionary_to_sentence(log_sentence, "xi", (int)(opt_xi*100));
 	Add_dictionary_to_sentence(log_sentence, "K", opt_K);
+	Add_dictionary_to_sentence(log_sentence, "eta", (int)(opt_eta*100));
 	Add_dictionary_to_sentence(log_sentence, "gamma", (int)(opt_gamma*100));
 	Add_dictionary_to_sentence(log_sentence, "rho", (int)(opt_rho*100));
 	Add_dictionary_to_sentence(log_sentence, "omega", (int)(opt_omega*100));
 	Add_dictionary_to_sentence(log_sentence, "SoakTme", opt_SoakTime);
 	Add_dictionary_to_sentence(log_sentence, "SoakTimeStep", (int)(opt_SoakTimeStep*100));
 	Add_dictionary_to_sentence(log_sentence, "perlin_freq", (int)(opt_perlin_freq*100));
-	Add_dictionary_to_sentence(log_sentence, "perlin_depth", (int)(opt_perlin_depth));
+	Add_dictionary_to_sentence(log_sentence, "perlin_depth", opt_perlin_depth);
+	if(opt_USE_Backrun){
+		Add_dictionary_to_sentence(log_sentence, "alpha", (int)(opt_alpha*100));
+		Add_dictionary_to_sentence(log_sentence, "epsilon", (int)(opt_epsilon*100));
+		Add_dictionary_to_sentence(log_sentence, "delta", (int)(opt_delta*100));
+		Add_dictionary_to_sentence(log_sentence, "sigma", (int)(opt_sigma*100));
+	}
 	
 	//vectorデータのヘッダを格納
 	// snprintf(tmp_sentence, 32, "%d", in->width);

@@ -17,7 +17,7 @@
 // FlowOutward：ガウスフィルタの直径(def:10)
 #define opt_K 10
 // FlowOutward：減衰係数(def:0.01-0.05)
-#define opt_eta 0.05
+#define opt_eta 0.01
 // TransferPigment：粒状化度、これが大きいほど沈着しづらく、浮上しづらい(def:0.05)
 #define opt_gamma 0.05
 // TransferPigment：顔料の比重、これが大きいほど沈着しやすく浮上しやすい(def:0.05)
@@ -31,16 +31,17 @@
 // SimulateCapillaryFlow：毛細層の水がこれより多いと隣から水が来ない(def:)
 #define opt_delta 0.5
 // SimulateCapillaryFlow：毛細層の水がこれより多いとウェットエリアに加えられる(def:)
-#define opt_sigma 0.2
+#define opt_sigma 0.1
 
 
 // 水と顔料を定着させる時間
-#define opt_SoakTime 15
-#define opt_SoakTimeStep 0.5
+#define opt_SoakTime 10
+#define opt_SoakTimeStep 0.1
 // perlinノイズのパラメータ
 #define opt_perlin_freq 0.1
 #define opt_perlin_depth 6
 // Option機能
+#define opt_USE_MoveWater 1
 #define opt_USE_Backrun 1
 
 double uf(double** u, double x, double y);
