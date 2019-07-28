@@ -13,6 +13,7 @@ void ufvf_Test(int argc, char *argv[]);
 void UpdateVelocity_Test(int argc, char *argv[]);
 void RelaxDivergence_Test(int argc, char *argv[]);
 void FlowOutward_Test(int argc, char *argv[]);
+void MovePigment_Test(int argc, char *argv[]);
 void TransferPigment_Test(int argc, char *argv[]);
 void calcu_grad_h_Test(int argc, char *argv[]);
 void Paint_Water_Test(int argc, char *argv[]);
@@ -168,7 +169,7 @@ void UpdateVelocity_Test(int argc, char *argv[])
     double var_t = 0.01;
     for (t = 0; t < 10; t=t+var_t) {
         UpdateVelocities(M, u, v, p, var_t, width, height);
-        if((int)(t/var_t) % 10 == 0 ){
+        if((int)(t/var_t) % 100 == 0 ){
             printf("%03d\n", (int)(t/var_t));
             snprintf(tmp_name, 16, "%03d", (int)(t/var_t));
             strcpy(filename, tmp_name);
@@ -363,8 +364,8 @@ void MovePigment_Test(int argc, char *argv[]){
     }
     write_ppm(filename, paint_img);
 
-    double var_t = 0.01;
-    for (t = 0; t < 10; t=t+var_t) {
+    double var_t = 0.1;
+    for (t = 0; t < 5; t=t+var_t) {
         UpdateVelocities(M, u, v, p, var_t, width, height);		// UpdateVelocitieの変化の推移を出力
         RelaxDivergence(M, u, v, p, var_t, width, height);		// RelaxDivergenceの変化の推移を出力
         FlowOutward(M, p, var_t, width, height);
@@ -377,7 +378,10 @@ void MovePigment_Test(int argc, char *argv[]){
             write_ppm(filename, u_img);
         }
  
+	    clock_t start = clock();
         MovePigment(M, u, v, gR, gG, gB, var_t, width, height);	// MovePigmentの変化の推移を出力
+        pn;
+	    pd("MP_Execution_TIME", (double)(clock()-start)/CLOCKS_PER_SEC);
         if((int)(t/var_t) % 100 == 0 ){
             printf("%03d\n", (int)(t/var_t));
             snprintf(tmp_name, 16, "MP%03d", (int)(t/var_t));

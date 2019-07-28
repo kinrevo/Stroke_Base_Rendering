@@ -333,9 +333,13 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
         {
             // (uv)i+0.5,j-0.5 = uf(u, i+0.5, j)*vf(v, i, j-0.5)
             if(M[i][j]==1){
-                A = pow(uf(u,i,j), 2) - pow(uf(u,i+1.0,j), 2) + uf(u, i+0.5, j-0.5)*vf(v, i+0.5, j-0.5) - uf(u, i+0.5, j+0.5)*vf(v, i+0.5, j+0.5);
-                B = uf(u,i+1.5,j) + uf(u, i-0.5, j) + uf(u, i+0.5, j+1.0) + uf(u, i+0.5, j-1.0) - 4*uf(u, i+0.5, j);
-                new_u[i+1][j] = u[i+1][j] + var_t*(A - mhu*B + p[i][j] - p[i+1][j] - kappa*uf(u,i+0.5,j));  //u[i][j]はu[i+0.5][j]
+                A = pow((u[i][j]+u[i+1][j])/2, 2) - pow((u[i+1][j]+u[i+2][j])/2, 2) + (u[i+1][j-1]+u[i+1][j])/2*(v[i][j]+v[i+1][j])/2 - (u[i+1][j]+u[i+1][j+1])/2*(v[i][j+1]+v[i+1][j+1])/2;
+                B = u[i+2][j] + u[i][j] + u[i+1][j+1] + u[i+1][j-1] - 4*u[i+1][j];
+                new_u[i+1][j] = u[i+1][j] + var_t*(A - mhu*B + p[i][j] - p[i+1][j] - kappa*u[i+1][j]);  //u[i][j]はu[i+0.5][j]
+                // double old_A = pow(uf(u,i,j), 2) - pow(uf(u,i+1.0,j), 2) + uf(u, i+0.5, j-0.5)*vf(v, i+0.5, j-0.5) - uf(u, i+0.5, j+0.5)*vf(v, i+0.5, j+0.5);
+                // double old_B = uf(u,i+1.5,j) + uf(u, i-0.5, j) + uf(u, i+0.5, j+1.0) + uf(u, i+0.5, j-1.0) - 4*uf(u, i+0.5, j);
+                // if(A!=old_A) printf("A:%f,oA:%f\n",A,old_A);
+                // if(B!=old_B) printf("B:%f,oB:%f\n",B,old_B);
             }else if(M[i][j]==0){   //ウェットエリア外を速度０に
                 new_u[i][j] = 0;
                 new_u[i+1][j] = 0;
@@ -349,9 +353,13 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
         for (j = 0; j < height-1; j++)
         {
             if(M[i][j]==1){
-                A = pow(vf(v,i,j), 2) - pow(vf(v,i,j+1.0), 2) + uf(u, i-0.5, j+0.5)*vf(v, i-0.5, j+0.5) - uf(u, i+0.5, j+0.5)*vf(v, i+0.5, j+0.5);
-                B = vf(v,i+1.0,j+0.5) + vf(v, i-1.0, j+0.5) + vf(v, i, j+1.5) + vf(v, i, j-0.5) - 4*vf(v, i, j+0.5);
-                new_v[i][j+1] = v[i][j+1] + var_t*(A - mhu*B + p[i][j] - p[i][j+1] - kappa*vf(v,i,j+0.5));  //u[i][j]はu[i+0.5][j]
+                A = pow((v[i][j]+v[i][j+1])/2, 2) - pow((v[i][j+1]+v[i][j+2])/2, 2) + (u[i][j]+u[i][j+1])/2*(v[i-1][j+1]+v[i][j+1])/2 - (u[i+1][j]+u[i+1][j+1])/2*(v[i][j+1]+v[i+1][j+1])/2;
+                B = v[i+1][j+1] + v[i-1][j+1] + v[i][j+2] + v[i][j] - 4*v[i][j+1];
+                new_v[i][j+1] = v[i][j+1] + var_t*(A - mhu*B + p[i][j] - p[i][j+1] - kappa*v[i][j+1]);  //u[i][j]はu[i+0.5][j]
+                // double old_A = pow(vf(v,i,j), 2) - pow(vf(v,i,j+1.0), 2) + uf(u, i-0.5, j+0.5)*vf(v, i-0.5, j+0.5) - uf(u, i+0.5, j+0.5)*vf(v, i+0.5, j+0.5);
+                // double old_B = vf(v,i+1.0,j+0.5) + vf(v, i-1.0, j+0.5) + vf(v, i, j+1.5) + vf(v, i, j-0.5) - 4*vf(v, i, j+0.5);
+                // if(A!=old_A) printf("A:%f,oA:%f\n",A,old_A);
+                // if(B!=old_B) printf("B:%f,oB:%f\n",B,old_B);
             }else if(M[i][j]==0){   //ウェットエリア外を速度０に
                 new_v[i][j] = 0;
                 new_v[i][j+1] = 0;
@@ -400,7 +408,7 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
         for(i=0; i<width; i++){
             for(j=0; j<height; j++){
                 if(M[i][j]==1){
-                    delta = xi*(uf(u, i+0.5, j) - uf(u, i-0.5, j) + vf(v, i, j+0.5) - vf(v, i, j-0.5));
+                    delta = xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
                     p[i][j] =  fmax(0, p[i][j] - delta);     // 計算符号正負不明、fmaxがないと水量が負になる
                     new_u[i+1][j] = new_u[i+1][j] - delta;
                     new_u[i][j] = new_u[i][j] + delta;
@@ -467,28 +475,28 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
         for(j=1; j<height-1; j++){
             if(M[i][j]==1){
                 // R
-                new_gR[i+1][j] = new_gR[i+1][j] + fmax(0, var_t*uf(u,i+0.5,j)*gR[i][j]);
-                new_gR[i-1][j] = new_gR[i-1][j] + fmax(0, var_t*-uf(u,i-0.5,j)*gR[i][j]);
-                new_gR[i][j+1] = new_gR[i][j+1] + fmax(0, var_t*vf(v,i,j+0.5)*gR[i][j]);
-                new_gR[i][j-1] = new_gR[i][j-1] + fmax(0, var_t*-vf(v,i,j-0.5)*gR[i][j]);
+                new_gR[i+1][j] = new_gR[i+1][j] + fmax(0, var_t*u[i+1][j]*gR[i][j]);
+                new_gR[i-1][j] = new_gR[i-1][j] + fmax(0, var_t*-u[i][j]*gR[i][j]);
+                new_gR[i][j+1] = new_gR[i][j+1] + fmax(0, var_t*v[i][j+1]*gR[i][j]);
+                new_gR[i][j-1] = new_gR[i][j-1] + fmax(0, var_t*-v[i][j]*gR[i][j]);
                 // 負の値になる可能性がありそう
-                new_gR[i][j] = new_gR[i][j] - fmax(0, var_t*uf(u,i+0.5,j)*gR[i][j]) - fmax(0, var_t*-uf(u,i-0.5,j)*gR[i][j]) - fmax(0, var_t*vf(v,i,j+0.5)*gR[i][j]) - fmax(0, var_t*-vf(v,i,j-0.5)*gR[i][j]);  
+                new_gR[i][j] = new_gR[i][j] - fmax(0, var_t*u[i+1][j]*gR[i][j]) - fmax(0, var_t*-u[i][j]*gR[i][j]) - fmax(0, var_t*v[i][j+1]*gR[i][j]) - fmax(0, var_t*-v[i][j]*gR[i][j]);  
 
                 // G
-                new_gG[i+1][j] = new_gG[i+1][j] + fmax(0, var_t*uf(u,i+0.5,j)*gG[i][j]);
-                new_gG[i-1][j] = new_gG[i-1][j] + fmax(0, var_t*-uf(u,i-0.5,j)*gG[i][j]);
-                new_gG[i][j+1] = new_gG[i][j+1] + fmax(0, var_t*vf(v,i,j+0.5)*gG[i][j]);
-                new_gG[i][j-1] = new_gG[i][j-1] + fmax(0, var_t*-vf(v,i,j-0.5)*gG[i][j]);
+                new_gG[i+1][j] = new_gG[i+1][j] + fmax(0, var_t*u[i+1][j]*gG[i][j]);
+                new_gG[i-1][j] = new_gG[i-1][j] + fmax(0, var_t*-u[i][j]*gG[i][j]);
+                new_gG[i][j+1] = new_gG[i][j+1] + fmax(0, var_t*v[i][j+1]*gG[i][j]);
+                new_gG[i][j-1] = new_gG[i][j-1] + fmax(0, var_t*-v[i][j]*gG[i][j]);
                 // 負の値になる可能性がありそう
-                new_gG[i][j] = new_gG[i][j] - fmax(0, var_t*uf(u,i+0.5,j)*gG[i][j]) - fmax(0, var_t*-uf(u,i-0.5,j)*gG[i][j]) - fmax(0, var_t*vf(v,i,j+0.5)*gG[i][j]) - fmax(0, var_t*-vf(v,i,j-0.5)*gG[i][j]);
+                new_gG[i][j] = new_gG[i][j] - fmax(0, var_t*u[i+1][j]*gG[i][j]) - fmax(0, var_t*-u[i][j]*gG[i][j]) - fmax(0, var_t*v[i][j+1]*gG[i][j]) - fmax(0, var_t*-v[i][j]*gG[i][j]);
                 
                 // B
-                new_gB[i+1][j] = new_gB[i+1][j] + fmax(0, var_t*uf(u,i+0.5,j)*gB[i][j]);
-                new_gB[i-1][j] = new_gB[i-1][j] + fmax(0, var_t*-uf(u,i-0.5,j)*gB[i][j]);
-                new_gB[i][j+1] = new_gB[i][j+1] + fmax(0, var_t*vf(v,i,j+0.5)*gB[i][j]);
-                new_gB[i][j-1] = new_gB[i][j-1] + fmax(0, var_t*-vf(v,i,j-0.5)*gB[i][j]);
+                new_gB[i+1][j] = new_gB[i+1][j] + fmax(0, var_t*u[i+1][j]*gB[i][j]);
+                new_gB[i-1][j] = new_gB[i-1][j] + fmax(0, var_t*-u[i][j]*gB[i][j]);
+                new_gB[i][j+1] = new_gB[i][j+1] + fmax(0, var_t*v[i][j+1]*gB[i][j]);
+                new_gB[i][j-1] = new_gB[i][j-1] + fmax(0, var_t*-v[i][j]*gB[i][j]);
                 // 負の値になる可能性がありそう
-                new_gB[i][j] = new_gB[i][j] - fmax(0, var_t*uf(u,i+0.5,j)*gB[i][j]) - fmax(0, var_t*-uf(u,i-0.5,j)*gB[i][j]) - fmax(0, var_t*vf(v,i,j+0.5)*gB[i][j]) - fmax(0, var_t*-vf(v,i,j-0.5)*gB[i][j]);
+                new_gB[i][j] = new_gB[i][j] - fmax(0, var_t*u[i+1][j]*gB[i][j]) - fmax(0, var_t*-u[i][j]*gB[i][j]) - fmax(0, var_t*v[i][j+1]*gB[i][j]) - fmax(0, var_t*-v[i][j]*gB[i][j]);
             }
         }
     }
@@ -604,11 +612,11 @@ void MoveWater(int** M,  double** u, double** v, double** p, double var_t, int w
         for(j=1; j<height-1; j++){
             if(M[i][j]==1){
                 // R
-                new_p[i+1][j] = new_p[i+1][j] + fmax(0, var_t*uf(u,i+0.5,j)*p[i][j]);
-                new_p[i-1][j] = new_p[i-1][j] + fmax(0, var_t*-uf(u,i-0.5,j)*p[i][j]);
-                new_p[i][j+1] = new_p[i][j+1] + fmax(0, var_t*vf(v,i,j+0.5)*p[i][j]);
-                new_p[i][j-1] = new_p[i][j-1] + fmax(0, var_t*-vf(v,i,j-0.5)*p[i][j]);
-                new_p[i][j] = new_p[i][j] - fmax(0, var_t*uf(u,i+0.5,j)*p[i][j]) - fmax(0, var_t*-uf(u,i-0.5,j)*p[i][j]) - fmax(0, var_t*vf(v,i,j+0.5)*p[i][j]) - fmax(0, var_t*-vf(v,i,j-0.5)*p[i][j]);
+                new_p[i+1][j] = new_p[i+1][j] + fmax(0, var_t*u[i+1][j]*p[i][j]);
+                new_p[i-1][j] = new_p[i-1][j] + fmax(0, var_t*-u[i][j]*p[i][j]);
+                new_p[i][j+1] = new_p[i][j+1] + fmax(0, var_t*v[i][j+1]*p[i][j]);
+                new_p[i][j-1] = new_p[i][j-1] + fmax(0, var_t*-v[i][j]*p[i][j]);
+                new_p[i][j] = new_p[i][j] - fmax(0, var_t*u[i+1][j]*p[i][j]) - fmax(0, var_t*-u[i][j]*p[i][j]) - fmax(0, var_t*v[i][j+1]*p[i][j]) - fmax(0, var_t*-v[i][j]*p[i][j]);
             }
         }
     }
