@@ -283,10 +283,6 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
 double uf(double** u, double x, double y){
     int x_LD = (int)(x*10)%10;  //少数第一位の値を整数で取得
     int y_LD = (int)(y*10)%10;
-    // if(x<-0.5 || y<0){
-    //    printf("uf_MINUS:%f,%f\n",x,y);
-    //    return 0;
-    // }
     if( x_LD == 0){
         return ( uf(u, x-0.5, y) + uf(u, x+0.5, y) )/2;
     }else if( y_LD == 5){
@@ -300,10 +296,6 @@ double uf(double** u, double x, double y){
 double vf(double** v, double x, double y){
     int x_LD = (int)(x*10)%10;  //少数第一位の値を整数で取得
     int y_LD = (int)(y*10)%10;
-    // if(x<0 || y<-0.5){
-    //     printf("vf_MINUS:%f,%f\n",x,y);
-    //     return 0;
-    // }
     if( y_LD == 0){
         return ( vf(v, x, y-0.5) + vf(v, x, y+0.5) )/2;
     }else if( x_LD == 5){
@@ -332,14 +324,11 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
         for (j = 1; j < height-1; j++)    // y:[j-1.0,j+1.0]
         {
             // (uv)i+0.5,j-0.5 = uf(u, i+0.5, j)*vf(v, i, j-0.5)
+            //u[i][j]はu[i+0.5][j]
             if(M[i][j]==1){
                 A = pow((u[i][j]+u[i+1][j])/2, 2) - pow((u[i+1][j]+u[i+2][j])/2, 2) + (u[i+1][j-1]+u[i+1][j])/2*(v[i][j]+v[i+1][j])/2 - (u[i+1][j]+u[i+1][j+1])/2*(v[i][j+1]+v[i+1][j+1])/2;
                 B = u[i+2][j] + u[i][j] + u[i+1][j+1] + u[i+1][j-1] - 4*u[i+1][j];
-                new_u[i+1][j] = u[i+1][j] + var_t*(A - mhu*B + p[i][j] - p[i+1][j] - kappa*u[i+1][j]);  //u[i][j]はu[i+0.5][j]
-                // double old_A = pow(uf(u,i,j), 2) - pow(uf(u,i+1.0,j), 2) + uf(u, i+0.5, j-0.5)*vf(v, i+0.5, j-0.5) - uf(u, i+0.5, j+0.5)*vf(v, i+0.5, j+0.5);
-                // double old_B = uf(u,i+1.5,j) + uf(u, i-0.5, j) + uf(u, i+0.5, j+1.0) + uf(u, i+0.5, j-1.0) - 4*uf(u, i+0.5, j);
-                // if(A!=old_A) printf("A:%f,oA:%f\n",A,old_A);
-                // if(B!=old_B) printf("B:%f,oB:%f\n",B,old_B);
+                new_u[i+1][j] = u[i+1][j] + var_t*(A - mhu*B + p[i][j] - p[i+1][j] - kappa*u[i+1][j]);  
             }else if(M[i][j]==0){   //ウェットエリア外を速度０に
                 new_u[i][j] = 0;
                 new_u[i+1][j] = 0;
@@ -355,11 +344,7 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
             if(M[i][j]==1){
                 A = pow((v[i][j]+v[i][j+1])/2, 2) - pow((v[i][j+1]+v[i][j+2])/2, 2) + (u[i][j]+u[i][j+1])/2*(v[i-1][j+1]+v[i][j+1])/2 - (u[i+1][j]+u[i+1][j+1])/2*(v[i][j+1]+v[i+1][j+1])/2;
                 B = v[i+1][j+1] + v[i-1][j+1] + v[i][j+2] + v[i][j] - 4*v[i][j+1];
-                new_v[i][j+1] = v[i][j+1] + var_t*(A - mhu*B + p[i][j] - p[i][j+1] - kappa*v[i][j+1]);  //u[i][j]はu[i+0.5][j]
-                // double old_A = pow(vf(v,i,j), 2) - pow(vf(v,i,j+1.0), 2) + uf(u, i-0.5, j+0.5)*vf(v, i-0.5, j+0.5) - uf(u, i+0.5, j+0.5)*vf(v, i+0.5, j+0.5);
-                // double old_B = vf(v,i+1.0,j+0.5) + vf(v, i-1.0, j+0.5) + vf(v, i, j+1.5) + vf(v, i, j-0.5) - 4*vf(v, i, j+0.5);
-                // if(A!=old_A) printf("A:%f,oA:%f\n",A,old_A);
-                // if(B!=old_B) printf("B:%f,oB:%f\n",B,old_B);
+                new_v[i][j+1] = v[i][j+1] + var_t*(A - mhu*B + p[i][j] - p[i][j+1] - kappa*v[i][j+1]); 
             }else if(M[i][j]==0){   //ウェットエリア外を速度０に
                 new_v[i][j] = 0;
                 new_v[i][j+1] = 0;
@@ -415,13 +400,10 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
                     new_v[i][j+1] = new_v[i][j+1] - delta;
                     new_v[i][j] = new_v[i][j] + delta;
                     delta_MAX = fmax(fabs(delta), delta_MAX);
-                    // if(isnan(new_u[i][j]) == 1) 
-                        // printf("nan:%d,%d\n", i,j);
                 }
             }
         }
         if(delta_MAX<tau) {
-            // p("t",t);
             break;
         }
         // pd("deltaMAX",delta_MAX);
@@ -660,8 +642,6 @@ void trans_Vector_img(PPM* img, double** u, int width, int height)
             if(fabs(u[i][j])>1 ) img->dataG[i][j] = 255;
             if(u[i][j]>=0) img->dataR[i][j] = u[i][j]*255;
             else if(u[i][j]<0) img->dataB[i][j] = -u[i][j]*255;
-            //else printf("UnpredictionValue_ERROR:%f\n", u[i][j]);
-            // if(img->dataR[i][j]<0 || img->dataB[i][j]<0) printf("%f\n%f\n",u[i][j], fabs(u[i][j]));
         }
     }
 }
