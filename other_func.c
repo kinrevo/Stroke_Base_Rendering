@@ -31,14 +31,20 @@ int **create_ally(int width, int height) {
 double **create_dally(int width, int height) {
 	int i;
 	double **buf = (double**)malloc(sizeof(double*)*(width));
+	#ifdef _OPENMP
+		#pragma omp parallel for private(i)
+    #endif
 	for(i=0; i<width; i++) { buf[i]=(double*)malloc(sizeof(double)*(height)); }
 	return buf;
 }
 
 
-//int配列をコピーする関数(ally2=ally)
+//int配列をコピーする関数
 void copy_ally(int **ally, int **ally2, int w, int h) {
 	int i, j;
+	#ifdef _OPENMP
+		#pragma omp parallel for private(i,j)
+    #endif
 	for(i=0; i<w; i++) {
 		for(j=0; j<h; j++) {
 			ally2[i][j] = ally[i][j];
@@ -47,9 +53,12 @@ void copy_ally(int **ally, int **ally2, int w, int h) {
 }
 
 
-//double配列をコピーする関数(ally2=ally)
+//double配列をコピーする関数
 void copy_dally(double **ally, double **ally2, int w, int h) {
 	int i, j;
+	#ifdef _OPENMP
+		#pragma omp parallel for private(i,j)
+    #endif
 	for(i=0; i<w; i++) {
 		for(j=0; j<h; j++) {
 			ally2[i][j] = ally[i][j];
@@ -82,6 +91,9 @@ void format_ally(int **ally, int w, int h, int bright) {
 //配列を初期化する関数
 void format_dally(double **ally, int w, int h, double bright) {
 	int i, j;
+	#ifdef _OPENMP
+		#pragma omp parallel for private(i,j)
+    #endif
 	for(i=0; i<w; i++) {
 		for(j=0; j<h; j++) {
 			ally[i][j] = bright;
@@ -93,6 +105,9 @@ void format_dally(double **ally, int w, int h, double bright) {
 //double領域を開放する関数
 void Free_dally(double **ally, int w) {
 	int i;
+	#ifdef _OPENMP
+		#pragma omp parallel for private(i)
+    #endif
 	for(i=0; i < w; i++) { free(ally[i]);}
 	free(ally);
 }
@@ -564,28 +579,23 @@ PGM *gaussian_filter(PGM *pgm, double sigma)
 
 
 //ガウシアンフィルタ可変半径(double)
-double** gaussian_filter_d(double** in, double sigma, int width, int height)
+double** gaussian_filter_d(double** in, int c, double** filter, int width, int height)
 {
 	int i,j,k,l;
 	double sum=0;
+	double fil_sum;
 	double** new = create_dally(width, height);
 	//入力データをコピー
 	copy_dally(in, new, width, height);
 	
-	int w = (int)( ceil(3.0*sigma+0.5)*2-1 );
-	int c=(w-1)/2;
 	
-	double filter[w][w];
-	double fil_sum;
-	
-    for(i=0;i<w;i++){
-        for(j=0;j<w;j++){
-        	filter[i][j] = gause_func(i-c, j-c, sigma);
-        }
-    }
-	
+	#ifdef _OPENMP
+		#pragma omp parallel for private(i,j,sum,fil_sum)
+    #endif
 	for(i=0; i<width; i++) {
 		for(j=0; j<height; j++) {
+			sum = 0;
+			fil_sum = 0;
 			//注目している周囲cピクセルの値を合計し平均する
 			for(k=-c; k<=c; k++) { 
 				for(l=-c; l<=c; l++)  {
@@ -598,8 +608,6 @@ double** gaussian_filter_d(double** in, double sigma, int width, int height)
 				}
 			}
 			new[i][j] = sum/fil_sum;
-			sum = 0;
-			fil_sum = 0;
 		}
 	}
 	

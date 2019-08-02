@@ -47,12 +47,12 @@
 ////////////////	第二段階のパラメータ	/////////////////
 
 // ストローク半径の最大値。この大きさからストロークを始める（0のとき第二段階は用いられない）
-#define opt2_thick_max 0
+#define opt2_thick_max 2
 
 // ストローク半径の最小値。この大きさでストロークを終える
 #define opt2_thick_min 1
 
 // ストロークの半径ごとの繰り返し数。多いと丁寧に塗りつぶす
-#define opt2_loop_cont 3
+#define opt2_loop_cont 2
 
 #endif

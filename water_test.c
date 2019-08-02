@@ -3,6 +3,7 @@
 #include <math.h>
 #include <time.h>
 #include <stdlib.h>
+#include <omp.h>
 #include "sbr.h"
 #include "water.h"
 
@@ -10,16 +11,16 @@
 
 
 void ufvf_Test(int argc, char *argv[]);
-void UpdateVelocity_Test(int argc, char *argv[]);
-void RelaxDivergence_Test(int argc, char *argv[]);
+double UpdateVelocity_Test(int argc, char *argv[]);
+double RelaxDivergence_Test(int argc, char *argv[]);
 void FlowOutward_Test(int argc, char *argv[]);
-void MovePigment_Test(int argc, char *argv[]);
-void TransferPigment_Test(int argc, char *argv[]);
+double MovePigment_Test(int argc, char *argv[]);
+double TransferPigment_Test(int argc, char *argv[]);
 void calcu_grad_h_Test(int argc, char *argv[]);
-void Paint_Water_Test(int argc, char *argv[]);
-void Circle_fill_Water_Test(int argc, char *argv[]);
-void set_WetStroke_Test(int argc, char *argv[]);
-void Paint_Water_Stroke_Test(int argc, char *argv[]);
+double Paint_Water_Test(int argc, char *argv[]);
+double Circle_fill_Water_Test(int argc, char *argv[]);
+double set_WetStroke_Test(int argc, char *argv[]);
+double Paint_Water_Stroke_Test(int argc, char *argv[]);
 void SimulateCapillaryFlow_Test(int argc, char *argv[]);
 void SimulateCapillaryFlow_PaintTest(int argc, char *argv[]);
 
@@ -29,14 +30,27 @@ void SimulateCapillaryFlow_PaintTest(int argc, char *argv[]);
 
 
 int main(int argc, char *argv[]){
-    // mtrace();
-	clock_t start = clock();
-    for (int i = 0; i < 1; i++) {
-        Paint_Water_Stroke_Test(argc, argv);
+    int i, trials=1;
+    double tmp, Ave_TIME=0, min=9999, max=0;
+    struct timespec start,end;
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    #ifdef _OPENMP
+        omp_set_num_threads(atoi(argv[2]));
+    #endif
+
+    for (i = 0; i < trials; i++) {
+        tmp = Paint_Water_Stroke_Test(argc, argv);
+        Ave_TIME += tmp;
+        if(max<tmp) max=tmp;
+        if(min>tmp) min=tmp;
     }
     pn;
-	pd("All_Execution_TIME", (double)(clock()-start)/CLOCKS_PER_SEC);
-    // muntrace();
+
+    clock_gettime(CLOCK_MONOTONIC, &end);
+	pd("All_Execution_TIME", (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9);
+    printf("Ave_TIME:%f, max:%f, min:%f\n",Ave_TIME/trials, max, min);
     return 0;
 }
 
@@ -133,8 +147,9 @@ void ufvf_Test(int argc, char *argv[])
 }
 
 
-void UpdateVelocity_Test(int argc, char *argv[])
+double UpdateVelocity_Test(int argc, char *argv[])
 {
+    struct timespec start,end;
     int i,j;
     int width=128, height=128;
     double t;
@@ -146,7 +161,7 @@ void UpdateVelocity_Test(int argc, char *argv[])
     double** p = create_dally(width, height);
     PPM* u_img = create_ppm(width+1, height, 255);
     char filename[64]={};
-    char tmp_name[16]={};
+    // char tmp_name[16]={};
 
     for (i = 0; i < width; i++) {	//u,v,pの初期化
         for (j = 0; j < height; j++) {
@@ -166,22 +181,30 @@ void UpdateVelocity_Test(int argc, char *argv[])
     write_ppm(filename, u_img);
 
 	// UpdateVelocitieの変化の推移を出力
-    double var_t = 0.01;
-    for (t = 0; t < 10; t=t+var_t) {
+    double var_t = 0.1;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    for (t = 0; t < 5; t=t+var_t) {
         UpdateVelocities(M, u, v, p, var_t, width, height);
-        if((int)(t/var_t) % 100 == 0 ){
-            printf("%03d\n", (int)(t/var_t));
-            snprintf(tmp_name, 16, "%03d", (int)(t/var_t));
-            strcpy(filename, tmp_name);
-            strcat(filename, argv[1]);
-            trans_Vector_img(u_img, u, width+1, height);
-            write_ppm(filename, u_img);
-        }
+        // if((int)(t/var_t) % 100 == 0 ){
+        //     printf("%03d\n", (int)(t/var_t));
+        //     snprintf(tmp_name, 16, "%03d", (int)(t/var_t));
+        //     strcpy(filename, tmp_name);
+        //     strcat(filename, argv[1]);
+        //     trans_Vector_img(u_img, u, width+1, height);
+        //     write_ppm(filename, u_img);
+        // }
     }
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    double Ex_TIME = (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
+	pd("UV_Execution_TIME", Ex_TIME);
+    return Ex_TIME;
 }
 
 
-void RelaxDivergence_Test(int argc, char *argv[]){
+double RelaxDivergence_Test(int argc, char *argv[])
+{
+    struct timespec start,end;
+    double Ex_TIME=0;
     int i,j;
     int width=128, height=128;
     double t;
@@ -219,26 +242,31 @@ void RelaxDivergence_Test(int argc, char *argv[]){
     write_ppm(filename, p_img);
 
     double var_t = 0.1;
-    for (t = 0; t < 100; t=t+var_t) {
+    for (t = 0; t < 10; t=t+var_t) {
         UpdateVelocities(M, u, v, p, var_t, width, height);		// UpdateVelocitieの変化の推移を出力
-        if((int)(t/var_t) % 10 == 0 ){
-            printf("%03d\n", (int)(t/var_t));
-            snprintf(tmp_name, 16, "%03dUV", (int)(t/var_t));
-            strcpy(filename, tmp_name);
-            strcat(filename, argv[1]);
-            trans_Vector_img(u_img, u, width-1, height);
-            write_ppm(filename, u_img);
-        }
+        // if((int)(t/var_t) % 100 == 0 ){
+        //     printf("%03d\n", (int)(t/var_t));
+        //     snprintf(tmp_name, 16, "%03dUV", (int)(t/var_t));
+        //     strcpy(filename, tmp_name);
+        //     strcat(filename, argv[1]);
+        //     trans_Vector_img(u_img, u, width-1, height);
+        //     write_ppm(filename, u_img);
+        // }
+
+        clock_gettime(CLOCK_MONOTONIC, &start);
         RelaxDivergence(M, u, v, p, var_t, width, height);		// RelaxDivergenceの変化の推移を出力
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        Ex_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
+
         if((int)(t/var_t) % 10 == 0 ){
-            printf("%03d\n", (int)(t/var_t));
+            // printf("%03d\n", (int)(t/var_t));
             snprintf(tmp_name, 16, "%03dRD", (int)(t/var_t));
             strcpy(filename, tmp_name);
             strcat(filename, argv[1]);
             trans_Vector_img(u_img, u, width-1, height);
             write_ppm(filename, u_img);
 
-            printf("%03d\n", (int)(t/var_t));
+            // printf("%03d\n", (int)(t/var_t));
             snprintf(tmp_name, 16, "p%03d", (int)(t/var_t));
             strcpy(filename, tmp_name);
             strcat(filename, argv[1]);
@@ -246,10 +274,15 @@ void RelaxDivergence_Test(int argc, char *argv[]){
             write_ppm(filename, p_img);
         }
     }
+     
+	pd("RD_Execution_TIME", Ex_TIME);
+    return Ex_TIME;
 }
 
 
 void FlowOutward_Test(int argc, char *argv[]){
+    // struct timespec start,end;
+    // double Ex_TIME=0;
     int i,j;
     int width=128, height=128;
     int** M = create_ally(width, height);
@@ -278,7 +311,19 @@ void FlowOutward_Test(int argc, char *argv[]){
         }
     }
     
-    gauss_M = gaussian_filter_d(dM, K/6.0, width, height);
+    int w = (int)( ceil(3.0*K/6.0+0.5)*2-1 );
+	int c=(w-1)/2;
+	double** filter = create_dally(w, w);
+	
+	#ifdef _OPENMP
+		#pragma omp parallel for
+    #endif
+    for(i=0;i<w;i++){
+        for(j=0;j<w;j++){
+        	filter[i][j] = gause_func(i-c, j-c, K/6.0);
+        }
+    }
+    gauss_M = gaussian_filter_d(dM, c, filter, width, height);
 
     trans_Vector_img(fig_img, gauss_M, width, height);
     write_ppm("gaussM.ppm", fig_img);
@@ -315,7 +360,9 @@ void FlowOutward_Test(int argc, char *argv[]){
 }
 
 
-void MovePigment_Test(int argc, char *argv[]){
+double MovePigment_Test(int argc, char *argv[]){
+    struct timespec start,end;
+    double UV_TIME=0, RD_TIME=0, FO_TIME=0, MP_TIME=0;
     int i,j;
     int width=128, height=128;
     double t;
@@ -336,6 +383,17 @@ void MovePigment_Test(int argc, char *argv[]){
     char filename[64]={};
     char tmp_name[16]={};
 
+	int w = (int)( ceil(3.0*opt_K/6+0.5)*2-1 ); //とりあえず動く計算
+	int c=(w-1)/2;
+	double** filter = create_dally(w, w);	
+	#ifdef _OPENMP
+		#pragma omp parallel for private(i,j)
+    #endif
+    for(i=0;i<w;i++){
+        for(j=0;j<w;j++){
+        	filter[i][j] = gause_func(i-c, j-c, opt_K/6.0);
+        }
+    }
 
     for (i = 0; i < width; i++) {	//u,v,pの初期化
         for (j = 0; j < height; j++) {
@@ -365,25 +423,36 @@ void MovePigment_Test(int argc, char *argv[]){
     write_ppm(filename, paint_img);
 
     double var_t = 0.1;
-    for (t = 0; t < 5; t=t+var_t) {
+    for (t = 0; t < 10; t=t+var_t) {
+        clock_gettime(CLOCK_MONOTONIC, &start);
         UpdateVelocities(M, u, v, p, var_t, width, height);		// UpdateVelocitieの変化の推移を出力
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        UV_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
+
+        clock_gettime(CLOCK_MONOTONIC, &start);
         RelaxDivergence(M, u, v, p, var_t, width, height);		// RelaxDivergenceの変化の推移を出力
-        FlowOutward(M, p, var_t, width, height);
-        if((int)(t/var_t) % 100 == 0 ){
-            printf("%03d\n", (int)(t/var_t));
-            snprintf(tmp_name, 16, "%03dUV", (int)(t/var_t));
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        RD_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
+
+        clock_gettime(CLOCK_MONOTONIC, &start);
+        FlowOutward(M, p, c, filter, var_t, width, height);
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        FO_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
+        if((int)(t/var_t) % 10 == 0 ){
+            // printf("%03d\n", (int)(t/var_t));
+            snprintf(tmp_name, 16, "%03dFO", (int)(t/var_t));
             strcpy(filename, tmp_name);
             strcat(filename, argv[1]);
-            trans_Vector_img(u_img, u, width-1, height);
+            trans_Vector_img(u_img, p, width-1, height);
             write_ppm(filename, u_img);
         }
  
-	    clock_t start = clock();
+        clock_gettime(CLOCK_MONOTONIC, &start);
         MovePigment(M, u, v, gR, gG, gB, var_t, width, height);	// MovePigmentの変化の推移を出力
-        pn;
-	    pd("MP_Execution_TIME", (double)(clock()-start)/CLOCKS_PER_SEC);
-        if((int)(t/var_t) % 100 == 0 ){
-            printf("%03d\n", (int)(t/var_t));
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        MP_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
+        if((int)(t/var_t) % 10 == 0 ){
+            // printf("%03d\n", (int)(t/var_t));
             snprintf(tmp_name, 16, "MP%03d", (int)(t/var_t));
             strcpy(filename, tmp_name);
             strcat(filename, argv[1]);
@@ -397,12 +466,20 @@ void MovePigment_Test(int argc, char *argv[]){
             write_ppm(filename, paint_img);
         }
     }
+         
+	pd("UV_Execution_TIME", UV_TIME);
+	pd("RD_Execution_TIME", RD_TIME);
+	pd("FO_Execution_TIME", FO_TIME);
+	pd("MP_Execution_TIME", MP_TIME);
+    return MP_TIME;
 }
 
 
 
-void TransferPigment_Test(int argc, char *argv[])
+double TransferPigment_Test(int argc, char *argv[])
 {
+    struct timespec start,end;
+    double Ex_TIME=0;
     int i,j;
     int width=128, height=128;
     double t;
@@ -433,6 +510,17 @@ void TransferPigment_Test(int argc, char *argv[])
     char filename[64]={};
     char tmp_name[16]={};
 
+	int w = (int)( ceil(3.0*opt_K/6+0.5)*2-1 ); //とりあえず動く計算
+	int c=(w-1)/2;
+	double** filter = create_dally(w, w);	
+	#ifdef _OPENMP
+		#pragma omp parallel for private(i,j)
+    #endif
+    for(i=0;i<w;i++){
+        for(j=0;j<w;j++){
+        	filter[i][j] = gause_func(i-c, j-c, opt_K/6.0);
+        }
+    }
 
     for (i = 0; i < width; i++) {	//u,v,pの初期化
         for (j = 0; j < height; j++) {
@@ -462,12 +550,12 @@ void TransferPigment_Test(int argc, char *argv[])
     write_ppm(filename, paint_img);
 
     double var_t = 0.1;
-    for (t = 0; t < 100; t=t+var_t) {
+    for (t = 0; t < 10; t=t+var_t) {
         UpdateVelocities(M, u, v, p, var_t, width, height);		// UpdateVelocitieの変化の推移を出力
         RelaxDivergence(M, u, v, p, var_t, width, height);		// RelaxDivergenceの変化の推移を出力
-        FlowOutward(M, p, var_t, width, height);
+        FlowOutward(M, p, c, filter, var_t, width, height);
         if((int)(t/var_t) % 10 == 0 ){
-            printf("%03d\n", (int)(t/var_t));
+            // printf("%03d\n", (int)(t/var_t));
             snprintf(tmp_name, 16, "%03dUV", (int)(t/var_t));
             strcpy(filename, tmp_name);
             strcat(filename, argv[1]);
@@ -475,7 +563,7 @@ void TransferPigment_Test(int argc, char *argv[])
             write_ppm(filename, u_img);
         }
         if((int)(t/var_t) % 10 == 0 ){
-            printf("%03d\n", (int)(t/var_t));
+            // printf("%03d\n", (int)(t/var_t));
             snprintf(tmp_name, 16, "p%03d", (int)(t/var_t));
             strcpy(filename, tmp_name);
             strcat(filename, argv[1]);
@@ -498,10 +586,12 @@ void TransferPigment_Test(int argc, char *argv[])
         //     }
         //     write_ppm(filename, paint_img);
         // }
-
+        clock_gettime(CLOCK_MONOTONIC, &start);
         TransferPigment(M, h, gR, gG, gB, dR, dG, dB, var_t, width, height); // TransferPigmentの変化の推移を出力
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        Ex_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
         if((int)(t/var_t) % 10 == 0 ){
-            printf("%03d\n", (int)(t/var_t));
+            // printf("%03d\n", (int)(t/var_t));
             snprintf(tmp_name, 16, "TP%03d", (int)(t/var_t));
             strcpy(filename, tmp_name);
             strcat(filename, argv[1]);
@@ -515,6 +605,9 @@ void TransferPigment_Test(int argc, char *argv[])
             write_ppm(filename, paint_img);
         }
     }
+         
+	pd("TP_Execution_TIME", Ex_TIME);
+    return Ex_TIME;
 }
 
 
@@ -558,8 +651,10 @@ void calcu_grad_h_Test(int argc, char *argv[])
 
 
 
-void Paint_Water_Test(int argc, char *argv[])
+double Paint_Water_Test(int argc, char *argv[])
 {
+    struct timespec start,end;
+    double Ex_TIME=0;
     int i,j;
     int width=128, height=128;
     double** u = create_dally(width+1, height);
@@ -623,7 +718,10 @@ void Paint_Water_Test(int argc, char *argv[])
     }
     write_ppm(filename, paint_img);
 
+    clock_gettime(CLOCK_MONOTONIC, &start);
     Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    Ex_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
 
     strcpy(filename, "u1_");		//uの初期速度を画像として出力
     strcat(filename, argv[1]);
@@ -643,11 +741,16 @@ void Paint_Water_Test(int argc, char *argv[])
         }
     }
     write_ppm(filename, paint_img);
+             
+	pd("PW_Execution_TIME", Ex_TIME);
+    return Ex_TIME;
 }
 
 
-void Circle_fill_Water_Test(int argc, char *argv[]) 
+double Circle_fill_Water_Test(int argc, char *argv[]) 
 {
+    struct timespec start,end;
+    double Ex_TIME=0;
     int i,j;
     int t=20;
     RGB color = {200, 0, 100};
@@ -692,8 +795,11 @@ void Circle_fill_Water_Test(int argc, char *argv[])
     trans_Vector_img(p_img, dM, width, height);
     write_ppm(filename, p_img);
 
+    clock_gettime(CLOCK_MONOTONIC, &start);
     Circle_fill_Water(M, p, gR, gG, gB, SP, t, color, gauce_filter, width, height);
-    
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    Ex_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
+
     for(i=0; i<width; i++){
         for(j=0; j<height; j++){
             p[i][j] = p[i][j] * 2*t;    //ブラシを動かして塗り重ねないと水量が少なすぎてintだと消える
@@ -712,13 +818,18 @@ void Circle_fill_Water_Test(int argc, char *argv[])
     strcpy(filename, "M1_");		//pの初期速度を画像として出力
     strcat(filename, argv[1]);
     trans_Vector_img(p_img, dM, width, height);
-    write_ppm(filename, p_img);
+    write_ppm(filename, p_img);          
+
+	pd("CfW_Execution_TIME", Ex_TIME);
+    return Ex_TIME;
 }
 
 
 
-void set_WetStroke_Test(int argc, char *argv[])
+double set_WetStroke_Test(int argc, char *argv[])
 {
+    struct timespec start,end;
+    double Ex_TIME=0;
     int i,j;
     int t=20;
     int pnum=5;
@@ -771,7 +882,10 @@ void set_WetStroke_Test(int argc, char *argv[])
     trans_Vector_img(p_img, dM, width, height);
     write_ppm(filename, p_img);
 
+    clock_gettime(CLOCK_MONOTONIC, &start);
     set_WetStroke(M, p, gR, gG, gB, SP, pnum, t, color, gauce_filter, width, height);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    Ex_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
     
     for(i=0; i<width; i++){
         for(j=0; j<height; j++){
@@ -803,12 +917,17 @@ void set_WetStroke_Test(int argc, char *argv[])
         }
     }
     write_ppm(filename, paint_img);
+                 
+	pd("sWS_Execution_TIME", Ex_TIME);
+    return Ex_TIME;
 }
 
 
 
-void Paint_Water_Stroke_Test(int argc, char *argv[]) 
+double Paint_Water_Stroke_Test(int argc, char *argv[]) 
 {
+    struct timespec start,end;
+    double Ex_TIME=0;
     int i,j;
     int t=20;
     int pnum=5;
@@ -856,15 +975,16 @@ void Paint_Water_Stroke_Test(int argc, char *argv[])
     strcat(filename, argv[1]);
     write_ppm(filename, Canvas_img);
 
-    clock_t start = clock();
+    clock_gettime(CLOCK_MONOTONIC, &start);
     Paint_Water_Stroke(SP1, pnum, t, color, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    Ex_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
 
     strcpy(filename, "C1_");    // ペイント1後のキャンバスを出力
     strcat(filename, argv[1]);
     write_ppm(filename, Canvas_img);
 
     Paint_Water_Stroke(SP2, pnum, t, color2, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
-    pd("TOTAL_TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
 
     strcpy(filename, "C2_");    // ペイント2後のキャンバスを出力
     strcat(filename, argv[1]);
@@ -875,6 +995,9 @@ void Paint_Water_Stroke_Test(int argc, char *argv[])
     Free_dally(grad_hy,width);
     Free_dally(gauce_filter,2*t+1);
     FreePPM(Canvas_img);
+                 
+	pd("PWS_Execution_TIME", Ex_TIME);
+    return Ex_TIME;
 }
 
 
@@ -883,6 +1006,7 @@ void SimulateCapillaryFlow_Test(int argc, char *argv[])
 {
     int i,j;
     int width=128, height=128;
+    double t;
     double var_t=0.5;
     int** M = create_ally(width, height);
     double** dM = create_dally(width, height);
@@ -913,7 +1037,7 @@ void SimulateCapillaryFlow_Test(int argc, char *argv[])
     trans_Vector_img(fig_img, dM, width, height);
     write_ppm("WetAreaO.ppm", fig_img);
 
-    for (double t = 0; t < 10; t+=var_t){
+    for (t = 0; t < 10; t+=var_t){
         SimulateCapillaryFlow(M, p, h, s, var_t, width, height);
         
         snprintf(count_name, 16, "%02d", (int)(t*2));
@@ -972,6 +1096,17 @@ void SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
     format_dally(dG, width, height, 0);
     format_dally(dB, width, height, 0);
 
+	int w = (int)( ceil(3.0*opt_K/6+0.5)*2-1 ); //とりあえず動く計算
+	int c=(w-1)/2;
+	double** filter = create_dally(w, w);	
+	#ifdef _OPENMP
+		#pragma omp parallel for private(i,j)
+    #endif
+    for(i=0;i<w;i++){
+        for(j=0;j<w;j++){
+        	filter[i][j] = gause_func(i-c, j-c, opt_K/6.0);
+        }
+    }
 
     char count_name[8];
     char out_name[32];
@@ -1011,7 +1146,7 @@ void SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
     {   
         UpdateVelocities(M, u, v, p, var_t, width, height);	
         RelaxDivergence(M, u, v, p, var_t, width, height);
-        FlowOutward(M, p, var_t, width, height);
+        FlowOutward(M, p, c, filter, var_t, width, height);
         MovePigment(M, u, v, gR, gG, gB, var_t, width, height);
         TransferPigment(M, h, gR, gG, gB, dR, dG, dB, var_t, width, height);
         if(opt_USE_Backrun) SimulateCapillaryFlow(M, p, h, s, var_t, width, height);

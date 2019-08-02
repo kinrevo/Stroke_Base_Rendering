@@ -206,6 +206,6 @@ void format_dally(double **ally, int w, int h, double bright);
 
 void copy_dally(double **ally, double **ally2, int w, int h);
 
-double** gaussian_filter_d(double** in, double sigma, int width, int height);
+double** gaussian_filter_d(double** in,  int c, double** filter, int width, int height);
 
 #endif
