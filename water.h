@@ -13,7 +13,7 @@
 // RelaxDivergence：減衰の閾値(def:)
 #define opt_tau 0.01
 // RelaxDivergence：減衰の係数(def:)
-#define opt_xi 0.01
+#define opt_xi 0.1
 // FlowOutward：ガウスフィルタの直径(def:10)
 #define opt_K 10
 // FlowOutward：減衰係数(def:0.01-0.05)
