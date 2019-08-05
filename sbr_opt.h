@@ -40,8 +40,11 @@
 // ストローク方向の決定においてガウス重みによるヒストグラムを用いるか
 #define opt_USE_gause_histogram 0
 
+// 最適ストローク手法を用いるかどうか
+#define opt_USE_Best_Stroke_Method 1
+
 // 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
-#define opt_optimal_improved_value_border 15
+#define opt_optimal_improved_value_border 0
 
 
 ////////////////	第二段階のパラメータ	/////////////////

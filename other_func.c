@@ -931,6 +931,17 @@ void light_dot(int x, int y, PGM* in_img, int bright) {
 
 
 
+//配列を端末表示する関数
+void display_Point_ally(Point *ally, int pnum) {
+	int i;
+	printf("(%.1f,%.1f)",ally[0].x,ally[0].y);
+	for(i=1; i<pnum; i++) {
+		printf("->(%.1f,%.1f)", ally[i].x,ally[i].y);
+	}
+	printf("\n");
+}
+
+
 /////////////////////////////////////////////
 //			その他の関数群			   
 /////////////////////////////////////////////

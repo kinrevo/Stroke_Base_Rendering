@@ -6,6 +6,9 @@
 #include <omp.h>
 #include "water.h"
 
+PGM* GLOBAL_improved_value_map;
+
+
 //　試しに描いてみて誤差を確認(water)
 int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, int t, double** h, double** grad_hx, double** grad_hy, double** gauce_filter)
 {
@@ -196,6 +199,8 @@ void Circle_fill_Water(int** M, double** p, double** gR, double** gG, double** g
                 gR[x][y] = 1-color.R/255.0;     //RGB[0,255]->CMY[0,1]
                 gG[x][y] = 1-color.G/255.0;
                 gB[x][y] = 1-color.B/255.0;
+                
+                GLOBAL_improved_value_map->data[x][y] = UNCALCULATED;
 			}
 		}
 	}
@@ -213,10 +218,10 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
 
     // char count_name[8];
     // char out_name[32];
-    double** dM = create_dally(width, height);
+    // double** dM = create_dally(width, height);
     // int paint_count=0;
     // PPM* fig_img = create_ppm(width, height, 255);
-    PPM* Canvas_img = create_ppm(width, height, 255);
+    // PPM* Canvas_img = create_ppm(width, height, 255);
 
 	int w = (int)( ceil(3.0*opt_K/6.0+0.5)*2-1 ); //とりあえず動く計算
 	int c=(w-1)/2;
@@ -491,7 +496,7 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
 void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t, int width, int height)
 {
     int i,j;
-    int K=opt_K;
+    // int K=opt_K;
     double eta=opt_eta;
     double** dM = create_dally(width, height);  //関数に渡すためにdouble型に変換
     double** gauss_M = gaussian_filter_d(dM, c, gause_filter, width, height);

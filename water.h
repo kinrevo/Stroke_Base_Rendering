@@ -57,22 +57,18 @@ void TransferPigment(int** M, double** h, double** gR, double** gG, double** gB,
 void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, double** gB, double var_t, int width, int height);
 void SimulateCapillaryFlow(int** M, double** p, double** c, double** s, double var_t, int width, int height);
 void MoveWater(int** M,  double** u, double** v, double** p, double var_t, int width, int height);
-
-
+double** perlin_img(int width, int height, double freq, int depth);
 void calcu_grad_h(double** h, double** grad_hx, double** grad_hy, int width, int height);
+
+
 void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, 
                             double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height);
 void set_WetStroke(int** M, double** p, double** gR, double** gG, double** gB, Point SP[], int pnum, int thick, RGB color, double** gauce_filter, int width, int height);
 void Circle_fill_Water(int** M, double** p, double** gR, double** gG, double** gB, Point SP, int r, RGB color, double** gauce_filter, int width, int height);
 void Paint_Water(int** M, double** u, double** v, double** p, double** h, double** grad_hx, double** grad_hy, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, int width, int height);
-PPM *c_Illust_brush_Water(PPM *in, char *filename);
-
 int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, int t, double** h, double** grad_hx, double** grad_hy, double** gauce_filter);
 
 void trans_Vector_img(PPM* img, double** u, int width, int height);
-
-double** perlin_img(int width, int height, double freq, int depth);
-
 
 
 #endif
