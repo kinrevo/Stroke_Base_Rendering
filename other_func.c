@@ -116,7 +116,7 @@ void Free_dally(double **ally, int w) {
 
 // 配列中の最大値を探索しPointを返す
 Point search_max_Point(int **ally, int w, int h) {
-	int y, x, max_value=-999999;
+	int y, x, max_value=-99999999;
 	Point max;
 	max.x=0; max.y=0;
 	for(y=0; y<h; y++) {
