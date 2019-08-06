@@ -391,10 +391,10 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 					snprintf(count_name, 16, "%d", paint_count);
 					strcat(out_filename, "_s");
 					strcat(out_filename, count_name);
-					strcat(out_filename, ".jpg");
+					strcat(out_filename, ".png");
 					out_png = PPM_to_image(nimgC);
 					// out_png = PPM_to_image(nimgC_Scaling);
-					if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+					if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
 					free_image(out_png);
 					printf("%s\n",out_filename);
 					printf("%d:",t);
@@ -414,10 +414,10 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 			snprintf(count_name, 16, "%02d", t);
 			strcat(out_filename, "__t");
 			strcat(out_filename, count_name);
-			strcat(out_filename, ".jpg");
+			strcat(out_filename, ".png");
 			out_png = PPM_to_image(nimgC);
 			// out_png = PPM_to_image(nimgC_Scaling);
-			if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+			if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
 			free_image(out_png);
 			printf("%s\n",out_filename);
 			printf("%d:",t);
@@ -442,10 +442,10 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	strcat(out_filename, in_filename);
 	strcat(out_filename, "__t");
 	strcat(out_filename, count_name);
-	strcat(out_filename, ".jpg");
+	strcat(out_filename, ".png");
 	out_png = PPM_to_image(nimgC);
 	// out_png = PPM_to_image(nimgC_Scaling);
-	if(write_jpeg_file(out_filename, out_png)){ printf("WRITE JPG ERROR.");}
+	if(write_png_file(out_filename, out_png)){ printf("WRITE JPG ERROR.");}
 	free_image(out_png);
 	printf("%s\n",out_filename);
 	tc=t;
@@ -633,10 +633,10 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 			snprintf(count_name, 16, "%02d", lc);
 			strcat(out_filename, "_lc");
 			strcat(out_filename, count_name);
-			strcat(out_filename, ".jpg");
+			strcat(out_filename, ".png");
 			out_png = PPM_to_image(nimgC);
 			// out_png = PPM_to_image(nimgC_Scaling);
-			if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+			if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
 			free_image(out_png);
 			printf("%s\n",out_filename);
 			printf("%d:",t);
@@ -1088,10 +1088,10 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					snprintf(count_name, 16, "%d", nc);
 					strcat(out_filename, "_s");
 					strcat(out_filename, count_name);
-					strcat(out_filename, ".jpg");
+					strcat(out_filename, ".png");
 					out_png = PPM_to_image(nimgC);
 					// out_png = PPM_to_image(nimgC_Scaling);
-					if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+					if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
 					free_image(out_png);
 					printf("%s\n",out_filename);
 					printf("%d:",t);
@@ -1118,10 +1118,10 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			snprintf(count_name, 16, "%02d", t);
 			strcat(out_filename, "__t");
 			strcat(out_filename, count_name);
-			strcat(out_filename, ".jpg");
+			strcat(out_filename, ".png");
 			out_png = PPM_to_image(nimgC);
 			// out_png = PPM_to_image(nimgC_Scaling);
-			if(write_jpeg_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+			if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
 			free_image(out_png);
 			printf("%s\n",out_filename);
 			printf("%d:",t);
@@ -1146,10 +1146,10 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	strcat(out_filename, in_filename);
 	strcat(out_filename, "__t");
 	strcat(out_filename, count_name);
-	strcat(out_filename, ".jpg");
+	strcat(out_filename, ".png");
 	out_png = PPM_to_image(nimgC);
 	// out_png = PPM_to_image(nimgC_Scaling);
-	if(write_jpeg_file(out_filename, out_png)){ printf("WRITE JPG ERROR.");}
+	if(write_png_file(out_filename, out_png)){ printf("WRITE JPG ERROR.");}
 	free_image(out_png);
 	printf("%s\n",out_filename);
 	tc=t;
