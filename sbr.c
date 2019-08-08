@@ -552,30 +552,58 @@ int calcu_Stroke_Point(PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimg
 
 
 // 描画したストロークの周囲のみ改善値マップをリセット
-void reset_improved_value_map(PGM* map, Point* p, int pnum, int t, int max_stroke){
-	int i,x,y;
+void reset_improved_value_map(PGM* improved_map, Point* sp, int pnum, Stroke*** best_stroke_map, int t, int max_stroke) {
+	int i,j,x,y,distance;
 	int left_end,right_end,upper_end,lower_end;
 	
 	// ストロークの各制御点から最大ストローク長だけ離れた座標までリセット
 	for(i=0; i<pnum; i++){
 		// ストロークの最大長＋描画されたストロークの半径＋誤差吸収遊び
-		left_end  = p[i].x - t*max_stroke - t -2;
-		right_end = p[i].x + t*max_stroke + t +2;
-		upper_end = p[i].y - t*max_stroke - t -2;
-		lower_end = p[i].y + t*max_stroke + t +2; 
+		left_end  = sp[i].x - t*max_stroke - t -2;
+		right_end = sp[i].x + t*max_stroke + t +2;
+		upper_end = sp[i].y - t*max_stroke - t -2;
+		lower_end = sp[i].y + t*max_stroke + t +2; 
 		if(left_end<0)left_end=0; 
-		if(map->width <= right_end)right_end=map->width-1; 
+		if(improved_map->width <= right_end)right_end=improved_map->width-1; 
 		if(upper_end<0)upper_end=0; 
-		if(map->height <= lower_end)lower_end=map->height-1; 
-		
-		for(y=upper_end; y<=lower_end; y++) { 
-			for(x=left_end; x<=right_end; x++) {  
-				map->data[x][y] = UNCALCULATED;
+		if(improved_map->height <= lower_end)lower_end=improved_map->height-1; 
+	}
+	//ストローク点を囲む端の座標を特定
+	left_end=right_end=sp[0].x;
+	upper_end=lower_end=sp[0].y;
+	for(i=1; i<pnum; i++){
+		if(sp[i].x < left_end) left_end=sp[i].x;
+		if(right_end < sp[i].x) right_end=sp[i].x;
+		if(sp[i].y < upper_end) upper_end=sp[i].y;
+		if(lower_end < sp[i].y) lower_end=sp[i].y;
+	}
+	//ストローク半径分、端座標を膨張
+	left_end  -= t*max_stroke + t+2; 
+	right_end += t*max_stroke + t+2; 
+	upper_end -= t*max_stroke + t+2; 
+	lower_end += t*max_stroke + t+2;
+	if(left_end<0)left_end=0; 
+	if(improved_map->width <= right_end)right_end=improved_map->width-1; 
+	if(upper_end<0)upper_end=0; 
+	if(improved_map->height <= lower_end)lower_end=improved_map->height-1; 
+
+	for(y=upper_end; y<=lower_end; y++) { 
+		for(x=left_end; x<=right_end; x++) {
+			// 描画したストローク制御点と重なるストロークのみを再計算
+			for(i=0; i<pnum; i++){
+				for(j=0; j<best_stroke_map[x][y]->pnum; j++) {
+					distance = (sp[i].x - best_stroke_map[x][y]->p[j].x)*(sp[i].x - best_stroke_map[x][y]->p[j].x) + (sp[i].y - best_stroke_map[x][y]->p[j].y)*(sp[i].y - best_stroke_map[x][y]->p[j].y);	// 点と点のユークリッド距離
+					if(distance*distance < t*t){
+						improved_map->data[x][y] = UNCALCULATED;
+						goto RIM_loopend;
+					}
+				}
 			}
+			RIM_loopend: ;
 		}
 	}
-	
 }
+
 
 
 

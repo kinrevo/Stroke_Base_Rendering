@@ -31,9 +31,6 @@ int **create_ally(int width, int height) {
 double **create_dally(int width, int height) {
 	int i;
 	double **buf = (double**)malloc(sizeof(double*)*(width));
-	#ifdef _OPENMP
-		#pragma omp parallel for private(i)
-    #endif
 	for(i=0; i<width; i++) { buf[i]=(double*)malloc(sizeof(double)*(height)); }
 	return buf;
 }

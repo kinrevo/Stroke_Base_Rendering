@@ -200,7 +200,7 @@ void Circle_fill_Water(int** M, double** p, double** gR, double** gG, double** g
                 gG[x][y] = 1-color.G/255.0;
                 gB[x][y] = 1-color.B/255.0;
                 
-                GLOBAL_improved_value_map->data[x][y] = UNCALCULATED;
+                // GLOBAL_improved_value_map->data[x][y] = UNCALCULATED;
 			}
 		}
 	}
@@ -409,14 +409,14 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
     int i,j,t;
     double delta, delta_MAX;
     double delta_SUM;
-    double N=opt_N, tau=opt_tau, xi=opt_xi;
+    // double N=opt_N, tau=opt_tau, xi=opt_xi;
     double** new_u = create_dally(width+1, height);
     double** new_v = create_dally(width, height+1);
     format_dally(new_u, width+1, height, 0);
     format_dally(new_v, width, height+1, 0);
 
 
-    for (t = 0; t < N; t++)
+    for (t = 0; t < opt_N; t++)
     {
         delta_MAX = delta_SUM = 0;
         copy_dally(u, new_u, width+1, height);
@@ -424,7 +424,7 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
 
         #ifdef _OPENMP  // OpenMP用の処理
         int Break_flag=1;
-        double th_delta_MAX=0;
+        // double th_delta_MAX=0;
 
         #pragma omp parallel private(i,j,delta)
         {
@@ -469,7 +469,7 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
         for(i=0; i<width; i++){
             for(j=0; j<height; j++){
                 if(M[i][j]==1){
-                    delta = xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
+                    delta = opt_xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
                     p[i][j] = fmax(0, p[i][j] - delta);     // 計算符号正負不明、fmaxがないと水量が負になる
                     new_u[i+1][j] = new_u[i+1][j] - delta;
                     new_u[i][j] = new_u[i][j] + delta;
@@ -479,7 +479,7 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
                 }
             }
         }
-        if(delta_MAX<tau) break;
+        if(delta_MAX<opt_tau) break;
         #endif
 
         // pd("deltaMAX",delta_MAX);

@@ -8,6 +8,8 @@
 #define Reversal_OFF 0
 #define UNCALCULATED -999999
 #define MIN_STROKE -111111
+#define SMALL_DIFF -222222
+#define SAME_STROKE -333333
 
 #define pnum(a) printf("%d\n",a)
 #define p(s,a) printf("%s:%d\n",s,a)
@@ -150,8 +152,6 @@ int calcu_Stroke_Point(PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimg
 		Point* Stroke_P, int direct_reversal_flag);
 		
 Point search_max_Point(int **ally, int w, int h);
-void reset_improved_value_map(PGM* map, Point* p, int pnum, int t, int max_stroke);
-
 Stroke *create_Stroke(int pnum);
 Stroke ***create_Stroke_ally(int width, int height, int max_stroke);
 
@@ -164,4 +164,6 @@ void copy_dally(double **ally, double **ally2, int w, int h);
 double** gaussian_filter_d(double** in,  int c, double** filter, int width, int height);
 
 void display_Point_ally(Point *ally, int pnum);
+
+void reset_improved_value_map(PGM* improved_map, Point* sp, int pnum, Stroke*** best_stroke_map, int t, int max_stroke);
 #endif

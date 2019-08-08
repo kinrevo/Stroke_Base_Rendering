@@ -104,7 +104,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	double **gauce_filter;
 	double sigma, diff_sum, sum;
 	int histogram_partition=opt_histogram_partition;
-	// int histogram_direct[31]={}; 
 	int paint_count=0, nc=0, tc=-1;
 	int loop_cont=opt_loop_cont, x_defo=0, y_defo=0;
 	int lc=0;
@@ -829,7 +828,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	Point best_P;
 	int optimal_improved_value_border = opt_optimal_improved_value_border;
 	// int diff_stroke=0;
-	Point before_P={0,0};
+	// Point before_P={0,0};
 
     //Water実装
     double** h = perlin_img(in->width, in->height, opt_perlin_freq, opt_perlin_depth);
@@ -892,7 +891,8 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					
 					//差分の合計平均(画素当たりの差分)が一定以上ならストローク開始位置とする
 					if(diff_sum < window_diff_border) {
-						stroke_histogram[pnum]++;
+						// stroke_histogram[pnum]++;
+						GLOBAL_improved_value_map->data[best_x][best_y] = SMALL_DIFF;
 						continue;
 					}
 					pnum=1;		//第一点確定
@@ -988,14 +988,14 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					
 					//　試しに描いてみて誤差を確認
 					if(pnum>=min_stroke){
-						// diff_stroke = test_stroke(test_Canvas, cmprR, cmprG, cmprB, nimgR, nimgG, nimgB, p, pnum, t, bright.R, bright.G, bright.B, ratio);
-						GLOBAL_improved_value_map->data[x][y] = diff_sum;
 						//現在のストロークが保存している開始点のものより良いなら更新
 						for(i=0; i<pnum; i++){
 							best_stroke_map[x][y]->p[i] = p[i];
 						}
 						best_stroke_map[x][y]->color=bright;
 						best_stroke_map[x][y]->pnum=pnum;
+						// GLOBAL_improved_value_map->data[x][y] = diff_sum;
+						GLOBAL_improved_value_map->data[x][y] = test_water_stroke(test_Canvas, in, nimgC, best_stroke_map[x][y], t, h, grad_hx, grad_hy, gauce_filter);
 					}else if(pnum<min_stroke){
 						GLOBAL_improved_value_map->data[x][y] = MIN_STROKE;
 					}
@@ -1010,30 +1010,29 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			// 改善値マップ中の最大値を探索
 			best_P = search_max_Point(GLOBAL_improved_value_map->data, GLOBAL_improved_value_map->width, GLOBAL_improved_value_map->height);
 			best_x=best_P.x;  best_y=best_P.y;
-			if(best_P.x==before_P.x && best_P.y==before_P.y){
-				GLOBAL_improved_value_map->data[best_x][best_y] = MIN_STROKE;
-				printf("LOUP_STROKE:[%d,%d]->",best_x,best_y);
-				best_P = search_max_Point(GLOBAL_improved_value_map->data, GLOBAL_improved_value_map->width, GLOBAL_improved_value_map->height);
-				best_x=best_P.x;  best_y=best_P.y;
-				printf("[%d,%d]\n",best_x,best_y);
-			}
-			before_P.x = best_P.x; before_P.y = best_P.y;
+			// if(best_P.x==before_P.x && best_P.y==before_P.y){
+			// 	GLOBAL_improved_value_map->data[best_x][best_y] = SAME_STROKE;
+			// 	printf("LOOP_STROKE:[%d,%d]->",best_x,best_y);
+			// 	best_P = search_max_Point(GLOBAL_improved_value_map->data, GLOBAL_improved_value_map->width, GLOBAL_improved_value_map->height);
+			// 	best_x=best_P.x;  best_y=best_P.y;
+			// 	printf("[%d,%d]\n",best_x,best_y);
+			// }
+			// before_P.x = best_P.x; before_P.y = best_P.y;
 			// diff_stroke_max = test_water_stroke(test_Canvas, in, nimgC, best_stroke_map[best_x][best_y], t, h, grad_hx, grad_hy, gauce_filter);
 			diff_stroke_max = GLOBAL_improved_value_map->data[best_x][best_y];
 			
 			// 直近の50のストロークでの変化がほとんどなければ次の半径ステップに移行
-			// if(t==1)optimal_improved_value_border = 1;
-			int diff_test_stroke_ave[50];
+			// int diff_test_stroke_ave[50];
 			diff_stroke_max_ave[s_count%50] = diff_stroke_max;
-			diff_test_stroke_ave[s_count%50] = test_water_stroke(test_Canvas, in, nimgC, best_stroke_map[best_x][best_y], t, h, grad_hx, grad_hy, gauce_filter);
+			// diff_test_stroke_ave[s_count%50] = test_water_stroke(test_Canvas, in, nimgC, best_stroke_map[best_x][best_y], t, h, grad_hx, grad_hy, gauce_filter);
 			if(s_count%50 == 49)
 			{
 				tmp_num=0;
 				for(i=0; i<50; i++) tmp_num+=diff_stroke_max_ave[i];
 				p("Stroke_MAX_AVE", tmp_num);
 				tmp_num=0;
-				for(i=0; i<50; i++) tmp_num+=diff_test_stroke_ave[i];
-				p("test_STROKE_AVE", tmp_num);
+				// for(i=0; i<50; i++) tmp_num+=diff_test_stroke_ave[i];
+				// p("test_STROKE_AVE", tmp_num);
 				// printf("C:[%d,%d,%d]",best_stroke_map[best_x][best_y]->color.R, best_stroke_map[best_x][best_y]->color.G, best_stroke_map[best_x][best_y]->color.B);
 				// display_Point_ally(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum);
 				// if(tmp_num/50 < optimal_improved_value_border) {
@@ -1071,7 +1070,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			Paint_Water_Stroke(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, t, best_stroke_map[best_x][best_y]->color, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);	
 			
 			// 描画したストロークの周囲のみ改善値マップをリセット
-			// reset_improved_value_map(GLOBAL_improved_value_map, best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, t, max_stroke);
+			reset_improved_value_map(GLOBAL_improved_value_map, best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, best_stroke_map, t, max_stroke);
 			
 					
 			//一定ストロークごとに途中経過画像を書き出す

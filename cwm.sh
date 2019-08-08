@@ -1,0 +1,1 @@
+gcc -g3 -owater -lm ImageIO/png.c ImageIO/image.c ImageIO/jpeg.c other_func.c sbr.c water.c -lpng -ljpeg -O2 -Wall -Wno-unknown-pragmas water_main.c
