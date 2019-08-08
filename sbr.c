@@ -556,18 +556,6 @@ void reset_improved_value_map(PGM* improved_map, Point* sp, int pnum, Stroke*** 
 	int i,j,x,y,distance;
 	int left_end,right_end,upper_end,lower_end;
 	
-	// ストロークの各制御点から最大ストローク長だけ離れた座標までリセット
-	for(i=0; i<pnum; i++){
-		// ストロークの最大長＋描画されたストロークの半径＋誤差吸収遊び
-		left_end  = sp[i].x - t*max_stroke - t -2;
-		right_end = sp[i].x + t*max_stroke + t +2;
-		upper_end = sp[i].y - t*max_stroke - t -2;
-		lower_end = sp[i].y + t*max_stroke + t +2; 
-		if(left_end<0)left_end=0; 
-		if(improved_map->width <= right_end)right_end=improved_map->width-1; 
-		if(upper_end<0)upper_end=0; 
-		if(improved_map->height <= lower_end)lower_end=improved_map->height-1; 
-	}
 	//ストローク点を囲む端の座標を特定
 	left_end=right_end=sp[0].x;
 	upper_end=lower_end=sp[0].y;
@@ -587,6 +575,7 @@ void reset_improved_value_map(PGM* improved_map, Point* sp, int pnum, Stroke*** 
 	if(upper_end<0)upper_end=0; 
 	if(improved_map->height <= lower_end)lower_end=improved_map->height-1; 
 
+	#pragma omp parallel for private(x,y,i,j,distance)
 	for(y=upper_end; y<=lower_end; y++) { 
 		for(x=left_end; x<=right_end; x++) {
 			// 描画したストローク制御点と重なるストロークのみを再計算
