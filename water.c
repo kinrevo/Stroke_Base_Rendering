@@ -205,7 +205,6 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
     static int first_flag=1;
     int i,j;
     double t, var_t;
-    double max=0;
     double** s;
     static int w;
     static int c;
@@ -238,34 +237,32 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
     for(i=0; i<width; i++){
         for(j=0; j<height; j++){
             u[i][j] = u[i][j] - grad_hx[i][j];
-            max = fmax( max, fabs(u[i][j]) );
             v[i][j] = v[i][j] - grad_hy[i][j];
-            max = fmax( max, fabs(v[i][j]) );
         }
     }
 
-    var_t = fmin(1/max, opt_SoakTimeStep);  // maxは１以下なのでおかしい・・・おかしくない？
+    var_t = opt_SoakTimeStep;  
     
     // format_ally(M, width, height, 1);  ///////////////////////////////////全体をウェットエリアにしても変わらない
 
     for ( t = 0; t < opt_SoakTime; t=t+var_t)
     {   
-        // double start = my_clock();
+        double start = my_clock();
         UpdateVelocities(M, u, v, p, var_t, width, height);	
-        // pd("    UV[s]",my_clock()-start);
+        pd("    UV[s]",my_clock()-start);
         if(opt_USE_MoveWater) MoveWater(M, u, v, p, var_t, width, height);
-        // start = my_clock();
+        start = my_clock();
         RelaxDivergence(M, u, v, p, var_t, width, height);
-        // pd("    RD[s]",my_clock()-start);
-        // start = my_clock();
+        pd("    RD[s]",my_clock()-start);
+        start = my_clock();
         FlowOutward(M, p, c, filter, var_t, width, height);
-        // pd("    FO[s]",my_clock()-start);
-        // start = my_clock();
+        pd("    FO[s]",my_clock()-start);
+        start = my_clock();
         MovePigment(M, u, v, gR, gG, gB, var_t, width, height);
-        // pd("    MP[s]",my_clock()-start);
-        // start = my_clock();
+        pd("    MP[s]",my_clock()-start);
+        start = my_clock();
         TransferPigment(M, h, gR, gG, gB, dR, dG, dB, var_t, width, height);
-        // pd("    TP[s]",my_clock()-start);
+        pd("    TP[s]",my_clock()-start);
         if(opt_USE_Backrun) SimulateCapillaryFlow(M, p, h, s, var_t, width, height);
 
         // #pragma omp parallel for private(i,j)
@@ -317,7 +314,8 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
 void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t, int width, int height) {
     static int first_flag=1;
     int i,j;
-    double A,B;
+    double t,A,B;
+    double max_verocity=0;
 
     static double **new_u,**new_v;
     if(first_flag){
@@ -329,63 +327,71 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
     format_dally(new_u, width+1, height, 0);
     format_dally(new_v, width, height+1, 0);
 
-    #pragma omp parallel
-    {
-        #pragma omp for private(i,j,A,B) schedule(static, 1)
-        for (i = 0; i < width-1; i++){    // x:[i-0.5,i+1.5]
-            for (j = 1; j < height-1; j++)    // y:[j-1.0,j+1.0]
-            {
-                // (uv)i+0.5,j-0.5 = uf(u, i+0.5, j)*vf(v, i, j-0.5)
-                //u[i][j]はu[i+0.5][j]
-                if(M[i][j]==1){
-                    A = pow((u[i][j]+u[i+1][j])/2, 2) - pow((u[i+1][j]+u[i+2][j])/2, 2) + (u[i+1][j-1]+u[i+1][j])/2*(v[i][j]+v[i+1][j])/2 - (u[i+1][j]+u[i+1][j+1])/2*(v[i][j+1]+v[i+1][j+1])/2;
-                    B = u[i+2][j] + u[i][j] + u[i+1][j+1] + u[i+1][j-1] - 4*u[i+1][j];
-                    new_u[i+1][j] = u[i+1][j] + var_t*(A - opt_mhu*B + p[i][j] - p[i+1][j] - opt_kappa*u[i+1][j]);  
-                }else if(M[i][j]==0){   //ウェットエリア外を速度０に
-                    // new_u[i][j] = 0;
-                    new_u[i+1][j] = 0;
-                }else{
-                    printf("UV_ERROR:M=%d,x=%d,y=%d\n", M[i][j], i, j);
-                }
-            }
-            // printf("[%d,%d]=thread_num:%d, num_thread:%d\n",i,j,omp_get_thread_num(),omp_get_max_threads());
+    #pragma omp parallel for private(i,j) reduction(max : max_verocity)
+    for(i=0; i<width; i++) {
+        for(j=0; j<height; j++) {
+            max_verocity = fmax( max_verocity, fabs(u[i][j]) );
+            max_verocity = fmax( max_verocity, fabs(v[i][j]) );
         }
-
-        #pragma omp for private(i,j,A,B) schedule(static, 1)
-        for (i = 1; i < width-1; i++){
-            for (j = 0; j < height-1; j++)
-            {
-                if(M[i][j]==1){
-                    A = pow((v[i][j]+v[i][j+1])/2, 2) - pow((v[i][j+1]+v[i][j+2])/2, 2) + (u[i][j]+u[i][j+1])/2*(v[i-1][j+1]+v[i][j+1])/2 - (u[i+1][j]+u[i+1][j+1])/2*(v[i][j+1]+v[i+1][j+1])/2;
-                    B = v[i+1][j+1] + v[i-1][j+1] + v[i][j+2] + v[i][j] - 4*v[i][j+1];
-                    new_v[i][j+1] = v[i][j+1] + var_t*(A - opt_mhu*B + p[i][j] - p[i][j+1] - opt_kappa*v[i][j+1]); 
-                }else if(M[i][j]==0){   //ウェットエリア外を速度０に
-                    // new_v[i][j] = 0;
-                    new_v[i][j+1] = 0;
-                }else{
-                    printf("UV_ERROR:M=%d,x=%d,y=%d\n", M[i][j], i, j);
-                }
-            }
-        }
-
-
-    // for (i = 0; i < width-1; i++){  //端付近は計算していないのでwidth-1にすべき？（しないと0が増殖）
-    //     for (j = 0; j < height-1; j++) {
-    //         if(j!=0) u[i][j] = new_u[i][j];
-    //         if(i!=0) v[i][j] = new_v[i][j];
-    //     }
-    // }
-
-        #pragma omp for private(i,j)
-        for (i = 0; i < width-2; i++){    // -2にしないと0が拡がる
-            for (j = 1; j < height-1; j++)    // 
-                {u[i+1][j] = new_u[i+1][j];}}
-        #pragma omp for private(i,j)
-        for (i = 1; i < width-1; i++){
-            for (j = 0; j < height-2; j++)    // -2にしないと0が拡がる
-                {v[i][j+1] = new_v[i][j+1];}}
     }
+    double UV_var_t = fmin(var_t, 1/max_verocity);
+    // printf("maxv%f \n", max_verocity);
 
+    for ( t = 0; t < var_t; t=t+UV_var_t)
+    {   
+        #pragma omp parallel
+        {
+            #pragma omp for private(i,j,A,B) schedule(static, 1)
+            for (i = 0; i < width-1; i++){    // x:[i-0.5,i+1.5]
+                for (j = 1; j < height-1; j++)    // y:[j-1.0,j+1.0]
+                {
+                    // (uv)i+0.5,j-0.5 = uf(u, i+0.5, j)*vf(v, i, j-0.5)
+                    //u[i][j]はu[i+0.5][j]
+                    if(M[i][j]==1){
+                        A = pow((u[i][j]+u[i+1][j])/2, 2) - pow((u[i+1][j]+u[i+2][j])/2, 2) + (u[i+1][j-1]+u[i+1][j])/2*(v[i][j]+v[i+1][j])/2 - (u[i+1][j]+u[i+1][j+1])/2*(v[i][j+1]+v[i+1][j+1])/2;
+                        B = u[i+2][j] + u[i][j] + u[i+1][j+1] + u[i+1][j-1] - 4*u[i+1][j];
+                        new_u[i+1][j] = u[i+1][j] + UV_var_t*(A - opt_mhu*B + p[i][j] - p[i+1][j] - opt_kappa*u[i+1][j]);  
+                    }else{   //ウェットエリア外を速度０に
+                        // new_u[i][j] = 0;
+                        new_u[i+1][j] = 0;
+                    }
+                }
+                // printf("[%d,%d]=thread_num:%d, num_thread:%d\n",i,j,omp_get_thread_num(),omp_get_max_threads());
+            }
+
+            #pragma omp for private(i,j,A,B) schedule(static, 1)
+            for (i = 1; i < width-1; i++){
+                for (j = 0; j < height-1; j++)
+                {
+                    if(M[i][j]==1){
+                        A = pow((v[i][j]+v[i][j+1])/2, 2) - pow((v[i][j+1]+v[i][j+2])/2, 2) + (u[i][j]+u[i][j+1])/2*(v[i-1][j+1]+v[i][j+1])/2 - (u[i+1][j]+u[i+1][j+1])/2*(v[i][j+1]+v[i+1][j+1])/2;
+                        B = v[i+1][j+1] + v[i-1][j+1] + v[i][j+2] + v[i][j] - 4*v[i][j+1];
+                        new_v[i][j+1] = v[i][j+1] + UV_var_t*(A - opt_mhu*B + p[i][j] - p[i][j+1] - opt_kappa*v[i][j+1]); 
+                    }else{   //ウェットエリア外を速度０に
+                        // new_v[i][j] = 0;
+                        new_v[i][j+1] = 0;
+                    }
+                }
+            }
+
+
+        // for (i = 0; i < width-1; i++){  //端付近は計算していないのでwidth-1にすべき？（しないと0が増殖）
+        //     for (j = 0; j < height-1; j++) {
+        //         if(j!=0) u[i][j] = new_u[i][j];
+        //         if(i!=0) v[i][j] = new_v[i][j];
+        //     }
+        // }
+
+            #pragma omp for private(i,j)
+            for (i = 0; i < width-2; i++){    // -2にしないと0が拡がる
+                for (j = 1; j < height-1; j++)    // 
+                    {u[i+1][j] = new_u[i+1][j];}}
+            #pragma omp for private(i,j)
+            for (i = 1; i < width-1; i++){
+                for (j = 0; j < height-2; j++)    // -2にしないと0が拡がる
+                    {v[i][j+1] = new_v[i][j+1];}}
+        }
+    }
 }
 
 

@@ -39,7 +39,7 @@ int main(int argc, char *argv[]){
     #endif
 
     for (i = 0; i < trials; i++) {
-        tmp = Paint_Water_Stroke_Test(argc, argv);
+        tmp = UpdateVelocity_Test(argc, argv);
         Ave_TIME += tmp;
         if(max<tmp) max=tmp;
         if(min>tmp) min=tmp;
@@ -84,7 +84,7 @@ int main(int argc, char *argv[]){
 // }
 
 
-
+/*
 void ufvf_Test(int argc, char *argv[])
 {
     int i,j;
@@ -142,7 +142,7 @@ void ufvf_Test(int argc, char *argv[])
     Free_dally(u, width+1);
     Free_dally(v, width);
 }
-
+*/
 
 double UpdateVelocity_Test(int argc, char *argv[])
 {
@@ -178,7 +178,7 @@ double UpdateVelocity_Test(int argc, char *argv[])
     write_ppm(filename, u_img);
 
 	// UpdateVelocitieの変化の推移を出力
-    double var_t = 0.1;
+    double var_t = 0.5;
     clock_gettime(CLOCK_MONOTONIC, &start);
     for (t = 0; t < 5; t=t+var_t) {
         UpdateVelocities(M, u, v, p, var_t, width, height);
