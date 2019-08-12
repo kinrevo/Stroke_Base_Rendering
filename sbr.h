@@ -166,4 +166,6 @@ double** gaussian_filter_d(double** in,  int c, double** filter, int width, int 
 void display_Point_ally(Point *ally, int pnum);
 
 void reset_improved_value_map(PGM* improved_map, Point* sp, int pnum, Stroke*** best_stroke_map, int t, int max_stroke);
+
+double my_clock();
 #endif

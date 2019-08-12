@@ -555,6 +555,7 @@ int calcu_Stroke_Point(PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimg
 void reset_improved_value_map(PGM* improved_map, Point* sp, int pnum, Stroke*** best_stroke_map, int t, int max_stroke) {
 	int i,j,x,y,distance;
 	int left_end,right_end,upper_end,lower_end;
+	int count=0;
 	
 	//ストローク点を囲む端の座標を特定
 	left_end=right_end=sp[0].x;
@@ -575,15 +576,17 @@ void reset_improved_value_map(PGM* improved_map, Point* sp, int pnum, Stroke*** 
 	if(upper_end<0)upper_end=0; 
 	if(improved_map->height <= lower_end)lower_end=improved_map->height-1; 
 
-	#pragma omp parallel for private(x,y,i,j,distance)
+	#pragma omp parallel for private(x,y,i,j,distance) reduction(+:count) schedule(dynamic)
 	for(y=upper_end; y<=lower_end; y++) { 
 		for(x=left_end; x<=right_end; x++) {
+			if(improved_map->data[x][y] == UNCALCULATED) continue;
 			// 描画したストローク制御点と重なるストロークのみを再計算
 			for(i=0; i<pnum; i++){
 				for(j=0; j<best_stroke_map[x][y]->pnum; j++) {
 					distance = (sp[i].x - best_stroke_map[x][y]->p[j].x)*(sp[i].x - best_stroke_map[x][y]->p[j].x) + (sp[i].y - best_stroke_map[x][y]->p[j].y)*(sp[i].y - best_stroke_map[x][y]->p[j].y);	// 点と点のユークリッド距離
-					if(distance*distance < t*t){
+					if(distance < 2*t*2*t){
 						improved_map->data[x][y] = UNCALCULATED;
+						count++;
 						goto RIM_loopend;
 					}
 				}
@@ -591,6 +594,7 @@ void reset_improved_value_map(PGM* improved_map, Point* sp, int pnum, Stroke*** 
 			RIM_loopend: ;
 		}
 	}
+	printf("reset_count:%d\n",count);
 }
 
 

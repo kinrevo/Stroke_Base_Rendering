@@ -30,11 +30,9 @@ void SimulateCapillaryFlow_PaintTest(int argc, char *argv[]);
 
 
 int main(int argc, char *argv[]){
-    int i, trials=1;
+    int i, trials=10;
     double tmp, Ave_TIME=0, min=9999, max=0;
-    struct timespec start,end;
-
-    clock_gettime(CLOCK_MONOTONIC, &start);
+    my_clock();
 
     #ifdef _OPENMP
         omp_set_num_threads(atoi(argv[2]));
@@ -48,8 +46,7 @@ int main(int argc, char *argv[]){
     }
     pn;
 
-    clock_gettime(CLOCK_MONOTONIC, &end);
-	pd("All_Execution_TIME", (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9);
+	pd("All_Execution_TIME", my_clock());
     printf("Ave_TIME:%f, max:%f, min:%f\n",Ave_TIME/trials, max, min);
     return 0;
 }
@@ -656,7 +653,7 @@ double Paint_Water_Test(int argc, char *argv[])
     struct timespec start,end;
     double Ex_TIME=0;
     int i,j;
-    int width=128, height=128;
+    int width=640, height=380;
     double** u = create_dally(width+1, height);
     double** v = create_dally(width, height+1);
     format_dally(u, width+1, height, 0);
@@ -929,37 +926,39 @@ double Paint_Water_Stroke_Test(int argc, char *argv[])
     struct timespec start,end;
     double Ex_TIME=0;
     int i,j;
-    int t=20;
-    int pnum=5;
-    RGB color = {0, 110, 0}, color2={250,0,0};
+    int t=10;
+    int pnum=6;
+    RGB color = {91, 15, 12}, color2={250,20,70};
     // RGB color = {200, 0, 100}, color2={0,0,0};
     double sigma;
-    int width=128, height=128;
+    int width=640, height=480;
     double** h = perlin_img(width, height, 0.1, 4);
     double** grad_hx = create_dally(width+1, height); 
     double** grad_hy = create_dally(width, height+1); 
     calcu_grad_h(h, grad_hx, grad_hy, width, height);
     PPM* Canvas_img = create_ppm(width, height, 255);
-    // Point SP[5]= {
-    //     {10,100},
-    //     {20,50},
-    //     {50,20},
-    //     {100,40},
-    //     {120,80}
-    // };
-    Point SP1[5]= {
-        {10,10},
-        {40,40},
-        {60,60},
-        {100,100},
-        {120,120}
+    Point SP1[6]= {
+        {391.5,346.5},
+        {400.9,350},
+        {410.9,349.5},
+        {420.9,349.0},
+        {430.8,348.5},
+        {440.8,347.9}
     };
-    Point SP2[5]= {
+    // Point SP1[5]= {
+    //     {10,10},
+    //     {40,40},
+    //     {60,60},
+    //     {100,100},
+    //     {120,120}
+    // };
+    Point SP2[6]= {
         {110,10},
         {80,40},
         {60,60},
         {40,100},
-        {10,120}
+        {10,120},
+        {0,150}
     };
     char filename[64]={};
 

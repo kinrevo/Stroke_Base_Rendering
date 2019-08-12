@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include <png.h>
 #include <jpeglib.h>
+#include <omp.h>
 #include "ImageIO/image.h"
 #include "sbr.h"
 #include "sbr_opt.h"
@@ -23,12 +24,16 @@ PGM* GLOBAL_improved_value_map;
 
 int main(int argc, char *argv[])
 {
-	clock_t start = clock();
+	my_clock();
 
-	if(argc>4 || argc<2){
+	if(argc<2){
 		fprintf(stderr, "Usage: program <inputfile> <outputfile>\n");
 		exit(1);
 	}
+	
+	#ifdef _OPENMP
+        omp_set_num_threads(atoi(argv[3]));
+    #endif
 	
 	image_t *in_img;
 	PPM *in_ppm, *trans_ppm;
@@ -78,7 +83,7 @@ int main(int argc, char *argv[])
 	FreePPM(trans_ppm);
 		
 	
-	pd("TOTAL_TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
+	pd("TOTAL_TIME[s]",my_clock());
 	return 0;
 }
 
@@ -87,10 +92,8 @@ int main(int argc, char *argv[])
 //与えられたイメージからブラッシングによる絵画を作る
 PPM *c_Illust_brush_Water(PPM *in, char *filename) 
 {
-	clock_t start = clock();
+	my_clock();
 	int i,j,x,y,xc,yc,t,break_flag,pnum, offscrn_count;
-	// int P2a_count, P2b_count, inapp_count, direct_count;
-	// P2a_count = P2b_count = inapp_count = direct_count = 0;
 	int window_diff_border = opt_window_diff_border; 	//ストローク位置探索のしきい値
 	int color_diff_border = opt_color_diff_border;  	//描画色の差異のしきい値
 	int max_stroke = opt_max_stroke;
@@ -375,7 +378,9 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 				}
 
 				if(pnum>=min_stroke) { 
-                    Paint_Water_Stroke(p, pnum, t, bright, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);	
+					double start_PWS = my_clock();
+                    Paint_Water_Stroke(p, pnum, t, bright, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);
+					pd("PWS[s]",my_clock()-start_PWS);
 					stroke_histogram[pnum]++;  
 					paint_count++;
 				}
@@ -397,7 +402,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 					free_image(out_png);
 					printf("%s\n",out_filename);
 					printf("%d:",t);
-					pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
+					pd("TIME[s]",my_clock());
 				}
 			}
 		}
@@ -423,13 +428,13 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 			strcat(log_sentence, "\r\n");
 			Add_dictionary_to_sentence(log_sentence, "t", t);
 			Add_dictionary_to_sentence(log_sentence, "s_count", paint_count);
-			snprintf(count_name, 16, "%f", (double)(clock()-start)/CLOCKS_PER_SEC);
+			snprintf(count_name, 16, "%f", my_clock());
 			strcat(log_sentence, count_name);
 			strcat(log_sentence, "\r\n");
-			pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
+			pd("TIME[s]",my_clock());
 		}
 	
-		printf("\n////////////////////\nt%d done.\n////////////////////\n",t);
+		printf("\n////////////////////\nt%d done.\n////////////////////\n\n\n",t);
 		p("Paint_num",paint_count); paint_count=0;
 		Free_dally(gauce_filter, 2*t+1);
 		x_defo=y_defo=paint_count=0;		
@@ -449,7 +454,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	printf("%s\n",out_filename);
 	tc=t;
 	printf("%d",t);
-	pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
+	pd("TIME[s]",my_clock());
 	
 
 
@@ -607,7 +612,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 		}
 		
 	
-		printf("////////////////////\nt%d done.\n////////////////////\n\n",t);
+		printf("////////////////////\nt%d done.\n////////////////////\n\n\n",t);
 		Free_dally(gauce_filter, 2*t+1);
 		
 		lc++;		//同じ半径でのループをcont回する
@@ -642,10 +647,10 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 			strcat(log_sentence, "\r\n");
 			Add_dictionary_to_sentence(log_sentence, "t", t);
 			Add_dictionary_to_sentence(log_sentence, "s_count", paint_count);
-			snprintf(count_name, 16, "%f", (double)(clock()-start)/CLOCKS_PER_SEC);
+			snprintf(count_name, 16, "%f", my_clock());
 			strcat(log_sentence, count_name);
 			strcat(log_sentence, "\r\n");
-			pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
+			pd("TIME[s]",my_clock());
 		}
 
 	}
@@ -661,7 +666,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	double MSE = image_MSE(nimgC, in);
 	Add_dictionary_to_sentence(log_sentence, "MSE", MSE);
 	
-	Add_dictionary_to_sentence(log_sentence, "All_Execution_TIME", (double)(clock()-start)/CLOCKS_PER_SEC);
+	Add_dictionary_to_sentence(log_sentence, "All_Execution_TIME", my_clock());
 	printf("%s\n", log_filename);
 	if(log_print(log_filename, log_sentence, "w") ){ printf("LOG_PRINTING_FAIL\n"); }
 	
@@ -683,10 +688,8 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 //与えられたイメージからブラッシングによる絵画を作る
 PPM *c_Illust_brush_Water_best(PPM *in, char *filename) 
 {
-	clock_t start = clock();
+	my_clock();
 	int i,j,x,y,xc,yc,t,break_flag,pnum, offscrn_count;
-	// int P2a_count, P2b_count, inapp_count, direct_count;
-	// P2a_count = P2b_count = inapp_count = direct_count = 0;
 	int window_diff_border = opt_window_diff_border; 	//ストローク位置探索のしきい値
 	int color_diff_border = opt_color_diff_border;  	//描画色の差異のしきい値
 	int max_stroke = opt_max_stroke;
@@ -852,7 +855,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 				
 
 		
-		stroke_num=9999;
+		stroke_num=2;
 		// stroke_num = in->width/t * in->height/t / (max_stroke+min_stroke)/2;
 		p("stroke_num", stroke_num);
 		
@@ -865,8 +868,8 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			
 			for(y=0; y<in->height; y++) {  
 				for(x=0; x<in->width; x++) {  
-			// for(y=y_defo; y<in->height; y=y+t) {  //ウィンドウの大きさに合わせて
-			// 	for(x=x_defo; x<in->width; x=x+t) {  //ウィンドウをずらす距離を変えとく
+			//for(y=y_defo; y<in->height; y=y+t) {  //ウィンドウの大きさに合わせて
+				//for(x=x_defo; x<in->width; x=x+t) {  //ウィンドウをずらす距離を変えとく
 					// 改善値が計算済みならSkip
 					if(GLOBAL_improved_value_map->data[x][y] != UNCALCULATED) continue;
 				
@@ -994,8 +997,8 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 						}
 						best_stroke_map[x][y]->color=bright;
 						best_stroke_map[x][y]->pnum=pnum;
-						// GLOBAL_improved_value_map->data[x][y] = diff_sum;
-						GLOBAL_improved_value_map->data[x][y] = test_water_stroke(test_Canvas, in, nimgC, best_stroke_map[x][y], t, h, grad_hx, grad_hy, gauce_filter);
+						GLOBAL_improved_value_map->data[x][y] = diff_sum;
+						//GLOBAL_improved_value_map->data[x][y] = test_water_stroke(test_Canvas, in, nimgC, best_stroke_map[x][y], t, h, grad_hx, grad_hy, gauce_filter);
 					}else if(pnum<min_stroke){
 						GLOBAL_improved_value_map->data[x][y] = MIN_STROKE;
 					}
@@ -1005,11 +1008,13 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					// 	diff_stroke_max = diff_sum;
 					// }
 				}
+				//printf("y:%d\n",y);
 			}
 			
 			// 改善値マップ中の最大値を探索
 			best_P = search_max_Point(GLOBAL_improved_value_map->data, GLOBAL_improved_value_map->width, GLOBAL_improved_value_map->height);
 			best_x=best_P.x;  best_y=best_P.y;
+			// 最適な開始点が前回と一致（ループ）している場合は
 			// if(best_P.x==before_P.x && best_P.y==before_P.y){
 			// 	GLOBAL_improved_value_map->data[best_x][best_y] = SAME_STROKE;
 			// 	printf("LOOP_STROKE:[%d,%d]->",best_x,best_y);
@@ -1049,7 +1054,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 				strcat(log_sentence, "\r\n");
 				Add_dictionary_to_sentence(log_sentence, "t", t);
 				Add_dictionary_to_sentence(log_sentence, "s_count", s_count);
-				snprintf(count_name, 16, "%f", (double)(clock()-start)/CLOCKS_PER_SEC);
+				snprintf(count_name, 16, "%f", my_clock());
 				strcat(log_sentence, count_name);
 				strcat(log_sentence, "\r\n");
 				{
@@ -1067,12 +1072,18 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			
 			
 			//算出したpnum個の制御点を用いてストロークを描画
+			double start_PWS = my_clock();
 			Paint_Water_Stroke(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, t, best_stroke_map[best_x][best_y]->color, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);	
+			printf("C:[%d,%d,%d]",best_stroke_map[best_x][best_y]->color.R, best_stroke_map[best_x][best_y]->color.G, best_stroke_map[best_x][best_y]->color.B);
+			display_Point_ally(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum);
+			pd("PWS[s]",my_clock()-start_PWS);
 			
 			// 描画したストロークの周囲のみ改善値マップをリセット
+			start_PWS = my_clock();
 			reset_improved_value_map(GLOBAL_improved_value_map, best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, best_stroke_map, t, max_stroke);
+			pd("RIvm[s]",my_clock()-start_PWS);
 			
-					
+			
 			//一定ストロークごとに途中経過画像を書き出す
 			paint_count++;
         	nc++;	
@@ -1094,7 +1105,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					free_image(out_png);
 					printf("%s\n",out_filename);
 					printf("%d:",t);
-					pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
+					pd("TIME[s]",my_clock());
 			}
 						
 				
@@ -1130,10 +1141,10 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			// snprintf(count_name, 16, "%f", (double)(clock()-start)/CLOCKS_PER_SEC);
 			// strcat(log_sentence, count_name);
 			// strcat(log_sentence, "\r\n");
-			pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
+			pd("TIME[s]",my_clock());
 		}
 
-		printf("\n////////////////////\nt%d done.\n////////////////////\n",t);
+		printf("\n////////////////////\nt%d done.\n////////////////////\n\n\n",t);
 		p("Paint_num",paint_count); paint_count=0;
 		Free_dally(gauce_filter, 2*t+1);
 		x_defo=y_defo=paint_count=0;		
@@ -1153,14 +1164,14 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	printf("%s\n",out_filename);
 	tc=t;
 	printf("%d",t);
-	pd("TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
+	pd("TIME[s]",my_clock());
 	
 
 	
 	double MSE = image_MSE(nimgC, in);
 	Add_dictionary_to_sentence(log_sentence, "MSE", MSE);
 	
-	Add_dictionary_to_sentence(log_sentence, "All_Execution_TIME", (double)(clock()-start)/CLOCKS_PER_SEC);
+	Add_dictionary_to_sentence(log_sentence, "All_Execution_TIME", my_clock());
 	printf("%s\n", log_filename);
 	if(log_print(log_filename, log_sentence, "w") ){ printf("LOG_PRINTING_FAIL\n"); }
 	

@@ -15,7 +15,7 @@
 // RelaxDivergence：減衰の係数(def:)
 #define opt_xi 0.1
 // FlowOutward：ガウスフィルタの直径(def:10)
-#define opt_K 10
+#define opt_K 5
 // FlowOutward：減衰係数(def:0.01-0.05)
 #define opt_eta 0.01
 // TransferPigment：粒状化度、これが大きいほど沈着しづらく、浮上しづらい(def:0.05)
@@ -37,7 +37,7 @@
 
 // 水と顔料を定着させる時間
 #define opt_SoakTime 5
-#define opt_SoakTimeStep 0.5
+#define opt_SoakTimeStep 1
 // perlinノイズのパラメータ
 #define opt_perlin_freq 0.1
 #define opt_perlin_depth 6

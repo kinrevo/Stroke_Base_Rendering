@@ -78,6 +78,9 @@ void display_ally(int *ally, int num) {
 //配列を初期化する関数
 void format_ally(int **ally, int w, int h, int bright) {
 	int i, j;
+	#ifdef _OPENMP
+		#pragma omp parallel for private(i,j)
+    #endif
 	for(i=0; i<w; i++) {
 		for(j=0; j<h; j++) {
 			ally[i][j] = bright;
@@ -939,6 +942,8 @@ void display_Point_ally(Point *ally, int pnum) {
 }
 
 
+
+
 /////////////////////////////////////////////
 //			その他の関数群			   
 /////////////////////////////////////////////
@@ -1012,6 +1017,28 @@ char *get_extension(char *name) {
   return NULL;
 }
 
+
+double my_clock() {
+	static int start_flag=1;
+    static struct timespec start;
+	struct timespec end;
+
+	if(start_flag){
+    	clock_gettime(CLOCK_MONOTONIC, &start);
+		start_flag=0;
+		return 0;
+	}
+	
+	clock_gettime(CLOCK_MONOTONIC, &end);
+
+	return (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
+}
+
+
+
+/////////////////////////////////////////////
+//			ストロークレンダリング関数群			   
+/////////////////////////////////////////////
 
 
 //与えられたパスの中のフォルダの中の画像すべてに対してC_illust_brushを実行

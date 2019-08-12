@@ -14,7 +14,7 @@
 #define opt_color_diff_border 0
 
 // ストロークの最大長
-#define opt_max_stroke 10
+#define opt_max_stroke 6
 
 // ストロークの最小長
 #define opt_min_stroke 3
@@ -44,7 +44,7 @@
 #define opt_USE_Best_Stroke_Method 1
 
 // 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
-#define opt_optimal_improved_value_border 0
+#define opt_optimal_improved_value_border 1
 
 
 ////////////////	第二段階のパラメータ	/////////////////
