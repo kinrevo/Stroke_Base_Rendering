@@ -64,6 +64,9 @@ void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** C
 {
     static int first_flag=1;
     int i,j;
+    Point rectangleP[2];
+    set_Stroke_rectangle(rectangleP[0], rectangleP[1], StrokeP, pnum, thick, width, height);
+
     static int** M;
     static double **u,**v,**p,**gR,**gG,**gB,**dR,**dG,**dB;
     if(first_flag){
@@ -101,7 +104,7 @@ void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** C
     }
 
     set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, color, gauce_filter, width, height);   //ストロークのエリアと水量を計算
-    Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height);    //水と顔料の移動を計算
+    Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
 
     // 堆積顔料をRGBに変換しキャンバスの色を計算
     #pragma omp parallel for private(i,j)
@@ -200,20 +203,20 @@ void Circle_fill_Water(int** M, double** p, double** gR, double** gG, double** g
 
 
 // 水彩筆による顔料の移動をシミュレーション
-void Paint_Water(int** M, double** u, double** v, double** p, double** h, double** grad_hx, double** grad_hy, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, int width, int height)
+void Paint_Water(int** M, double** u, double** v, double** p, double** h, double** grad_hx, double** grad_hy, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, int width, int height, Point rectangleP[])
 {
     static int first_flag=1;
     int i,j;
     double t, var_t;
     double** s;
-    static int w;
-    static int c;
-    static double** filter;
     if(opt_USE_Backrun) {
         s = create_dally(width, height);
         format_dally(s, width, height, 0);
     }
 
+    static int w;
+    static int c;
+    static double** filter;
     if(first_flag){
         w = (int)( ceil(3.0*opt_K/6.0+0.5)*2-1 ); //とりあえず動く計算
         c=(w-1)/2;
@@ -252,13 +255,13 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
         pd("    UV[s]",my_clock()-start);
         if(opt_USE_MoveWater) MoveWater(M, u, v, p, var_t, width, height);
         start = my_clock();
-        RelaxDivergence(M, u, v, p, var_t, width, height);
+        RelaxDivergence(M, u, v, p, var_t, width, height, rectangleP);
         pd("    RD[s]",my_clock()-start);
         start = my_clock();
-        FlowOutward(M, p, c, filter, var_t, width, height);
+        FlowOutward(M, p, c, filter, var_t, width, height, rectangleP);
         pd("    FO[s]",my_clock()-start);
         start = my_clock();
-        MovePigment(M, u, v, gR, gG, gB, var_t, width, height);
+        MovePigment(M, u, v, gR, gG, gB, var_t, width, height, rectangleP);
         pd("    MP[s]",my_clock()-start);
         start = my_clock();
         TransferPigment(M, h, gR, gG, gB, dR, dG, dB, var_t, width, height);
@@ -266,7 +269,7 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
         if(opt_USE_Backrun) SimulateCapillaryFlow(M, p, h, s, var_t, width, height);
 
         // #pragma omp parallel for private(i,j)
-        // for (i = 0; i < width; i++) {	
+        // for (i = 0; i < width; i++) {
         //     for (j = 0; j < height; j++) {
         //         dM[i][j] = M[i][j];
         //         Canvas_img->dataR[i][j] = (1 - dR[i][j]) * 255;    //CMY[0,1]->RGB[0,255]
@@ -327,6 +330,7 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
     format_dally(new_u, width+1, height, 0);
     format_dally(new_v, width, height+1, 0);
 
+    // 最大初速度が大きいほど細かく更新を行う
     #pragma omp parallel for private(i,j) reduction(max : max_verocity)
     for(i=0; i<width; i++) {
         for(j=0; j<height; j++) {
@@ -341,7 +345,7 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
     {   
         #pragma omp parallel
         {
-            #pragma omp for private(i,j,A,B) schedule(static, 1)
+            #pragma omp for private(i,j,A,B) schedule(static, 2)
             for (i = 0; i < width-1; i++){    // x:[i-0.5,i+1.5]
                 for (j = 1; j < height-1; j++)    // y:[j-1.0,j+1.0]
                 {
@@ -356,10 +360,9 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
                         new_u[i+1][j] = 0;
                     }
                 }
-                // printf("[%d,%d]=thread_num:%d, num_thread:%d\n",i,j,omp_get_thread_num(),omp_get_max_threads());
             }
 
-            #pragma omp for private(i,j,A,B) schedule(static, 1)
+            #pragma omp for private(i,j,A,B) schedule(static, 2)
             for (i = 1; i < width-1; i++){
                 for (j = 0; j < height-1; j++)
                 {
@@ -396,7 +399,7 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
 
 
 // 速度ベクトルの発散をある許容範囲τ未満になるまで緩和
-void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, int width, int height)
+void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, int width, int height, Point rectangleP[])
 {
     static int first_flag=1;
     int i,j,t;
@@ -422,9 +425,9 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
 
         #pragma omp parallel private(i,j,delta)
         {
-            #pragma omp for schedule(static, 1)
-            for(i=0; i<width; i++){
-                for(j=0; j<height; j++){
+            #pragma omp for schedule(static)
+            for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
+                for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
                     if(M[i][j]==1){
                         delta = opt_xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
                         p[i][j] =  fmax(0, p[i][j] - delta);     // 計算符号正負不明、fmaxがないと水量が負になる
@@ -437,9 +440,9 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
                     }
                 }
             }
-            #pragma omp for schedule(static, 1)
-            for(i=0; i<width; i++){
-                for(j=0; j<height; j++){
+            #pragma omp for schedule(static)
+            for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
+                for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
                     if(M[i][j]==1){
                         delta = opt_xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
                         new_u[i+1][j] = new_u[i+1][j] - delta;
@@ -451,8 +454,8 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
 
         #else  // 逐次用の処理
         double delta_MAX=0;
-        for(i=0; i<width; i++){
-            for(j=0; j<height; j++){
+        for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
+            for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
                 if(M[i][j]==1){
                     delta = opt_xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
                     p[i][j] = fmax(0, p[i][j] - delta);     // 計算符号正負不明、fmaxがないと水量が負になる
@@ -476,7 +479,7 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
 
 
 
-void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t, int width, int height)
+void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t, int width, int height, Point rectangleP[])
 {
     static int first_flag=1;
     int i,j;
@@ -498,9 +501,11 @@ void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t
     double** gauss_M = gaussian_filter_d(dM, c, gause_filter, width, height);
     
     #pragma omp parallel for private(i,j)
-    for(i=0; i<width; i++){
-        for(j=0; j<height; j++){
-            p[i][j] = fmax(0, p[i][j] - opt_eta*var_t*(1-gauss_M[i][j])*M[i][j]);
+    for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
+        for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
+            if(M[i][j]==1){
+                p[i][j] = fmax(0, p[i][j] - opt_eta*var_t*(1-gauss_M[i][j])*M[i][j]);
+            }
         }
     }
 
@@ -508,7 +513,7 @@ void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t
 }
 
 
-void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, double** gB, double var_t, int width, int height)
+void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, double** gB, double var_t, int width, int height, Point rectangleP[])
 {
     static int first_flag=1;
     int i,j;
@@ -524,13 +529,19 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
     copy_dally(gG, new_gG, width, height);
     copy_dally(gB, new_gB, width, height);
 
+    int left_end=rectangleP[0].x,right_end=rectangleP[1].x,upper_end=rectangleP[0].y,lower_end=rectangleP[1].y;
+	if(left_end<1) left_end=1; 
+	if(width-1 <= right_end) right_end=width-2; 
+	if(upper_end<1) upper_end=1; 
+	if(height-1 <= lower_end) lower_end=height-2; 
+
 
     #ifdef _OPENMP  // OpenMP用の処理
     #pragma omp parallel private(i,j)
     {
-        #pragma omp for schedule(static, 1)
-        for(i=1; i<width-1; i++){
-            for(j=1; j<height-1; j++){
+        #pragma omp for schedule(static)
+        for(i=left_end; i<=right_end; i++){
+            for(j=upper_end; j<=lower_end; j++){
                 if(M[i][j]==1){
                     // R
                     new_gR[i][j+1] = new_gR[i][j+1] + fmax(0, var_t*v[i][j+1]*gR[i][j]);
@@ -553,9 +564,9 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
             }
         }
 
-        #pragma omp for schedule(static, 1)
-        for(i=1; i<width-1; i++){
-            for(j=1; j<height-1; j++){
+        #pragma omp for schedule(static)
+        for(i=left_end; i<=right_end; i++){
+            for(j=upper_end; j<=lower_end; j++){
                 if(M[i][j]==1){
                     // R
                     new_gR[i-1][j] = new_gR[i-1][j] + fmax(0, var_t*-u[i][j]*gR[i][j]);
@@ -566,9 +577,9 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
                 }
             }
         }
-        #pragma omp for schedule(static, 1)
-        for(i=1; i<width-1; i++){
-            for(j=1; j<height-1; j++){
+        #pragma omp for schedule(static)
+        for(i=left_end; i<=right_end; i++){
+            for(j=upper_end; j<=lower_end; j++){
                 if(M[i][j]==1){
                     // R
                     new_gR[i+1][j] = new_gR[i+1][j] + fmax(0, var_t*u[i+1][j]*gR[i][j]);
@@ -582,8 +593,8 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
     }
 
     #else  // 逐次用の処理
-    for(i=1; i<width-1; i++){
-        for(j=1; j<height-1; j++){
+        for(i=left_end; i<=right_end; i++){
+            for(j=upper_end; j<=lower_end; j++){
             if(M[i][j]==1){
                 // R
                 new_gR[i+1][j] = new_gR[i+1][j] + fmax(0, var_t*u[i+1][j]*gR[i][j]);
@@ -616,9 +627,6 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
     copy_dally(new_gR, gR, width, height);
     copy_dally(new_gG, gG, width, height);
     copy_dally(new_gB, gB, width, height);
-    // Free_dally(new_gR, width);
-    // Free_dally(new_gG, width);
-    // Free_dally(new_gB, width);
 }
 
 

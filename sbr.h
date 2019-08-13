@@ -168,4 +168,6 @@ void display_Point_ally(Point *ally, int pnum);
 void reset_improved_value_map(PGM* improved_map, Point* sp, int pnum, Stroke*** best_stroke_map, int t, int max_stroke);
 
 double my_clock();
+
+void set_Stroke_rectangle(Point smaller_edge, Point lager_edge, Point StrokeP[], int pnum, int thick, int width, int height);
 #endif

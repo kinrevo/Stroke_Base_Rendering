@@ -599,6 +599,33 @@ void reset_improved_value_map(PGM* improved_map, Point* sp, int pnum, Stroke*** 
 
 
 
+//　試しに描いてみて誤差を確認(water)
+void set_Stroke_rectangle(Point smaller_edge, Point lager_edge, Point StrokeP[], int pnum, int thick, int width, int height)
+{
+	int i;
+	double left_end,right_end,upper_end,lower_end;//upper,lowerは画像の見かけの上下（値の上下ではない）
+	
+	//ストローク点を囲む端の座標を特定
+	left_end=right_end=StrokeP[0].x;
+	upper_end=lower_end=StrokeP[0].y;
+	for(i=1; i<pnum; i++){
+		if(StrokeP[i].x < left_end) left_end=StrokeP[i].x;
+		if(right_end < StrokeP[i].x) right_end=StrokeP[i].x;
+		if(StrokeP[i].y < upper_end) upper_end=StrokeP[i].y;
+		if(lower_end < StrokeP[i].y) lower_end=StrokeP[i].y;
+	}
+	//ストローク半径分、端座標を膨張
+	left_end -= (thick+2); right_end += (thick+2); upper_end -= (thick+2); lower_end += (thick+2);
+	if(left_end<0) left_end=0; 
+	if(width <= right_end) right_end=width-1; 
+	if(upper_end<0) upper_end=0; 
+	if(height <= lower_end) lower_end=height-1; 
+
+	smaller_edge.x=left_end; smaller_edge.y=upper_end;
+	lager_edge.x=right_end; lager_edge.y=lower_end;
+}
+
+
 
 
 //与えられたイメージからブラッシングによる絵画を作る

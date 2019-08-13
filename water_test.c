@@ -39,7 +39,7 @@ int main(int argc, char *argv[]){
     #endif
 
     for (i = 0; i < trials; i++) {
-        tmp = UpdateVelocity_Test(argc, argv);
+        tmp = Paint_Water_Stroke_Test(argc, argv);
         Ave_TIME += tmp;
         if(max<tmp) max=tmp;
         if(min>tmp) min=tmp;
@@ -204,6 +204,10 @@ double RelaxDivergence_Test(int argc, char *argv[])
     double Ex_TIME=0;
     int i,j;
     int width=128, height=128;
+    Point rectangleP[2] = {
+        {0,128},
+        {0,128}
+    };
     double t;
     double** u = create_dally(width+1, height);
     double** v = create_dally(width, height+1);
@@ -251,7 +255,7 @@ double RelaxDivergence_Test(int argc, char *argv[])
         // }
 
         clock_gettime(CLOCK_MONOTONIC, &start);
-        RelaxDivergence(M, u, v, p, var_t, width, height);		// RelaxDivergenceの変化の推移を出力
+        RelaxDivergence(M, u, v, p, var_t, width, height, rectangleP);		// RelaxDivergenceの変化の推移を出力
         clock_gettime(CLOCK_MONOTONIC, &end);
         Ex_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
 
@@ -362,6 +366,10 @@ double MovePigment_Test(int argc, char *argv[]){
     double UV_TIME=0, RD_TIME=0, FO_TIME=0, MP_TIME=0;
     int i,j;
     int width=128, height=128;
+    Point rectangleP[2] = {
+        {0,128},
+        {0,128}
+    };
     double t;
     double** u = create_dally(width+1, height);
     double** v = create_dally(width, height+1);
@@ -427,12 +435,12 @@ double MovePigment_Test(int argc, char *argv[]){
         UV_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
 
         clock_gettime(CLOCK_MONOTONIC, &start);
-        RelaxDivergence(M, u, v, p, var_t, width, height);		// RelaxDivergenceの変化の推移を出力
+        RelaxDivergence(M, u, v, p, var_t, width, height, rectangleP);		// RelaxDivergenceの変化の推移を出力
         clock_gettime(CLOCK_MONOTONIC, &end);
         RD_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
 
         clock_gettime(CLOCK_MONOTONIC, &start);
-        FlowOutward(M, p, c, filter, var_t, width, height);
+        FlowOutward(M, p, c, filter, var_t, width, height, rectangleP);
         clock_gettime(CLOCK_MONOTONIC, &end);
         FO_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
         if((int)(t/var_t) % 10 == 0 ){
@@ -445,7 +453,7 @@ double MovePigment_Test(int argc, char *argv[]){
         }
  
         clock_gettime(CLOCK_MONOTONIC, &start);
-        MovePigment(M, u, v, gR, gG, gB, var_t, width, height);	// MovePigmentの変化の推移を出力
+        MovePigment(M, u, v, gR, gG, gB, var_t, width, height, rectangleP);	// MovePigmentの変化の推移を出力
         clock_gettime(CLOCK_MONOTONIC, &end);
         MP_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
         if((int)(t/var_t) % 10 == 0 ){
@@ -479,6 +487,10 @@ double TransferPigment_Test(int argc, char *argv[])
     double Ex_TIME=0;
     int i,j;
     int width=128, height=128;
+    Point rectangleP[2] = {
+        {0,128},
+        {0,128}
+    };
     double t;
     double** u = create_dally(width+1, height);
     double** v = create_dally(width, height+1);
@@ -549,8 +561,8 @@ double TransferPigment_Test(int argc, char *argv[])
     double var_t = 0.1;
     for (t = 0; t < 10; t=t+var_t) {
         UpdateVelocities(M, u, v, p, var_t, width, height);		// UpdateVelocitieの変化の推移を出力
-        RelaxDivergence(M, u, v, p, var_t, width, height);		// RelaxDivergenceの変化の推移を出力
-        FlowOutward(M, p, c, filter, var_t, width, height);
+        RelaxDivergence(M, u, v, p, var_t, width, height, rectangleP);		// RelaxDivergenceの変化の推移を出力
+        FlowOutward(M, p, c, filter, var_t, width, height, rectangleP);
         if((int)(t/var_t) % 10 == 0 ){
             // printf("%03d\n", (int)(t/var_t));
             snprintf(tmp_name, 16, "%03dUV", (int)(t/var_t));
@@ -568,7 +580,7 @@ double TransferPigment_Test(int argc, char *argv[])
             write_ppm(filename, p_img);
         }
  
-        MovePigment(M, u, v, gR, gG, gB, var_t, width, height);	// MovePigmentの変化の推移を出力
+        MovePigment(M, u, v, gR, gG, gB, var_t, width, height, rectangleP);	// MovePigmentの変化の推移を出力
         // if((int)(t/var_t) % 10 == 0 ){
         //     printf("%03d\n", (int)(t/var_t));
         //     snprintf(tmp_name, 16, "MP%03d", (int)(t/var_t));
@@ -653,7 +665,11 @@ double Paint_Water_Test(int argc, char *argv[])
     struct timespec start,end;
     double Ex_TIME=0;
     int i,j;
-    int width=640, height=380;
+    int width=640, height=430;
+    Point rectangleP[2] = {
+        {0,640},
+        {0,430}
+    };
     double** u = create_dally(width+1, height);
     double** v = create_dally(width, height+1);
     format_dally(u, width+1, height, 0);
@@ -716,7 +732,7 @@ double Paint_Water_Test(int argc, char *argv[])
     write_ppm(filename, paint_img);
 
     clock_gettime(CLOCK_MONOTONIC, &start);
-    Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height);
+    Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);
     clock_gettime(CLOCK_MONOTONIC, &end);
     Ex_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
 
@@ -1069,6 +1085,10 @@ void SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
     double t;
     double max=0,var_t;
     int width=128, height=128;
+    Point rectangleP[2] = {
+        {0,128},
+        {0,128}
+    };
     double** u = create_dally(width+1, height);
     double** v = create_dally(width, height+1);
     format_dally(u, width+1, height, 0);
@@ -1144,9 +1164,9 @@ void SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
     for ( t = 0; t < opt_SoakTime; t=t+var_t)
     {   
         UpdateVelocities(M, u, v, p, var_t, width, height);	
-        RelaxDivergence(M, u, v, p, var_t, width, height);
-        FlowOutward(M, p, c, filter, var_t, width, height);
-        MovePigment(M, u, v, gR, gG, gB, var_t, width, height);
+        RelaxDivergence(M, u, v, p, var_t, width, height, rectangleP);
+        FlowOutward(M, p, c, filter, var_t, width, height, rectangleP);
+        MovePigment(M, u, v, gR, gG, gB, var_t, width, height, rectangleP);
         TransferPigment(M, h, gR, gG, gB, dR, dG, dB, var_t, width, height);
         if(opt_USE_Backrun) SimulateCapillaryFlow(M, p, h, s, var_t, width, height);
 
