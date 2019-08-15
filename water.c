@@ -35,7 +35,6 @@ int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, i
 	//テストキャンバスにおけるストロークによる影響箇所をコピー
 	for(i=left_end; i<=right_end; i++) {
 		for(j=upper_end; j<=lower_end; j++) {
-			//if(i<0 || i>cmprR->width-1 || j<0 || j>cmprR->height-1)continue;
 			test_Canvas->dataR[i][j] = nimgC->dataR[i][j];
 			test_Canvas->dataG[i][j] = nimgC->dataG[i][j];
 			test_Canvas->dataB[i][j] = nimgC->dataB[i][j];
@@ -45,9 +44,7 @@ int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, i
 	Paint_Water_Stroke(stroke->p, stroke->pnum, t, stroke->color, test_Canvas->dataR, test_Canvas->dataG, test_Canvas->dataB, h, grad_hx, grad_hy, gauce_filter, nimgC->width, nimgC->height);
 	//試し描きによる変化を確認
 	for(i=left_end; i<=right_end; i++) {
-        if(i<0 || i>cmpr->width-1)continue;
 		for(j=upper_end; j<=lower_end; j++) {
-			if(j<0 || j>cmpr->height-1)continue;
 			diffsum += abs(cmpr->dataR[i][j]-nimgC->dataR[i][j]) - abs(cmpr->dataR[i][j]-test_Canvas->dataR[i][j]);
 			diffsum += abs(cmpr->dataG[i][j]-nimgC->dataG[i][j]) - abs(cmpr->dataG[i][j]-test_Canvas->dataG[i][j]);
 			diffsum += abs(cmpr->dataB[i][j]-nimgC->dataB[i][j]) - abs(cmpr->dataB[i][j]-test_Canvas->dataB[i][j]);
@@ -59,13 +56,12 @@ int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, i
 
 
 
-void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, 
-                            double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height)
+void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height)
 {
     static int first_flag=1;
     int i,j;
     Point rectangleP[2];
-    set_Stroke_rectangle(rectangleP[0], rectangleP[1], StrokeP, pnum, thick, width, height);
+    set_Stroke_rectangle(&rectangleP[0], &rectangleP[1], StrokeP, pnum, thick, width, height);
 
     static int** M;
     static double **u,**v,**p,**gR,**gG,**gB,**dR,**dG,**dB;
@@ -186,8 +182,9 @@ void Circle_fill_Water(int** M, double** p, double** gR, double** gG, double** g
 
     #pragma omp parallel for private(x,y)
 	for(x=min_x; x <= max_x; x++) {
+        if(x<0 || x>width-1) continue;
 		for(y=min_y; y <= max_y; y++) {
-			if(x<0 || x>width-1 || y<0 || y>height-1) {}
+			if(y<0 || y>height-1) {}
 			else if( (x-SP.x)*(x-SP.x)+(y-SP.y)*(y-SP.y) <= r*r ) {
                 M[x][y] = 1;
                 p[x][y] += gauce_filter[x-((int)SP.x-r)][y-((int)SP.y-r)]*r;    //筆の入りのときガウスフィルタの半径とｒが合わない
@@ -426,8 +423,8 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
         #pragma omp parallel private(i,j,delta)
         {
             #pragma omp for schedule(static)
-            for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
-                for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
+            for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x -1; i++){   // INDEX+1の計算をするので－1
+                for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y -1; j++){
                     if(M[i][j]==1){
                         delta = opt_xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
                         p[i][j] =  fmax(0, p[i][j] - delta);     // 計算符号正負不明、fmaxがないと水量が負になる
@@ -441,8 +438,8 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
                 }
             }
             #pragma omp for schedule(static)
-            for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
-                for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
+            for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x -1; i++){  // INDEX+1の計算をするので－1
+                for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y -1; j++){
                     if(M[i][j]==1){
                         delta = opt_xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
                         new_u[i+1][j] = new_u[i+1][j] - delta;
@@ -454,8 +451,8 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
 
         #else  // 逐次用の処理
         double delta_MAX=0;
-        for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
-            for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
+        for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x -1; i++){  // INDEX+1の計算をするので－1
+            for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y -1; j++){
                 if(M[i][j]==1){
                     delta = opt_xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
                     p[i][j] = fmax(0, p[i][j] - delta);     // 計算符号正負不明、fmaxがないと水量が負になる
@@ -482,24 +479,34 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
 void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t, int width, int height, Point rectangleP[])
 {
     static int first_flag=1;
-    int i,j;
-    static double **dM; 
+    int i,j,k,l;
+    static double **gauss_M; 
     if(first_flag){
-        dM = create_dally(width, height);   //関数に渡すためにdouble型に変換
+        gauss_M = create_dally(width, height);
 
         first_flag=0;
     }
-    
+    format_dally(gauss_M, width, height, 0);
 
-    #pragma omp parallel for private(i,j)
-    for(i=0; i<width; i++){
-        for(j=0; j<height; j++){
-            dM[i][j] = M[i][j];
-        }
-    }
-    
-    double** gauss_M = gaussian_filter_d(dM, c, gause_filter, width, height);
-    
+
+	#pragma omp parallel for private(i,j)
+    for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
+        for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
+            //注目しているセルがウェットエリアならガウスフィルタによる拡散された値を周囲に足し込む
+            if(M[i][j]==1) {
+                for(k=-c; k<=c; k++) { 
+                    if( (i+k)<(int)rectangleP[0].x || (i+k)>(int)rectangleP[1].x) continue;
+                    for(l=-c; l<=c; l++)  {
+                        //フィルタの端ピクセルがない場合分母にも分子にも加算しない
+                        if((j+l)<(int)rectangleP[0].y || (j+l)>(int)rectangleP[1].y) continue;
+                        gauss_M[i+k][j+l] += gause_filter[k+c][l+c];
+                    }
+                }
+            }
+		}
+	}
+
+
     #pragma omp parallel for private(i,j)
     for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
         for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
@@ -509,7 +516,7 @@ void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t
         }
     }
 
-    Free_dally(gauss_M, width);
+    // Free_dally(gauss_M, width);
 }
 
 
@@ -530,6 +537,7 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
     copy_dally(gB, new_gB, width, height);
 
     int left_end=rectangleP[0].x,right_end=rectangleP[1].x,upper_end=rectangleP[0].y,lower_end=rectangleP[1].y;
+    // INDEX+1,-1の計算をするので－1
 	if(left_end<1) left_end=1; 
 	if(width-1 <= right_end) right_end=width-2; 
 	if(upper_end<1) upper_end=1; 

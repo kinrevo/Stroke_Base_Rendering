@@ -594,13 +594,13 @@ void reset_improved_value_map(PGM* improved_map, Point* sp, int pnum, Stroke*** 
 			RIM_loopend: ;
 		}
 	}
-	printf("reset_count:%d\n",count);
+	// printf("reset_count:%d\n",count);
 }
 
 
 
 //　試しに描いてみて誤差を確認(water)
-void set_Stroke_rectangle(Point smaller_edge, Point lager_edge, Point StrokeP[], int pnum, int thick, int width, int height)
+void set_Stroke_rectangle(Point* smaller_edge, Point* lager_edge, Point StrokeP[], int pnum, int thick, int width, int height)
 {
 	int i;
 	double left_end,right_end,upper_end,lower_end;//upper,lowerは画像の見かけの上下（値の上下ではない）
@@ -621,8 +621,8 @@ void set_Stroke_rectangle(Point smaller_edge, Point lager_edge, Point StrokeP[],
 	if(upper_end<0) upper_end=0; 
 	if(height <= lower_end) lower_end=height-1; 
 
-	smaller_edge.x=left_end; smaller_edge.y=upper_end;
-	lager_edge.x=right_end; lager_edge.y=lower_end;
+	smaller_edge->x=left_end; smaller_edge->y=upper_end;
+	lager_edge->x=right_end; lager_edge->y=lower_end;
 }
 
 

@@ -997,8 +997,8 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 						}
 						best_stroke_map[x][y]->color=bright;
 						best_stroke_map[x][y]->pnum=pnum;
-						GLOBAL_improved_value_map->data[x][y] = diff_sum;
-						//GLOBAL_improved_value_map->data[x][y] = test_water_stroke(test_Canvas, in, nimgC, best_stroke_map[x][y], t, h, grad_hx, grad_hy, gauce_filter);
+						// GLOBAL_improved_value_map->data[x][y] = diff_sum;
+						GLOBAL_improved_value_map->data[x][y] = test_water_stroke(test_Canvas, in, nimgC, best_stroke_map[x][y], t, h, grad_hx, grad_hy, gauce_filter);
 					}else if(pnum<min_stroke){
 						GLOBAL_improved_value_map->data[x][y] = MIN_STROKE;
 					}
@@ -1008,7 +1008,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					// 	diff_stroke_max = diff_sum;
 					// }
 				}
-				//printf("y:%d\n",y);
 			}
 			
 			// 改善値マップ中の最大値を探索
@@ -1072,16 +1071,16 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			
 			
 			//算出したpnum個の制御点を用いてストロークを描画
-			double start_PWS = my_clock();
+			// double start_PWS = my_clock();
 			Paint_Water_Stroke(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, t, best_stroke_map[best_x][best_y]->color, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);	
-			printf("C:[%d,%d,%d]",best_stroke_map[best_x][best_y]->color.R, best_stroke_map[best_x][best_y]->color.G, best_stroke_map[best_x][best_y]->color.B);
-			display_Point_ally(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum);
-			pd("PWS[s]",my_clock()-start_PWS);
+			// printf("C:[%d,%d,%d]",best_stroke_map[best_x][best_y]->color.R, best_stroke_map[best_x][best_y]->color.G, best_stroke_map[best_x][best_y]->color.B);
+			// display_Point_ally(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum);
+			// pd("PWS[s]",my_clock()-start_PWS);
 			
 			// 描画したストロークの周囲のみ改善値マップをリセット
-			start_PWS = my_clock();
+			// start_PWS = my_clock();
 			reset_improved_value_map(GLOBAL_improved_value_map, best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, best_stroke_map, t, max_stroke);
-			pd("RIvm[s]",my_clock()-start_PWS);
+			// pd("RIvm[s]",my_clock()-start_PWS);
 			
 			
 			//一定ストロークごとに途中経過画像を書き出す

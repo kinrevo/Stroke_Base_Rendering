@@ -44,7 +44,7 @@
 #define opt_USE_Best_Stroke_Method 1
 
 // 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
-#define opt_optimal_improved_value_border 1
+#define opt_optimal_improved_value_border 50
 
 
 ////////////////	第二段階のパラメータ	/////////////////

@@ -947,6 +947,7 @@ double Paint_Water_Stroke_Test(int argc, char *argv[])
     RGB color = {91, 15, 12}, color2={250,20,70};
     // RGB color = {200, 0, 100}, color2={0,0,0};
     double sigma;
+    // int width=460, height=360;
     int width=640, height=480;
     double** h = perlin_img(width, height, 0.1, 4);
     double** grad_hx = create_dally(width+1, height); 
