@@ -49,7 +49,7 @@
 
 double uf(double** u, double x, double y);
 double vf(double** v, double x, double y);
-void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t, int width, int height);
+void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t, int width, int height, Point rectangleP[]);
 void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, int width, int height, Point rectangleP[]);
 void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t, int width, int height, Point rectangleP[]);
 void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, double** gB, double var_t, int width, int height, Point rectangleP[]);

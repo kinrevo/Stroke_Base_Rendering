@@ -41,7 +41,7 @@
 #define opt_USE_gause_histogram 0
 
 // 最適ストローク手法を用いるかどうか
-#define opt_USE_Best_Stroke_Method 1
+#define opt_USE_Best_Stroke_Method 0
 
 // 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
 #define opt_optimal_improved_value_border 50

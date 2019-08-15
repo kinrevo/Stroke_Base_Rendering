@@ -170,4 +170,6 @@ void reset_improved_value_map(PGM* improved_map, Point* sp, int pnum, Stroke*** 
 double my_clock();
 
 void set_Stroke_rectangle(Point* smaller_edge, Point* lager_edge, Point StrokeP[], int pnum, int thick, int width, int height);
+
+void rect_copy_dally(double **ally, double **ally2, int x_min, int x_max, int y_min, int y_max);
 #endif

@@ -247,22 +247,22 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
 
     for ( t = 0; t < opt_SoakTime; t=t+var_t)
     {   
-        double start = my_clock();
-        UpdateVelocities(M, u, v, p, var_t, width, height);	
-        pd("    UV[s]",my_clock()-start);
+        // double start = my_clock();
+        UpdateVelocities(M, u, v, p, var_t, width, height, rectangleP);	
+        // pd("    UV[s]",my_clock()-start);
         if(opt_USE_MoveWater) MoveWater(M, u, v, p, var_t, width, height);
-        start = my_clock();
+        // start = my_clock();
         RelaxDivergence(M, u, v, p, var_t, width, height, rectangleP);
-        pd("    RD[s]",my_clock()-start);
-        start = my_clock();
+        // pd("    RD[s]",my_clock()-start);
+        // start = my_clock();
         FlowOutward(M, p, c, filter, var_t, width, height, rectangleP);
-        pd("    FO[s]",my_clock()-start);
-        start = my_clock();
+        // pd("    FO[s]",my_clock()-start);
+        // start = my_clock();
         MovePigment(M, u, v, gR, gG, gB, var_t, width, height, rectangleP);
-        pd("    MP[s]",my_clock()-start);
-        start = my_clock();
+        // pd("    MP[s]",my_clock()-start);
+        // start = my_clock();
         TransferPigment(M, h, gR, gG, gB, dR, dG, dB, var_t, width, height);
-        pd("    TP[s]",my_clock()-start);
+        // pd("    TP[s]",my_clock()-start);
         if(opt_USE_Backrun) SimulateCapillaryFlow(M, p, h, s, var_t, width, height);
 
         // #pragma omp parallel for private(i,j)
@@ -311,7 +311,7 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
 
 
 // 一定時間経過後の速度変化を計算
-void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t, int width, int height) {
+void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t, int width, int height, Point rectangleP[]) {
     static int first_flag=1;
     int i,j;
     double t,A,B;
@@ -324,15 +324,18 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
 
         first_flag=0;
     }
-    format_dally(new_u, width+1, height, 0);
-    format_dally(new_v, width, height+1, 0);
+    // format_dally(new_u, width+1, height, 0);    
+    // format_dally(new_v, width, height+1, 0);
+
 
     // 最大初速度が大きいほど細かく更新を行う
     #pragma omp parallel for private(i,j) reduction(max : max_verocity)
-    for(i=0; i<width; i++) {
-        for(j=0; j<height; j++) {
-            max_verocity = fmax( max_verocity, fabs(u[i][j]) );
-            max_verocity = fmax( max_verocity, fabs(v[i][j]) );
+    for(i=rectangleP[0].x; i<=rectangleP[1].x; i++){
+        for(j=rectangleP[0].y; j<=rectangleP[1].y; j++){
+            if(M[i][j]==1){
+                max_verocity = fmax( max_verocity, fabs(u[i][j]) );
+                max_verocity = fmax( max_verocity, fabs(v[i][j]) );
+            }
         }
     }
     double UV_var_t = fmin(var_t, 1/max_verocity);
@@ -383,12 +386,16 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
         // }
 
             #pragma omp for private(i,j)
-            for (i = 0; i < width-2; i++){    // -2にしないと0が拡がる
-                for (j = 1; j < height-1; j++)    // 
+            // for (i = 0; i < width-2; i++){    // -2にしないと0が拡がる
+            //     for (j = 1; j < height-1; j++)    // 
+            for(i=rectangleP[0].x+1; i<=rectangleP[1].x-1; i++){
+                for(j=rectangleP[0].y+1; j<=rectangleP[1].y-1; j++)
                     {u[i+1][j] = new_u[i+1][j];}}
             #pragma omp for private(i,j)
-            for (i = 1; i < width-1; i++){
-                for (j = 0; j < height-2; j++)    // -2にしないと0が拡がる
+            // for (i = 1; i < width-1; i++){
+            //     for (j = 0; j < height-2; j++)    // -2にしないと0が拡がる
+            for(i=rectangleP[0].x+1; i<=rectangleP[1].x-1; i++){
+                for(j=rectangleP[0].y+1; j<=rectangleP[1].y-1; j++)
                     {v[i][j+1] = new_v[i][j+1];}}
         }
     }
@@ -413,8 +420,8 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
 
     for (t = 0; t < opt_N; t++)
     {
-        copy_dally(u, new_u, width+1, height);
-        copy_dally(v, new_v, width, height+1);
+        rect_copy_dally(u, new_u, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y);
+        rect_copy_dally(v, new_v, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y);
 
         #ifdef _OPENMP  // OpenMP用の処理
         int Break_flag=1;
@@ -468,8 +475,8 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
         #endif
 
         // pd("deltaMAX",delta_MAX);
-        copy_dally(new_u, u, width+1, height);
-        copy_dally(new_v, v, width, height+1);
+        rect_copy_dally(new_u, u, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y);
+        rect_copy_dally(new_v, v, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y);
     }
 
 }
@@ -515,8 +522,6 @@ void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t
             }
         }
     }
-
-    // Free_dally(gauss_M, width);
 }
 
 
@@ -532,9 +537,9 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
 
         first_flag=0;
     }
-    copy_dally(gR, new_gR, width, height);
-    copy_dally(gG, new_gG, width, height);
-    copy_dally(gB, new_gB, width, height);
+    rect_copy_dally(gR, new_gR, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y);
+    rect_copy_dally(gG, new_gG, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y);
+    rect_copy_dally(gB, new_gB, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y);
 
     int left_end=rectangleP[0].x,right_end=rectangleP[1].x,upper_end=rectangleP[0].y,lower_end=rectangleP[1].y;
     // INDEX+1,-1の計算をするので－1
@@ -632,9 +637,9 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
     }
     #endif
 
-    copy_dally(new_gR, gR, width, height);
-    copy_dally(new_gG, gG, width, height);
-    copy_dally(new_gB, gB, width, height);
+    rect_copy_dally(new_gR, gR, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y);
+    rect_copy_dally(new_gG, gG, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y);
+    rect_copy_dally(new_gB, gB, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y);
 }
 
 

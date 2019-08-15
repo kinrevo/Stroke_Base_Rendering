@@ -599,7 +599,7 @@ void reset_improved_value_map(PGM* improved_map, Point* sp, int pnum, Stroke*** 
 
 
 
-//　試しに描いてみて誤差を確認(water)
+//　
 void set_Stroke_rectangle(Point* smaller_edge, Point* lager_edge, Point StrokeP[], int pnum, int thick, int width, int height)
 {
 	int i;

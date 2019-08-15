@@ -855,7 +855,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 				
 
 		
-		stroke_num=2;
+		stroke_num=9999;
 		// stroke_num = in->width/t * in->height/t / (max_stroke+min_stroke)/2;
 		p("stroke_num", stroke_num);
 		

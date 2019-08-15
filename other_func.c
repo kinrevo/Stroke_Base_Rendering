@@ -64,6 +64,20 @@ void copy_dally(double **ally, double **ally2, int w, int h) {
 }
 
 
+//double配列を限定的にコピーする関数
+void rect_copy_dally(double **ally, double **ally2, int x_min, int x_max, int y_min, int y_max) {
+	int i, j;
+	#ifdef _OPENMP
+		#pragma omp parallel for private(i,j)
+    #endif
+	for(i=x_min; i<=x_max; i++) {
+		for(j=y_min; j<=y_max; j++) {
+			ally2[i][j] = ally[i][j];
+		}
+	}
+}
+
+
 //配列を端末表示する関数
 void display_ally(int *ally, int num) {
 	int i;
