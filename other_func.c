@@ -913,7 +913,7 @@ void sobel_calcu(PGM *pgm, double **sobel_abs, double **sobel_angle)
 
 
 
-//与えられた二つのイメージの差分を取る（in2-in1）
+//与えられた二つのイメージの差分の平均（RGBの平均）を取る（in2-in1）
 double image_MSE(PPM *in1, PPM *in2) {
 	
 	int i,j;

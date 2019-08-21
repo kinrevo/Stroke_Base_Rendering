@@ -330,8 +330,8 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
 
     // 最大初速度が大きいほど細かく更新を行う
     #pragma omp parallel for private(i,j) reduction(max : max_verocity)
-    for(i=rectangleP[0].x; i<=rectangleP[1].x; i++){
-        for(j=rectangleP[0].y; j<=rectangleP[1].y; j++){
+    for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
+        for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
             if(M[i][j]==1){
                 max_verocity = fmax( max_verocity, fabs(u[i][j]) );
                 max_verocity = fmax( max_verocity, fabs(v[i][j]) );
@@ -388,14 +388,14 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
             #pragma omp for private(i,j)
             // for (i = 0; i < width-2; i++){    // -2にしないと0が拡がる
             //     for (j = 1; j < height-1; j++)    // 
-            for(i=rectangleP[0].x+1; i<=rectangleP[1].x-1; i++){
-                for(j=rectangleP[0].y+1; j<=rectangleP[1].y-1; j++)
+            for(i=(int)rectangleP[0].x+1; i<=(int)rectangleP[1].x-1; i++){
+                for(j=(int)rectangleP[0].y+1; j<=(int)rectangleP[1].y-1; j++)
                     {u[i+1][j] = new_u[i+1][j];}}
             #pragma omp for private(i,j)
             // for (i = 1; i < width-1; i++){
             //     for (j = 0; j < height-2; j++)    // -2にしないと0が拡がる
-            for(i=rectangleP[0].x+1; i<=rectangleP[1].x-1; i++){
-                for(j=rectangleP[0].y+1; j<=rectangleP[1].y-1; j++)
+            for(i=(int)rectangleP[0].x+1; i<=(int)rectangleP[1].x-1; i++){
+                for(j=(int)rectangleP[0].y+1; j<=(int)rectangleP[1].y-1; j++)
                     {v[i][j+1] = new_v[i][j+1];}}
         }
     }

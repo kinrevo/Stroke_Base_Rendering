@@ -32,7 +32,7 @@
 #define opt_thick_max 10
 
 // ストローク半径の最小値。この大きさでストロークを終える
-#define opt_thick_min 3
+#define opt_thick_min 5
 
 // 描画色の計算法においてバイラテラル距離を用いるか
 #define opt_USE_calcu_color_bi 0
@@ -41,21 +41,27 @@
 #define opt_USE_gause_histogram 0
 
 // 最適ストローク手法を用いるかどうか
-#define opt_USE_Best_Stroke_Method 0
+#define opt_USE_Best_Stroke_Method 1
 
 // 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
-#define opt_optimal_improved_value_border 50
+#define opt_optimal_improved_value_border 1
 
 
 ////////////////	第二段階のパラメータ	/////////////////
 
 // ストローク半径の最大値。この大きさからストロークを始める（0のとき第二段階は用いられない）
-#define opt2_thick_max 2
+#define opt2_thick_max 3
 
 // ストローク半径の最小値。この大きさでストロークを終える
 #define opt2_thick_min 1
 
+// ストロークの最小長
+#define opt2_min_stroke 3
+
+// ストロークの描画の濃さ。この値が大きいほど下地の色を無視して塗りつぶす
+#define opt2_ratio 0.2
+
 // ストロークの半径ごとの繰り返し数。多いと丁寧に塗りつぶす
-#define opt2_loop_cont 2
+#define opt2_loop_cont 1
 
 #endif

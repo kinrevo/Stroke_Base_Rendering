@@ -39,7 +39,7 @@ int main(int argc, char *argv[]){
     #endif
 
     for (i = 0; i < trials; i++) {
-        tmp = UpdateVelocity_Test(argc, argv);
+        tmp = Paint_Water_Stroke_Test(argc, argv);
         Ave_TIME += tmp;
         if(max<tmp) max=tmp;
         if(min>tmp) min=tmp;
@@ -947,25 +947,34 @@ double Paint_Water_Stroke_Test(int argc, char *argv[])
     double Ex_TIME=0;
     int i,j;
     int t=10;
-    int pnum=6;
-    RGB color = {91, 15, 12}, color2={250,20,70};
+    int pnum1=7,pnum2=6;
+    RGB color = {50, 10, 250}, color2={250,20,70};
     // RGB color = {200, 0, 100}, color2={0,0,0};
     double sigma;
-    // int width=460, height=360;
-    int width=640, height=480;
+    int width=460, height=360;
+    // int width=640, height=480;
     double** h = perlin_img(width, height, 0.1, 4);
     double** grad_hx = create_dally(width+1, height); 
     double** grad_hy = create_dally(width, height+1); 
     calcu_grad_h(h, grad_hx, grad_hy, width, height);
     PPM* Canvas_img = create_ppm(width, height, 255);
-    Point SP1[6]= {
-        {391.5,346.5},
-        {400.9,350},
-        {410.9,349.5},
-        {420.9,349.0},
-        {430.8,348.5},
-        {440.8,347.9}
+    Point SP1[7]= {
+        {60.5,60.5},
+        {53.5,53.5},
+        {53.5,43.5},
+        {58.5,34.8},
+        {63.5,26.1},
+        {73.5,26.1},
+        {80.6,33.2}
     };
+    // Point SP1[6]= {
+    //     {391.5,346.5},
+    //     {400.9,350},
+    //     {410.9,349.5},
+    //     {420.9,349.0},
+    //     {430.8,348.5},
+    //     {440.8,347.9}
+    // };
     // Point SP1[5]= {
     //     {10,10},
     //     {40,40},
@@ -973,14 +982,14 @@ double Paint_Water_Stroke_Test(int argc, char *argv[])
     //     {100,100},
     //     {120,120}
     // };
-    Point SP2[6]= {
-        {110,10},
-        {80,40},
-        {60,60},
-        {40,100},
-        {10,120},
-        {0,150}
-    };
+    // Point SP2[6]= {
+    //     {110,10},
+    //     {80,40},
+    //     {60,60},
+    //     {40,100},
+    //     {10,120},
+    //     {0,150}
+    // };
     char filename[64]={};
 
     double** gauce_filter = create_dally(2*t+1, 2*t+1);
@@ -991,12 +1000,12 @@ double Paint_Water_Stroke_Test(int argc, char *argv[])
         }
     }
 
-    strcpy(filename, "C0_");    // ペイント前のキャンバスを出力
-    strcat(filename, argv[1]);
-    write_ppm(filename, Canvas_img);
+    // strcpy(filename, "C0_");    // ペイント前のキャンバスを出力
+    // strcat(filename, argv[1]);
+    // write_ppm(filename, Canvas_img);
 
     clock_gettime(CLOCK_MONOTONIC, &start);
-    Paint_Water_Stroke(SP1, pnum, t, color, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
+    Paint_Water_Stroke(SP1, pnum1, t, color, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
     clock_gettime(CLOCK_MONOTONIC, &end);
     Ex_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
 
@@ -1004,11 +1013,11 @@ double Paint_Water_Stroke_Test(int argc, char *argv[])
     strcat(filename, argv[1]);
     write_ppm(filename, Canvas_img);
 
-    Paint_Water_Stroke(SP2, pnum, t, color2, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
+    // Paint_Water_Stroke(SP2, pnum2, t, color2, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
 
-    strcpy(filename, "C2_");    // ペイント2後のキャンバスを出力
-    strcat(filename, argv[1]);
-    write_ppm(filename, Canvas_img);
+    // strcpy(filename, "C2_");    // ペイント2後のキャンバスを出力
+    // strcat(filename, argv[1]);
+    // write_ppm(filename, Canvas_img);
 
     Free_dally(h,width);
     Free_dally(grad_hx,width+1);

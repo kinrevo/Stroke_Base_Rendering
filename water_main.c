@@ -169,6 +169,13 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "USE_calcu_color_bi", opt_USE_calcu_color_bi);
 	Add_dictionary_to_sentence(log_sentence, "USE_gause_histogram", opt_USE_gause_histogram);
 	Add_dictionary_to_sentence(log_sentence, "optimal_improved_value_border", opt_optimal_improved_value_border);
+	if(opt2_thick_max){
+		Add_dictionary_to_sentence(log_sentence, "thick_max[2]", opt2_thick_max);
+		Add_dictionary_to_sentence(log_sentence, "thick_min[2]", opt2_thick_min);
+		Add_dictionary_to_sentence(log_sentence, "min_stroke[2]", opt2_min_stroke);
+		Add_dictionary_to_sentence(log_sentence, "ratio[2]", (int)(opt2_ratio*100));
+		Add_dictionary_to_sentence(log_sentence, "loop_cont[2]", opt2_loop_cont);
+	}
 	strcat(log_sentence, "[Water Option]\r\n");
 	Add_dictionary_to_sentence(log_sentence, "mhu", (int)(opt_mhu*100));
 	Add_dictionary_to_sentence(log_sentence, "kappa", (int)(opt_kappa*100));
@@ -462,6 +469,8 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	//エッジマップを計算し、エッジの複雑な周辺だけに描画を行う
 	//---------------------------
 	loop_cont = opt2_loop_cont;
+	min_stroke = opt2_min_stroke;
+	ratio = opt2_ratio;
 	tc=-1;
 	double maxValue=0.30, minValue=0.10;
 	PGM *canny;
@@ -614,18 +623,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	
 		printf("////////////////////\nt%d done.\n////////////////////\n\n\n",t);
 		Free_dally(gauce_filter, 2*t+1);
-		
-		lc++;		//同じ半径でのループをcont回する
-		if((lc%loop_cont) != 0){
-			p("lc",lc);
-			t++;
-			x_defo += t/loop_cont;
-			y_defo += t/loop_cont;
-			if(t/loop_cont==0){
-				x_defo++;	y_defo++;
-			}
-		}
-		
 
 		{
 			tc=t;	
@@ -652,7 +649,17 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 			strcat(log_sentence, "\r\n");
 			pd("TIME[s]",my_clock());
 		}
-
+		
+		lc++;		//同じ半径でのループをcont回する
+		if((lc%loop_cont) != 0){
+			p("lc",lc);
+			t++;
+			x_defo += t/loop_cont;
+			y_defo += t/loop_cont;
+			if(t/loop_cont==0){
+				x_defo++;	y_defo++;
+			}
+		}
 	}
 
 
@@ -664,7 +671,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 
 	
 	double MSE = image_MSE(nimgC, in);
-	Add_dictionary_to_sentence(log_sentence, "MSE", MSE);
+	Add_dictionary_to_sentence(log_sentence, "MSE", (int)MSE);
 	
 	Add_dictionary_to_sentence(log_sentence, "All_Execution_TIME", my_clock());
 	printf("%s\n", log_filename);
@@ -765,6 +772,13 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "USE_calcu_color_bi", opt_USE_calcu_color_bi);
 	Add_dictionary_to_sentence(log_sentence, "USE_gause_histogram", opt_USE_gause_histogram);
 	Add_dictionary_to_sentence(log_sentence, "optimal_improved_value_border", opt_optimal_improved_value_border);
+	if(opt2_thick_max){
+		Add_dictionary_to_sentence(log_sentence, "thick_max[2]", opt2_thick_max);
+		Add_dictionary_to_sentence(log_sentence, "thick_min[2]", opt2_thick_min);
+		Add_dictionary_to_sentence(log_sentence, "min_stroke[2]", opt2_min_stroke);
+		Add_dictionary_to_sentence(log_sentence, "ratio[2]", (int)(opt2_ratio*100));
+		Add_dictionary_to_sentence(log_sentence, "loop_cont[2]", opt2_loop_cont);
+	}
 	strcat(log_sentence, "[Water Option]\r\n");
 	Add_dictionary_to_sentence(log_sentence, "mhu", (int)(opt_mhu*100));
 	Add_dictionary_to_sentence(log_sentence, "kappa", (int)(opt_kappa*100));
@@ -824,7 +838,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	int diff_stroke_max=0;
 	int tmp_num;
 	int diff_stroke_max_ave[50]={};
-	int **reversal_map = create_ally(in->width, in->height);
+	// int **reversal_map = create_ally(in->width, in->height);
 	int best_x=0, best_y=0;
 	// int miss_stroke_count=0;
 	Stroke*** best_stroke_map = create_Stroke_ally(in->width, in->height, max_stroke);
@@ -842,6 +856,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	
 	//太いストロークから順番にストロークを小さくしておおまかに絵の形を取っていく
 	for(t=thick_max; t>=thick_min; t--){
+		// if(t!=20 && t!=10 && t!=5) continue;
 		if(t!=20 && t!=15 && t!=10 && t!=6 && t!=3 ) continue;
 			
 		//ストロークサイズのガウスフィルタを生成
@@ -855,12 +870,18 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 				
 
 		
-		stroke_num=9999;
+		stroke_num=99999;
 		// stroke_num = in->width/t * in->height/t / (max_stroke+min_stroke)/2;
 		p("stroke_num", stroke_num);
 		
+		// 最適なストロークに関するデータを初期化
 		format_ally(GLOBAL_improved_value_map->data, GLOBAL_improved_value_map->width, GLOBAL_improved_value_map->height, UNCALCULATED);
-		format_ally(reversal_map, GLOBAL_improved_value_map->width, GLOBAL_improved_value_map->height, Reversal_OFF);
+		// for(i=0; i<in->width; i++){
+		// 	for(j=0; j<in->height; j++){
+		// 		best_stroke_map[i][j]->pnum = 1; // 開始点は常に正しいため1
+		// 	}
+		// }
+		// format_ally(reversal_map, GLOBAL_improved_value_map->width, GLOBAL_improved_value_map->height, Reversal_OFF);
 		
 		for(s_count=0; s_count<stroke_num; s_count++) {  //ある半径におけるストローク回数
 			// 誤差探索の変数を初期化
@@ -895,7 +916,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					//差分の合計平均(画素当たりの差分)が一定以上ならストローク開始位置とする
 					if(diff_sum < window_diff_border) {
 						// stroke_histogram[pnum]++;
-						GLOBAL_improved_value_map->data[best_x][best_y] = SMALL_DIFF;
+						GLOBAL_improved_value_map->data[x][y] = SMALL_DIFF;
 						continue;
 					}
 					pnum=1;		//第一点確定
@@ -989,14 +1010,14 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 						}
 					}
 					
+					
+					for(i=0; i<pnum; i++){
+						best_stroke_map[x][y]->p[i] = p[i];
+					}
+					best_stroke_map[x][y]->color=bright;
+					best_stroke_map[x][y]->pnum=pnum;
 					//　試しに描いてみて誤差を確認
 					if(pnum>=min_stroke){
-						//現在のストロークが保存している開始点のものより良いなら更新
-						for(i=0; i<pnum; i++){
-							best_stroke_map[x][y]->p[i] = p[i];
-						}
-						best_stroke_map[x][y]->color=bright;
-						best_stroke_map[x][y]->pnum=pnum;
 						// GLOBAL_improved_value_map->data[x][y] = diff_sum;
 						GLOBAL_improved_value_map->data[x][y] = test_water_stroke(test_Canvas, in, nimgC, best_stroke_map[x][y], t, h, grad_hx, grad_hy, gauce_filter);
 					}else if(pnum<min_stroke){
@@ -1166,9 +1187,218 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	pd("TIME[s]",my_clock());
 	
 
+
+	
+
+	//---------------------------
+	//エッジマップを計算し、エッジの複雑な周辺だけに描画を行う
+	//---------------------------
+	int lc=0;
+	loop_cont = opt2_loop_cont;
+	min_stroke = opt2_min_stroke;
+	ratio = opt2_ratio;
+	tc=-1;
+	double maxValue=0.30, minValue=0.10;
+	PGM *canny;
+	PGM *EdgeMap;
+	
+	thick_max = opt2_thick_max;
+	if(thick_max){
+		canny = cannyedge_detector(gray, maxValue, minValue, thick_min);
+		EdgeMap = calcu_EdgeMap(canny, thick_min, sobel_angle);
+		//EdgeMap = expand_Edge(canny, thick_min);
+	}
+	thick_min = opt2_thick_min;
+	strcat(log_sentence, "[EdgeStroke Option]\r\n");
+	
+	for(t=thick_max; t>=thick_min; t--){
+		paint_count=0;
+
+		//ストロークサイズのガウスフィルタを生成
+		gauce_filter = create_dally(2*t+1, 2*t+1);
+		sigma = t/3.0;
+		for(i=0; i<2*t+1; i++){
+	        for(j=0; j<2*t+1; j++){
+	        	gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
+	        }
+	    }
+		
+		for(y=y_defo; y<in->height; y=y+t) {  //ウィンドウの大きさに合わせて
+			for(x=x_defo; x<in->width; x=x+t) {  //ウィンドウをずらす距離を変えとく
+				//エッジマップにない箇所なら次のループに
+				if(EdgeMap->data[x][y]!=255) continue;
+				
+				//ウィンドウの中の差分の合計を取る
+				diff_sum = break_flag = pnum = 0;
+				
+				offscrn_count = 0;
+				for(xc=-t; xc<=t; xc++) {
+					if((x+xc)<0 || (x+xc)>in->width-1) {offscrn_count += 2*t+1;		continue;	}
+					for(yc=-t; yc<=t; yc++) {
+						if((y+yc)<0 || (y+yc)>in->height-1) {	offscrn_count++;
+						}else{
+							diff_sum += abs(nimgR->data[x+xc][y+yc] - cmprR->data[x+xc][y+yc]);
+							diff_sum += abs(nimgG->data[x+xc][y+yc] - cmprG->data[x+xc][y+yc]);
+							diff_sum += abs(nimgB->data[x+xc][y+yc] - cmprB->data[x+xc][y+yc]);
+						}
+					}
+				}
+				diff_sum = diff_sum/((2*t+1)*(2*t+1)-offscrn_count)/3;
+				
+				//差分の合計平均(画素当たりの差分)が一定以上ならストローク開始位置とする
+				if(diff_sum < window_diff_border) {
+					stroke_histogram[pnum]++;
+					continue;
+				}
+				pnum=1;		//第一点確定
+				p[0].x=x+0.5; p[0].y=y+0.5;
+				
+				//一つ目の描画領域から描画色を平均を取って取得
+				if(opt_USE_calcu_color_bi){
+					bright.R = calcu_color_bi(cmprR->data, cmprR->width, cmprR->height, x, y, t, 50, gauce_filter);
+					bright.G = calcu_color_bi(cmprG->data, cmprG->width, cmprG->height, x, y, t, 50, gauce_filter);
+					bright.B = calcu_color_bi(cmprB->data, cmprB->width, cmprB->height, x, y, t, 50, gauce_filter);
+				} else{
+					bright.R = calcu_color(cmprR->data, cmprR->width, cmprR->height, x, y, t);
+					bright.G = calcu_color(cmprG->data, cmprG->width, cmprG->height, x, y, t);
+					bright.B = calcu_color(cmprB->data, cmprB->width, cmprB->height, x, y, t);
+				}
+				
+				
+				theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition, 
+						gauce_filter, p[0].x, p[0].y, t, &break_flag);
+				
+				
+				//制御点を方向から計算し代入
+				p[1] = calcu_point(cmpr, p[0], t, theta);
+				
+				
+				//二つ目の描画点周りの色が描画色と一致するか確認する
+				sum = 0;
+				sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
+				sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
+				sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
+				
+				//二つ目の制御点周りの色が描画色としきい値以上の差を持つなら描画せず反対方向の制御点を見る
+				if( sum < color_diff_border){
+					//もう一つの勾配垂直の点を代入
+					theta += PI; 
+					p[1] = calcu_point(cmpr, p[0], t, theta);
+					
+					//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
+					//sum = diffsum_clr(cmpr, nimgV, p[1], t, bright);  //点当たりの差異平均
+					sum = 0;
+					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
+					sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
+					sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
+					
+					//どちらの第二点も不適切なら描画をせず次のループへ
+					if( sum < color_diff_border) {
+						// inapp_count++;
+						// stroke_histogram[pnum]++;
+						continue;
+					}
+				}
+				//適切な第二点が見つかれば次へ
+				pnum=2;		//第二点確定
+				
+				
+				/*
+					POINT2から勾配により次の制御点を探していく
+				*/
+				
+				while(pnum<max_stroke){
+					former_theta=theta;
+					
+					//第pnum点周りにおいて、sobelからヒストグラムを作成し最大のものを勾配とする
+					theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition, 
+											gauce_filter, p[pnum-1].x, p[pnum-1].y, t, &break_flag);
+					
+					//制御点の為す角が急峻になるようなら逆方向に角度を取る
+					if( (theta < former_theta-PI/2) || (theta > former_theta+PI/2) ) {theta += PI;} 
+					p[pnum] = calcu_point(cmpr, p[pnum-1], t, theta);
+					
+					//pnum+1目の描画点周りの色が描画色と一致するか確認する  //点当たりの差異平均
+					sum = 0;
+					sum += diffsum_clr(cmprR, nimgR, p[pnum], t, bright.R);
+					sum += diffsum_clr(cmprG, nimgG, p[pnum], t, bright.G);
+					sum += diffsum_clr(cmprB, nimgB, p[pnum], t, bright.B);
+					
+					/*
+						pnum+1目の(次の)制御点周りの色が描画色としきい値以上の差を持つなら
+						それまでの制御点を用いて線を描画
+					*/
+					if( sum < color_diff_border) {break_flag=1; break;}
+					else {pnum++;}
+					
+				}
+				
+				if(pnum>=min_stroke) { 
+					//算出したpnum個の制御点を用いてストロークを描画
+					Paint_Bezier_ex(p, pnum, nimgR, t, bright.R, ratio);	
+					Paint_Bezier_ex(p, pnum, nimgG, t, bright.G, ratio);	
+					Paint_Bezier_ex(p, pnum, nimgB, t, bright.B, ratio);	
+					// stroke_histogram[pnum]++;  
+				}
+
+				paint_count++;
+				nc++;
+			}
+		}
+		
+
+		printf("////////////////////\nt%d done.\n////////////////////\n\n\n",t);
+		Free_dally(gauce_filter, 2*t+1);
+		
+
+		{
+			tc=t;	
+			strcpy(out_filename, dir_path);
+			strcat(out_filename, in_filename);
+			snprintf(count_name, 16, "%02d", t);
+			strcat(out_filename, "__st");
+			strcat(out_filename, count_name);
+			snprintf(count_name, 16, "%02d", lc);
+			strcat(out_filename, "_lc");
+			strcat(out_filename, count_name);
+			strcat(out_filename, ".png");
+			out_png = PPM_to_image(nimgC);
+			// out_png = PPM_to_image(nimgC_Scaling);
+			if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+			free_image(out_png);
+			printf("%s\n",out_filename);
+			printf("%d:",t);
+			strcat(log_sentence, "\r\n");
+			Add_dictionary_to_sentence(log_sentence, "t", t);
+			Add_dictionary_to_sentence(log_sentence, "s_count", paint_count);
+			snprintf(count_name, 16, "%f", my_clock());
+			strcat(log_sentence, count_name);
+			strcat(log_sentence, "\r\n");
+			pd("TIME[s]",my_clock());
+		}
+
+				
+		lc++;		//同じ半径でのループをcont回する
+		if((lc%loop_cont) != 0){
+			p("lc",lc);
+			t++;
+			x_defo += t/loop_cont;
+			y_defo += t/loop_cont;
+			if(t/loop_cont==0){
+				x_defo++;	y_defo++;
+			}
+		}
+	}
+
+	strcpy(out_filename, dir_path);
+	strcat(out_filename, in_filename);
+	strcat(out_filename, "__EdgeMap");
+	strcat(out_filename, ".pgm");
+	if(write_pgm(out_filename, EdgeMap)){ printf("WRITE PNG ERROR.");}
+
 	
 	double MSE = image_MSE(nimgC, in);
-	Add_dictionary_to_sentence(log_sentence, "MSE", MSE);
+	Add_dictionary_to_sentence(log_sentence, "MSE", (int)MSE);
 	
 	Add_dictionary_to_sentence(log_sentence, "All_Execution_TIME", my_clock());
 	printf("%s\n", log_filename);
