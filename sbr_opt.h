@@ -41,10 +41,17 @@
 #define opt_USE_gause_histogram 0
 
 // 最適ストローク手法を用いるかどうか
-#define opt_USE_Best_Stroke_Method 1
+#define opt_USE_Best_Stroke_Method 0
 
 // 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
 #define opt_optimal_improved_value_border 1
+
+// キャンバスを描画途中画像から始めるかどうか
+#define opt_USE_input_progress_image 0
+
+// キャンバスに用いられる描画途中画像のアドレス
+#define opt_progress_image_address "ex_tmp/ex_tmp__t06.png"
+
 
 
 ////////////////	第二段階のパラメータ	/////////////////

@@ -224,7 +224,34 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	PGM *cmprB = inB;  
 	//キャンバスイメージ生成
 	PGM *nimgV = create_pgm(gray->width, gray->height, gray->bright); //明度のみのキャンバス（比較用）  
-	PPM *nimgC = create_ppm(in->width, in->height, in->bright); //実際に描画するキャンバス
+	PPM *nimgC;
+	if(opt_USE_input_progress_image){
+		//描画中キャンバス画像を読み込む
+		image_t *in_img;
+		char name[64] = opt_progress_image_address;
+		char* ext = get_extension(name);
+
+		if (strcmp("ppm", ext) == 0 || strcmp("pnm", ext) == 0) {
+			nimgC = read_ppm(name);
+		} else if (strcmp("jpg", ext) == 0 || strcmp("jpeg", ext) == 0) {
+			in_img = read_jpeg_file(name);
+			dump_image_info(in_img);	//画像情報出力
+			nimgC = image_to_PPM(in_img);		//扱いやすいデータ構造に変換
+			free_image(in_img);
+		} else if (strcmp("png", ext) == 0) {
+			in_img = read_png_file(name);
+			dump_image_info(in_img);	//画像情報出力
+			nimgC = image_to_PPM(in_img);		//扱いやすいデータ構造に変換
+			free_image(in_img);
+		} else {
+			printf("Plese use JPEG,PNG or PPM!\n");
+			exit(1);
+		}
+
+		devide_ppm(nimgC, nimgR, nimgG, nimgB);
+	} else{
+		nimgC = create_ppm(in->width, in->height, in->bright); //実際に描画するキャンバス
+	}
 	nimgC->dataR = nimgR->data;
 	nimgC->dataG = nimgG->data;
 	nimgC->dataB = nimgB->data;
@@ -661,7 +688,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	double MSE = image_MSE(nimgC, in);
 	Add_dictionary_to_sentence(log_sentence, "MSE", (int)MSE);
 	
-	Add_dictionary_to_sentence(log_sentence, "All_Execution_TIME", my_clock());
+	Add_dictionary_to_sentence_d(log_sentence, "All_Execution_TIME", my_clock());
 	printf("%s\n", log_filename);
 	if(log_print(log_filename, log_sentence, "w") ){ printf("LOG_PRINTING_FAIL\n"); }
 	
@@ -804,10 +831,38 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	PGM *cmprB = inB;  
 	//キャンバスイメージ生成
 	PGM *nimgV = create_pgm(gray->width, gray->height, gray->bright); //明度のみのキャンバス（比較用）  
-	PPM *nimgC = create_ppm(in->width, in->height, in->bright); //実際に描画するキャンバス
+	PPM *nimgC;
+	if(opt_USE_input_progress_image){
+		//描画中キャンバス画像を読み込む
+		image_t *in_img;
+		char name[64] = opt_progress_image_address;
+		char* ext = get_extension(name);
+
+		if (strcmp("ppm", ext) == 0 || strcmp("pnm", ext) == 0) {
+			nimgC = read_ppm(name);
+		} else if (strcmp("jpg", ext) == 0 || strcmp("jpeg", ext) == 0) {
+			in_img = read_jpeg_file(name);
+			dump_image_info(in_img);	//画像情報出力
+			nimgC = image_to_PPM(in_img);		//扱いやすいデータ構造に変換
+			free_image(in_img);
+		} else if (strcmp("png", ext) == 0) {
+			in_img = read_png_file(name);
+			dump_image_info(in_img);	//画像情報出力
+			nimgC = image_to_PPM(in_img);		//扱いやすいデータ構造に変換
+			free_image(in_img);
+		} else {
+			printf("Plese use JPEG,PNG or PPM!\n");
+			exit(1);
+		}
+
+		devide_ppm(nimgC, nimgR, nimgG, nimgB);
+	} else{
+		nimgC = create_ppm(in->width, in->height, in->bright); //実際に描画するキャンバス
+	}
 	nimgC->dataR = nimgR->data;
 	nimgC->dataG = nimgG->data;
 	nimgC->dataB = nimgB->data;
+
 	PPM *test_Canvas = create_ppm(in->width, in->height, in->bright); //誤差予測に使うテストキャンバス
 	// PGM *improved_value_map = create_pgm(in->width, in->height, in->bright); //改善値マップ
 	GLOBAL_improved_value_map = create_pgm(in->width, in->height, in->bright); //改善値マップ
@@ -857,7 +912,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 
 		
 		stroke_num=99999;
-		// stroke_num = in->width/t * in->height/t / (max_stroke+min_stroke)/2;
 		p("stroke_num", stroke_num);
 		
 		// 最適なストロークに関するデータを初期化
@@ -942,8 +996,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 						theta += PI;
 						p[1] = calcu_point(cmpr, p[0], t, theta);
 						
-						//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
-						//sum = diffsum_clr(cmpr, nimgV, p[1], t, bright);  //点当たりの差異平均
+						//反対方向の第二点の描画点周りの色が描画色と一致するか確認する//点当たりの差異平均
 						sum = 0;
 						sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
 						sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
@@ -1116,12 +1169,8 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 				if(y_defo>t) y_defo -= t;
 			}
 		}
-		
-		// printf("miss_stroke/t%d:%d\n",t,miss_stroke_count);
 
-		// if(t!=tc)
 		{
-			// tc=t;	
 			strcpy(out_filename, dir_path);
 			strcat(out_filename, in_filename);
 			snprintf(count_name, 16, "%02d", t);
@@ -1377,7 +1426,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	double MSE = image_MSE(nimgC, in);
 	Add_dictionary_to_sentence(log_sentence, "MSE", (int)MSE);
 	
-	Add_dictionary_to_sentence(log_sentence, "All_Execution_TIME", my_clock());
+	Add_dictionary_to_sentence_d(log_sentence, "All_Execution_TIME", my_clock());
 	printf("%s\n", log_filename);
 	if(log_print(log_filename, log_sentence, "w") ){ printf("LOG_PRINTING_FAIL\n"); }
 	
