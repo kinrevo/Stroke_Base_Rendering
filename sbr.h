@@ -133,6 +133,7 @@ PPM *image_to_PPM(image_t *img);
 image_t *PPM_to_image(PPM *ppm);
 int log_print(char* filename, char *sentence, char *mode);
 void Add_dictionary_to_sentence(char* sentence, char *name, int value);
+void Add_dictionary_to_sentence_d(char* sentence, char *name, double value);
 
 char** make_file_list(int* file_num, char* search_path, int Search_TYPE);
 void multi_file_CIB(char** list, int list_num);

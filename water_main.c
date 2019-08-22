@@ -99,7 +99,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	int max_stroke = opt_max_stroke;
 	int min_stroke = opt_min_stroke;
 	Point p[max_stroke];
-//	Point *scaling_p;
 	int stroke_histogram[max_stroke+1];
 	for(i=0; i<max_stroke+1; i++){stroke_histogram[i]=0;}
 	double ratio=opt_ratio;		//ストロークの濃度
@@ -110,7 +109,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	int paint_count=0, nc=0, tc=-1;
 	int loop_cont=opt_loop_cont, x_defo=0, y_defo=0;
 	int lc=0;
-//	double canvas_scaling_ratio = 1.0;
 	RGB bright;
 	
 	
@@ -215,9 +213,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	PGM *nimgR = create_pgm(gray->width, gray->height, gray->bright); 
 	PGM *nimgG = create_pgm(gray->width, gray->height, gray->bright); 
 	PGM *nimgB = create_pgm(gray->width, gray->height, gray->bright); 
-	// PGM *nimgR_Scaling = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
-	// PGM *nimgG_Scaling = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
-	// PGM *nimgB_Scaling = create_pgm(gray->width*canvas_scaling_ratio, gray->height*canvas_scaling_ratio, gray->bright); 
 	PGM *inR = create_pgm(gray->width, gray->height, gray->bright); 
 	PGM *inG = create_pgm(gray->width, gray->height, gray->bright); 
 	PGM *inB = create_pgm(gray->width, gray->height, gray->bright); 
@@ -233,10 +228,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	nimgC->dataR = nimgR->data;
 	nimgC->dataG = nimgG->data;
 	nimgC->dataB = nimgB->data;
-	// PPM *nimgC_Scaling = create_ppm(in->width*canvas_scaling_ratio, in->height*canvas_scaling_ratio, in->bright); //実際に描画するキャンバス（拡縮描画用）
-	// nimgC_Scaling->dataR = nimgR_Scaling->data;
-	// nimgC_Scaling->dataG = nimgG_Scaling->data;
-	// nimgC_Scaling->dataB = nimgB_Scaling->data;
 	
 	// sobelフィルタを適応した計算結果を予め格納しておく
 	double **sobel_abs = create_dally(in->width, in->height);
@@ -404,7 +395,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 					strcat(out_filename, count_name);
 					strcat(out_filename, ".png");
 					out_png = PPM_to_image(nimgC);
-					// out_png = PPM_to_image(nimgC_Scaling);
 					if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
 					free_image(out_png);
 					printf("%s\n",out_filename);
@@ -427,7 +417,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 			strcat(out_filename, count_name);
 			strcat(out_filename, ".png");
 			out_png = PPM_to_image(nimgC);
-			// out_png = PPM_to_image(nimgC_Scaling);
 			if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
 			free_image(out_png);
 			printf("%s\n",out_filename);
@@ -435,9 +424,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 			strcat(log_sentence, "\r\n");
 			Add_dictionary_to_sentence(log_sentence, "t", t);
 			Add_dictionary_to_sentence(log_sentence, "s_count", paint_count);
-			snprintf(count_name, 16, "%f", my_clock());
-			strcat(log_sentence, count_name);
-			strcat(log_sentence, "\r\n");
+			Add_dictionary_to_sentence_d(log_sentence, "TIME[s]", my_clock());
 			pd("TIME[s]",my_clock());
 		}
 	
@@ -455,7 +442,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	strcat(out_filename, count_name);
 	strcat(out_filename, ".png");
 	out_png = PPM_to_image(nimgC);
-	// out_png = PPM_to_image(nimgC_Scaling);
 	if(write_png_file(out_filename, out_png)){ printf("WRITE JPG ERROR.");}
 	free_image(out_png);
 	printf("%s\n",out_filename);
@@ -478,12 +464,15 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	
 	thick_max = opt2_thick_max;
 	if(thick_max){
+		strcat(log_sentence, "\r\n\r\n[EdgeStroke]\r\n");
 		canny = cannyedge_detector(gray, maxValue, minValue, thick_min);
 		EdgeMap = calcu_EdgeMap(canny, thick_min, sobel_angle);
 		//EdgeMap = expand_Edge(canny, thick_min);
 	}
 	thick_min = opt2_thick_min;
-	strcat(log_sentence, "[EdgeStroke Option]\r\n");
+
+	Add_dictionary_to_sentence_d(log_sentence, "CannyTIME[s]", my_clock());
+	pd("Canny:TIME[s]",my_clock());
 	
 	for(t=thick_max; t>=thick_min; t--){
 		paint_count=0;
@@ -636,7 +625,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 			strcat(out_filename, count_name);
 			strcat(out_filename, ".png");
 			out_png = PPM_to_image(nimgC);
-			// out_png = PPM_to_image(nimgC_Scaling);
 			if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
 			free_image(out_png);
 			printf("%s\n",out_filename);
@@ -702,7 +690,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	int max_stroke = opt_max_stroke;
 	int min_stroke = opt_min_stroke;
 	Point p[max_stroke];
-//	Point *scaling_p;
 	int stroke_histogram[max_stroke+1];
 	for(i=0; i<max_stroke+1; i++){stroke_histogram[i]=0;}
 	double ratio=opt_ratio;		//ストロークの濃度
@@ -714,7 +701,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	int loop_cont=opt_loop_cont, x_defo=0, y_defo=0;
 	// int lc=0;
 	// double maxValue, minValue;
-//	double canvas_scaling_ratio = 1.0;
 	RGB bright;
 	
 	
@@ -1074,9 +1060,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 				strcat(log_sentence, "\r\n");
 				Add_dictionary_to_sentence(log_sentence, "t", t);
 				Add_dictionary_to_sentence(log_sentence, "s_count", s_count);
-				snprintf(count_name, 16, "%f", my_clock());
-				strcat(log_sentence, count_name);
-				strcat(log_sentence, "\r\n");
+				Add_dictionary_to_sentence_d(log_sentence, "TIME[s]", my_clock());
 				{
 					strcpy(out_filename, dir_path);
 					strcat(out_filename, in_filename);
@@ -1092,16 +1076,12 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			
 			
 			//算出したpnum個の制御点を用いてストロークを描画
-			// double start_PWS = my_clock();
 			Paint_Water_Stroke(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, t, best_stroke_map[best_x][best_y]->color, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);	
 			// printf("C:[%d,%d,%d]",best_stroke_map[best_x][best_y]->color.R, best_stroke_map[best_x][best_y]->color.G, best_stroke_map[best_x][best_y]->color.B);
 			// display_Point_ally(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum);
-			// pd("PWS[s]",my_clock()-start_PWS);
 			
 			// 描画したストロークの周囲のみ改善値マップをリセット
-			// start_PWS = my_clock();
 			reset_improved_value_map(GLOBAL_improved_value_map, best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, best_stroke_map, t, max_stroke);
-			// pd("RIvm[s]",my_clock()-start_PWS);
 			
 			
 			//一定ストロークごとに途中経過画像を書き出す
@@ -1120,7 +1100,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					strcat(out_filename, count_name);
 					strcat(out_filename, ".png");
 					out_png = PPM_to_image(nimgC);
-					// out_png = PPM_to_image(nimgC_Scaling);
 					if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
 					free_image(out_png);
 					printf("%s\n",out_filename);
@@ -1150,7 +1129,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			strcat(out_filename, count_name);
 			strcat(out_filename, ".png");
 			out_png = PPM_to_image(nimgC);
-			// out_png = PPM_to_image(nimgC_Scaling);
 			if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
 			free_image(out_png);
 			printf("%s\n",out_filename);
@@ -1178,7 +1156,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	strcat(out_filename, count_name);
 	strcat(out_filename, ".png");
 	out_png = PPM_to_image(nimgC);
-	// out_png = PPM_to_image(nimgC_Scaling);
 	if(write_png_file(out_filename, out_png)){ printf("WRITE JPG ERROR.");}
 	free_image(out_png);
 	printf("%s\n",out_filename);
@@ -1204,12 +1181,15 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	
 	thick_max = opt2_thick_max;
 	if(thick_max){
+		strcat(log_sentence, "\r\n\r\n[EdgeStroke]\r\n");
 		canny = cannyedge_detector(gray, maxValue, minValue, thick_min);
 		EdgeMap = calcu_EdgeMap(canny, thick_min, sobel_angle);
 		//EdgeMap = expand_Edge(canny, thick_min);
 	}
 	thick_min = opt2_thick_min;
-	strcat(log_sentence, "[EdgeStroke Option]\r\n");
+
+	Add_dictionary_to_sentence_d(log_sentence, "CannyTIME[s]", my_clock());
+	pd("Canny:TIME[s]",my_clock());
 	
 	for(t=thick_max; t>=thick_min; t--){
 		paint_count=0;
@@ -1363,7 +1343,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			strcat(out_filename, count_name);
 			strcat(out_filename, ".png");
 			out_png = PPM_to_image(nimgC);
-			// out_png = PPM_to_image(nimgC_Scaling);
 			if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
 			free_image(out_png);
 			printf("%s\n",out_filename);
@@ -1371,9 +1350,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			strcat(log_sentence, "\r\n");
 			Add_dictionary_to_sentence(log_sentence, "t", t);
 			Add_dictionary_to_sentence(log_sentence, "s_count", paint_count);
-			snprintf(count_name, 16, "%f", my_clock());
-			strcat(log_sentence, count_name);
-			strcat(log_sentence, "\r\n");
+			Add_dictionary_to_sentence_d(log_sentence, "TIME[s]", my_clock());
 			pd("TIME[s]",my_clock());
 		}
 

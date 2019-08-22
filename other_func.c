@@ -974,6 +974,18 @@ void Add_dictionary_to_sentence(char* sentence, char *name, int value){
 }
 
 
+//[name, value] -> "name : value\n"
+void Add_dictionary_to_sentence_d(char* sentence, char *name, double value){
+	char value_word[16];
+	
+	strcat(sentence, name);
+	strcat(sentence, " : ");
+	snprintf(value_word, 16, "%f", value);
+	strcat(sentence, value_word);
+	strcat(sentence, "\r\n");
+}
+
+
 //logテキストファイルを生成する
 int log_print(char* filename, char *sentence, char *mode){
 	FILE* fp;
