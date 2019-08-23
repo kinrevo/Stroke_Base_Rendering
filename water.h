@@ -4,26 +4,26 @@
 #include "sbr.h"
 
 
-// UpdateVelocities：Bの係数(def:)
+// UpdateVelocities：Bの係数(def:0.1)
 #define opt_mhu 0.1
-// UpdateVelocities：粘性抵抗(def:)
+// UpdateVelocities：粘性抵抗(def:0.01)
 #define opt_kappa 0.01
-// RelaxDivergence：減衰の繰り返し回数(def:)
+// RelaxDivergence：減衰の繰り返し回数(def:50)
 #define opt_N 50
-// RelaxDivergence：減衰の閾値(def:)
+// RelaxDivergence：減衰の閾値(def:0.01)
 #define opt_tau 0.01
-// RelaxDivergence：減衰の係数(def:)
+// RelaxDivergence：減衰の係数(def:0.1)
 #define opt_xi 0.1
 // FlowOutward：ガウスフィルタの直径(def:10)
 #define opt_K 5
 // FlowOutward：減衰係数(def:0.01-0.05)
 #define opt_eta 0.01
 // TransferPigment：粒状化度、これが大きいほど沈着しづらく、浮上しづらい(def:0.05)
-#define opt_gamma 0.05
+#define opt_gamma 0.5
 // TransferPigment：顔料の比重、これが大きいほど沈着しやすく浮上しやすい(def:0.05)
-#define opt_rho 0.05
+#define opt_rho 0.2
 // TransferPigment：染色力、これが大きいほど浮上しづらい(def:1.0)
-#define opt_omega 1.0
+#define opt_omega 1.5
 
 // SimulateCapillaryFlow：浅水層から毛細層に水の浸透する割合(def:)
 #define opt_alpha 1.0

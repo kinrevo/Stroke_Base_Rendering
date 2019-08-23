@@ -267,6 +267,10 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
     double** grad_hy = create_dally(in->width, in->height+1); 
     calcu_grad_h(h, grad_hx, grad_hy, in->width, in->height);
 
+
+	///////////////////preprocess終了/////////////////
+	Add_dictionary_to_sentence_d(log_sentence, "\r\nPreProsessTIME[s]", my_clock());
+	pd("PreProsessTIME[s]",my_clock());
 	
 	//太いストロークから順番にストロークを小さくしておおまかに絵の形を取っていく
 	for(t=thick_max; t>=thick_min; t--){
@@ -894,11 +898,14 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
     double** grad_hy = create_dally(in->width, in->height+1); 
     calcu_grad_h(h, grad_hx, grad_hy, in->width, in->height);
 
-	
+	///////////////////preprocess終了/////////////////
+	Add_dictionary_to_sentence_d(log_sentence, "PreProsessTIME[s]", my_clock());
+	pd("PreProsessTIME[s]",my_clock());
+
 	//太いストロークから順番にストロークを小さくしておおまかに絵の形を取っていく
 	for(t=thick_max; t>=thick_min; t--){
-		// if(t!=20 && t!=10 && t!=5) continue;
-		if(t!=20 && t!=15 && t!=10 && t!=6 && t!=3 ) continue;
+		if(t!=20 && t!=10 && t!=7 && t!=5) continue;
+		// if(t!=20 && t!=15 && t!=10 && t!=6 && t!=3 ) continue;
 			
 		//ストロークサイズのガウスフィルタを生成
 		gauce_filter = create_dally(2*t+1, 2*t+1);

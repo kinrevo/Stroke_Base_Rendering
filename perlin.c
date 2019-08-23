@@ -92,12 +92,13 @@ int main(int argc, char *argv[])
     double tmp;
     double max=-99999999;
     double min=99999999;
-    width = height = 512;
+    width = 640;
+    height = 427;
     PGM* img = create_pgm(width,height,255);
 
     for(y=0; y<height; y++){
         for(x=0; x<width; x++){
-            tmp = perlin2d(x, y, 0.4, 6);//ここでノイズを調整
+            tmp = perlin2d(x, y, 0.1, 6);//ここでノイズを調整
             img->data[x][y] = tmp*255;
             max = fmax(max, tmp);
             min = fmin(min, tmp);
@@ -107,7 +108,7 @@ int main(int argc, char *argv[])
     pd("max",max);
     pd("min",min);
 
-    write_pgm("perlin512_f0.4_d6.pgm", img);
+    write_pgm("perlin640_f0.1_d6.pgm", img);
 
     return 0;
 }
