@@ -488,6 +488,7 @@ void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t
     static int first_flag=1;
     int i,j,k,l;
     static double **gauss_M; 
+    double sum, fil_sum;
     if(first_flag){
         gauss_M = create_dally(width, height);
 
@@ -496,19 +497,41 @@ void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t
     format_dally(gauss_M, width, height, 0);
 
 
+	// #pragma omp parallel for private(i,j)
+    // for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
+    //     for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
+    //         //注目しているセルがウェットエリアならガウスフィルタによる拡散された値を周囲に足し込む
+    //         if(M[i][j]==1) {
+    //             for(k=-c; k<=c; k++) { 
+    //                 if( (i+k)<(int)rectangleP[0].x || (i+k)>(int)rectangleP[1].x) continue;
+    //                 for(l=-c; l<=c; l++)  {
+    //                     //フィルタの端ピクセルがない場合分母にも分子にも加算しない
+    //                     if((j+l)<(int)rectangleP[0].y || (j+l)>(int)rectangleP[1].y) continue;
+    //                     gauss_M[i+k][j+l] += gause_filter[k+c][l+c];
+    //                 }
+    //             }
+    //         }
+	// 	}
+	// }
+
 	#pragma omp parallel for private(i,j)
     for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
         for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
             //注目しているセルがウェットエリアならガウスフィルタによる拡散された値を周囲に足し込む
             if(M[i][j]==1) {
+                sum = 0;
+                fil_sum = 1;
                 for(k=-c; k<=c; k++) { 
-                    if( (i+k)<(int)rectangleP[0].x || (i+k)>(int)rectangleP[1].x) continue;
                     for(l=-c; l<=c; l++)  {
-                        //フィルタの端ピクセルがない場合分母にも分子にも加算しない
-                        if((j+l)<(int)rectangleP[0].y || (j+l)>(int)rectangleP[1].y) continue;
-                        gauss_M[i+k][j+l] += gause_filter[k+c][l+c];
-                    }
+                        //フィルタの端ピクセルがない場合、分子には加算せず分母から減算
+				    	if( (i+k)<0 || (i+k)>=width-1 || (j+l)<0 || (j+l)>=height-1){
+					    	fil_sum -= gause_filter[k+c][l+c];
+                        }else{
+                            sum += M[i+k][j+l] * gause_filter[k+c][l+c];
+                        }
+					}
                 }
+                gauss_M[i][j] = sum/fil_sum;
             }
 		}
 	}

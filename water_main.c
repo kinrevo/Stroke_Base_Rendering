@@ -270,7 +270,14 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	
 	//太いストロークから順番にストロークを小さくしておおまかに絵の形を取っていく
 	for(t=thick_max; t>=thick_min; t--){
-		if(t!=10 && t!=6 && t!=3 ) continue;
+		if(opt_num_thick){
+			int thick_arr[opt_num_thick] = opt_thick_assignment;
+			int thick_flag=1;
+			for (i = 0; i < opt_num_thick; i++){
+				if(t==thick_arr[i]) thick_flag=0;
+			}
+			if(thick_flag) continue;
+		}
 			
 		//ストロークサイズのガウスフィルタを生成
 		gauce_filter = create_dally(2*t+1, 2*t+1);
@@ -897,8 +904,14 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	
 	//太いストロークから順番にストロークを小さくしておおまかに絵の形を取っていく
 	for(t=thick_max; t>=thick_min; t--){
-		// if(t!=20 && t!=10 && t!=5) continue;
-		if(t!=20 && t!=15 && t!=10 && t!=6 && t!=3 ) continue;
+		if(opt_num_thick){
+			int thick_arr[opt_num_thick] = opt_thick_assignment;
+			int thick_flag=1;
+			for (i = 0; i < opt_num_thick; i++){
+				if(t==thick_arr[i]) thick_flag=0;
+			}
+			if(thick_flag) continue;
+		}
 			
 		//ストロークサイズのガウスフィルタを生成
 		gauce_filter = create_dally(2*t+1, 2*t+1);
@@ -912,7 +925,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 
 		
 		stroke_num=99999;
-		p("stroke_num", stroke_num);
 		
 		// 最適なストロークに関するデータを初期化
 		format_ally(GLOBAL_improved_value_map->data, GLOBAL_improved_value_map->width, GLOBAL_improved_value_map->height, UNCALCULATED);
