@@ -267,6 +267,10 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
     double** grad_hy = create_dally(in->width, in->height+1); 
     calcu_grad_h(h, grad_hx, grad_hy, in->width, in->height);
 
+
+	///////////////////preprocess終了/////////////////
+	Add_dictionary_to_sentence_d(log_sentence, "\r\nPreProsessTIME[s]", my_clock());
+	pd("PreProsessTIME[s]",my_clock());
 	
 	//太いストロークから順番にストロークを小さくしておおまかに絵の形を取っていく
 	for(t=thick_max; t>=thick_min; t--){
@@ -901,7 +905,10 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
     double** grad_hy = create_dally(in->width, in->height+1); 
     calcu_grad_h(h, grad_hx, grad_hy, in->width, in->height);
 
-	
+	///////////////////preprocess終了/////////////////
+	Add_dictionary_to_sentence_d(log_sentence, "PreProsessTIME[s]", my_clock());
+	pd("PreProsessTIME[s]",my_clock());
+
 	//太いストロークから順番にストロークを小さくしておおまかに絵の形を取っていく
 	for(t=thick_max; t>=thick_min; t--){
 		if(opt_num_thick){
