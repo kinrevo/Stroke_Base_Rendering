@@ -416,7 +416,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 				if(pnum>=min_stroke) { 
 					double start_PWS = my_clock();
                     Paint_Water_Stroke(p, pnum, t, bright, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);
-					pd("PWS[s]",my_clock()-start_PWS);
+					//pd("PWS[s]",my_clock()-start_PWS);
 					stroke_histogram[pnum]++;  
 					paint_count++;
 				}
