@@ -220,7 +220,7 @@ int calcu_color_bi(int** data, int width, int height, int x, int y, int t, doubl
 double calcu_histogram(PGM* cmpr, double **sobel_abs, double **sobel_angle, int partition, 
 					double **gauce_filter, int x, int y, int t, int *break_flag)
 {
-	int i,j,Farg, im1,ip1;//,im2,ip2;
+	int i,j,Farg;//, im1,ip1;//,im2,ip2;
 	int peak=partition/2+0.5;		//lÌŒÜ“ü
 	double histogram[partition];
 	double theta;
@@ -242,16 +242,16 @@ double calcu_histogram(PGM* cmpr, double **sobel_abs, double **sobel_angle, int 
 	}
 	
 	//Å‘å’l‚Ì80“ˆÈã‚ÌŒù”z‚ª‘¼‚É‘¶İ‚·‚ê‚Îcontinue
-	for(i=0;i<partition;i++){
-		im1 = (i-1<0) ? partition-1:i-1;
-		ip1 = (i+1>partition-1) ? 0:i+1;
-		//im2 = (im1-1<0) ? partition-1:im1-1;
-		//ip2 = (ip1+1>partition-1) ? 0:ip1+1;
-		if(histogram[i] > 0.8*histogram[peak] && i!=peak && im1!=peak && ip1!=peak && im1!=peak && ip1!=peak){
-			*break_flag=1;
-			break;
-		}
-	}
+	// for(i=0;i<partition;i++){
+	// 	im1 = (i-1<0) ? partition-1:i-1;
+	// 	ip1 = (i+1>partition-1) ? 0:i+1;
+	// 	//im2 = (im1-1<0) ? partition-1:im1-1;
+	// 	//ip2 = (ip1+1>partition-1) ? 0:ip1+1;
+	// 	if(histogram[i] > 0.8*histogram[peak] && i!=peak && im1!=peak && ip1!=peak && im1!=peak && ip1!=peak){
+	// 		*break_flag=1;
+	// 		break;
+	// 	}
+	// }
 	theta = ((double)peak/partition)*PI+((PI/partition)/2);
 	
 	return theta;

@@ -19,11 +19,11 @@
 // FlowOutward：減衰係数(def:0.01-0.05)
 #define opt_eta 0.01
 // TransferPigment：粒状化度、これが大きいほど沈着しづらく、浮上しづらい(def:0.05)
-#define opt_gamma 0.5
+#define opt_gamma 0.05
 // TransferPigment：顔料の比重、これが大きいほど沈着しやすく浮上しやすい(def:0.05)
-#define opt_rho 0.2
+#define opt_rho 0.05
 // TransferPigment：染色力、これが大きいほど浮上しづらい(def:1.0)
-#define opt_omega 1.5
+#define opt_omega 1.0
 
 // SimulateCapillaryFlow：浅水層から毛細層に水の浸透する割合(def:)
 #define opt_alpha 1.0

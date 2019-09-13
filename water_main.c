@@ -64,8 +64,10 @@ int main(int argc, char *argv[])
 	
 	//入力画像の絵画化
 	if(opt_USE_Best_Stroke_Method){
+		printf("Stroke_Method:Best \n");
 		trans_ppm = c_Illust_brush_Water_best(in_ppm, argv[2]);
 	}else{
+		printf("Stroke_Method:Raster \n");
 		trans_ppm = c_Illust_brush_Water(in_ppm, argv[2]);
 	}
 
@@ -195,6 +197,12 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 		Add_dictionary_to_sentence(log_sentence, "delta", (int)(opt_delta*100));
 		Add_dictionary_to_sentence(log_sentence, "sigma", (int)(opt_sigma*100));
 	}
+	#ifdef _OPENMP
+		Add_dictionary_to_sentence(log_sentence, "OMP_NUM_THREADS", omp_get_max_threads());
+		printf("OMP_NUM_T:%d \n",(int)omp_get_max_threads());
+	#endif
+
+	pn;
 	
 	//vectorデータのヘッダを格納
 	// snprintf(tmp_sentence, 32, "%d", in->width);
@@ -414,9 +422,9 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 				}
 
 				if(pnum>=min_stroke) { 
-					double start_PWS = my_clock();
+					// double start_PWS = my_clock();
                     Paint_Water_Stroke(p, pnum, t, bright, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);
-					pd("PWS[s]",my_clock()-start_PWS);
+					// pd("PWS[s]",my_clock()-start_PWS);
 					stroke_histogram[pnum]++;  
 					paint_count++;
 				}
@@ -824,8 +832,13 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 		Add_dictionary_to_sentence(log_sentence, "delta", (int)(opt_delta*100));
 		Add_dictionary_to_sentence(log_sentence, "sigma", (int)(opt_sigma*100));
 	}
+	#ifdef _OPENMP
+		Add_dictionary_to_sentence(log_sentence, "OMP_NUM_THREADS", omp_get_max_threads());
+		printf("OMP_NUM_T:%d \n",(int)omp_get_max_threads());
+	#endif
 
-		
+	pn;
+
 	//カラー画像分割
 	PGM *gray = color_gray_conversion(in);
 	PGM *nimgR = create_pgm(gray->width, gray->height, gray->bright); 
@@ -874,7 +887,10 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	nimgC->dataG = nimgG->data;
 	nimgC->dataB = nimgB->data;
 
-	PPM *test_Canvas = create_ppm(in->width, in->height, in->bright); //誤差予測に使うテストキャンバス
+	PPM *test_Canvas;
+	// #ifndef _OPENMP
+		test_Canvas = create_ppm(in->width, in->height, in->bright);
+	// #endif
 	// PGM *improved_value_map = create_pgm(in->width, in->height, in->bright); //改善値マップ
 	GLOBAL_improved_value_map = create_pgm(in->width, in->height, in->bright); //改善値マップ
 
@@ -942,11 +958,18 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 		// }
 		// format_ally(reversal_map, GLOBAL_improved_value_map->width, GLOBAL_improved_value_map->height, Reversal_OFF);
 		
+		// #ifdef _OPENMP
+		// 	Format_SINGLE_Paint_Water();
+		// #endif
 		for(s_count=0; s_count<stroke_num; s_count++) {  //ある半径におけるストローク回数
 			// 誤差探索の変数を初期化
 			diff_stroke_max = UNCALCULATED;
 			
+			// #pragma omp parallel for private(x,xc,yc,test_Canvas,diff_sum,break_flag,pnum,offscrn_count,theta,sum,former_theta) schedule(static, 1)
 			for(y=0; y<in->height; y++) {  
+				// #ifdef _OPENMP
+				// 	test_Canvas = create_ppm(in->width, in->height, in->bright);
+				// #endif
 				for(x=0; x<in->width; x++) {  
 			//for(y=y_defo; y<in->height; y=y+t) {  //ウィンドウの大きさに合わせて
 				//for(x=x_defo; x<in->width; x=x+t) {  //ウィンドウをずらす距離を変えとく
@@ -979,33 +1002,33 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 						continue;
 					}
 					pnum=1;		//第一点確定
-					p[0].x=x+0.5; p[0].y=y+0.5;
+					best_stroke_map[x][y]->p[0].x=x+0.5; best_stroke_map[x][y]->p[0].y=y+0.5;
 					
 					//一つ目の描画領域から描画色を取得
 					if(opt_USE_calcu_color_bi){
-						bright.R = calcu_color_bi(cmprR->data, cmprR->width, cmprR->height, x, y, t, 50, gauce_filter);
-						bright.G = calcu_color_bi(cmprG->data, cmprG->width, cmprG->height, x, y, t, 50, gauce_filter);
-						bright.B = calcu_color_bi(cmprB->data, cmprB->width, cmprB->height, x, y, t, 50, gauce_filter);
+						best_stroke_map[x][y]->color.R = calcu_color_bi(cmprR->data, cmprR->width, cmprR->height, x, y, t, 50, gauce_filter);
+						best_stroke_map[x][y]->color.G = calcu_color_bi(cmprG->data, cmprG->width, cmprG->height, x, y, t, 50, gauce_filter);
+						best_stroke_map[x][y]->color.B = calcu_color_bi(cmprB->data, cmprB->width, cmprB->height, x, y, t, 50, gauce_filter);
 					} else{
-						bright.R = calcu_color(cmprR->data, cmprR->width, cmprR->height, x, y, t);
-						bright.G = calcu_color(cmprG->data, cmprG->width, cmprG->height, x, y, t);
-						bright.B = calcu_color(cmprB->data, cmprB->width, cmprB->height, x, y, t);
+						best_stroke_map[x][y]->color.R = calcu_color(cmprR->data, cmprR->width, cmprR->height, x, y, t);
+						best_stroke_map[x][y]->color.G = calcu_color(cmprG->data, cmprG->width, cmprG->height, x, y, t);
+						best_stroke_map[x][y]->color.B = calcu_color(cmprB->data, cmprB->width, cmprB->height, x, y, t);
 					}
 
 		
 					theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition, 
-							gauce_filter, p[0].x, p[0].y, t, &break_flag);
+							gauce_filter, best_stroke_map[x][y]->p[0].x, best_stroke_map[x][y]->p[0].y, t, &break_flag);
 					
 					
 					//制御点を方向から計算し代入
-					p[1] = calcu_point(cmpr, p[0], t, theta);
+					best_stroke_map[x][y]->p[1] = calcu_point(cmpr, best_stroke_map[x][y]->p[0], t, theta);
 					
 					
 					//二つ目の描画点周りの色が描画色と一致するか確認する
 					sum = 0;
-					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
-					sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
-					sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
+					sum += diffsum_clr(cmprR, nimgR, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color.R);
+					sum += diffsum_clr(cmprG, nimgG, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color.G);
+					sum += diffsum_clr(cmprB, nimgB, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color.B);
 					diff_sum += sum;
 					
 					
@@ -1013,18 +1036,18 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					if(sum < color_diff_border){
 						//もう一つの勾配垂直の点を代入
 						theta += PI;
-						p[1] = calcu_point(cmpr, p[0], t, theta);
+						best_stroke_map[x][y]->p[1] = calcu_point(cmpr, best_stroke_map[x][y]->p[0], t, theta);
 						
 						//反対方向の第二点の描画点周りの色が描画色と一致するか確認する//点当たりの差異平均
 						sum = 0;
-						sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
-						sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
-						sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
+						sum += diffsum_clr(cmprR, nimgR, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color.R);
+						sum += diffsum_clr(cmprG, nimgG, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color.G);
+						sum += diffsum_clr(cmprB, nimgB, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color.B);
 						diff_sum += sum;
 						
 						//どちらの第二点も不適切なら描画をせず次のループへ
 						if( sum < color_diff_border) {
-							stroke_histogram[pnum]++;
+							// stroke_histogram[pnum]++;
 							GLOBAL_improved_value_map->data[x][y] = MIN_STROKE;
 							continue;
 						}
@@ -1045,17 +1068,17 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 						
 						//第pnum点周りにおいて、sobelからヒストグラムを作成し最大のものを勾配とする
 						theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition, 
-												gauce_filter, p[pnum-1].x, p[pnum-1].y, t, &break_flag);
+												gauce_filter, best_stroke_map[x][y]->p[pnum-1].x, best_stroke_map[x][y]->p[pnum-1].y, t, &break_flag);
 						
 						//制御点の為す角が急峻になるようなら逆方向に角度を取る
 						if( (theta < former_theta-PI/2) || (theta > former_theta+PI/2) ) {theta += PI;} 
-						p[pnum] = calcu_point(cmpr, p[pnum-1], t, theta);
+						best_stroke_map[x][y]->p[pnum] = calcu_point(cmpr, best_stroke_map[x][y]->p[pnum-1], t, theta);
 						
 						//pnum+1目の描画点周りの色が描画色と一致するか確認する
 						sum = 0;
-						sum += diffsum_clr(cmprR, nimgR, p[pnum], t, bright.R);
-						sum += diffsum_clr(cmprG, nimgG, p[pnum], t, bright.G);
-						sum += diffsum_clr(cmprB, nimgB, p[pnum], t, bright.B);
+						sum += diffsum_clr(cmprR, nimgR, best_stroke_map[x][y]->p[pnum], t, best_stroke_map[x][y]->color.R);
+						sum += diffsum_clr(cmprG, nimgG, best_stroke_map[x][y]->p[pnum], t, best_stroke_map[x][y]->color.G);
+						sum += diffsum_clr(cmprB, nimgB, best_stroke_map[x][y]->p[pnum], t, best_stroke_map[x][y]->color.B);
 						
 						/*
 							pnum+1目の(次の)制御点周りの色が描画色としきい値以上の差を持つなら
@@ -1069,10 +1092,10 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					}
 					
 					
-					for(i=0; i<pnum; i++){
-						best_stroke_map[x][y]->p[i] = p[i];
-					}
-					best_stroke_map[x][y]->color=bright;
+					//for(i=0; i<pnum; i++){
+					//	best_stroke_map[x][y]->p[i] = p[i];
+					//}
+					//best_stroke_map[x][y]->color=bright;
 					best_stroke_map[x][y]->pnum=pnum;
 					//　試しに描いてみて誤差を確認
 					if(pnum>=min_stroke){
@@ -1087,6 +1110,9 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					// 	diff_stroke_max = diff_sum;
 					// }
 				}
+				// #ifdef _OPENMP
+				// 	FreePPM(test_Canvas);
+				// #endif
 			}
 			
 			// 改善値マップ中の最大値を探索
@@ -1159,14 +1185,14 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			//一定ストロークごとに途中経過画像を書き出す
 			paint_count++;
         	nc++;	
+			// if(nc%1==0)
 			if(nc%100==0 || nc<=100)
-			//if(t!=tc)
 			{
 					strcpy(out_filename, dir_path);
 					strcat(out_filename, in_filename);
-					snprintf(count_name, 16, "%02d", t);
-					strcat(out_filename, "_t");
-					strcat(out_filename, count_name);
+					// snprintf(count_name, 16, "%02d", t);
+					// strcat(out_filename, "_t");
+					// strcat(out_filename, count_name);
 					snprintf(count_name, 16, "%d", nc);
 					strcat(out_filename, "_s");
 					strcat(out_filename, count_name);
@@ -1391,6 +1417,25 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 
 				paint_count++;
 				nc++;
+				// if(nc%1==0)
+				if(nc%100==0 || nc<=100)
+				{
+						strcpy(out_filename, dir_path);
+						strcat(out_filename, in_filename);
+						// snprintf(count_name, 16, "%02d", t);
+						// strcat(out_filename, "_t");
+						// strcat(out_filename, count_name);
+						snprintf(count_name, 16, "%d", nc);
+						strcat(out_filename, "_s");
+						strcat(out_filename, count_name);
+						strcat(out_filename, ".png");
+						out_png = PPM_to_image(nimgC);
+						if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+						free_image(out_png);
+						printf("%s\n",out_filename);
+						printf("%d:",t);
+						pd("TIME[s]",my_clock());
+				}
 			}
 		}
 		
@@ -1452,11 +1497,21 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	
 	Free_dally(sobel_abs, in->width);
 	Free_dally(sobel_angle, in->width);
+	Free_dally(h, in->width);
+	Free_dally(grad_hx, in->width+1);
+	Free_dally(grad_hy, in->width);
 	FreePGM(gray);
 	FreePGM(inR);
 	FreePGM(inG);
 	FreePGM(inB);
 	FreePGM(nimgV);
+	free(nimgR);
+	free(nimgG);
+	free(nimgB);
+	if(thick_max){
+		FreePGM(canny);
+		FreePGM(EdgeMap);
+	}
     
     return nimgC;
 }
