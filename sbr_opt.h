@@ -9,11 +9,11 @@
 
 // ストローク半径の最大小値。この大きさの範囲でストロークを行う
 #define opt_thick_max 10
-#define opt_thick_min 3
+#define opt_thick_min 5
 
 // ストローク半径の種類の数（指定しないとき０）と指定の半径
 #define opt_num_thick 3
-#define opt_thick_assignment {10,6,3}
+#define opt_thick_assignment {10,7,5}
 
 // ストロークの最大小長
 #define opt_max_stroke 6
@@ -30,7 +30,7 @@
 #define opt_progress_image_address "ex_tmp/ex_tmp__t06.png"
 
 // ストロークの描画の濃さ。この値が大きいほど下地の色を無視して塗りつぶす
-#define opt_ratio 0.03
+#define opt_ratio 0.05
 
 // ストロークの半径ごとの繰り返し数。多いと丁寧に塗りつぶす
 #define opt_loop_cont 1
