@@ -7,7 +7,6 @@
 #include "sbr.h"
 #include "water.h"
 
-// #include <mcheck.h>
 
 
 void ufvf_Test(int argc, char *argv[]);
@@ -21,8 +20,8 @@ double Paint_Water_Test(int argc, char *argv[]);
 double Circle_fill_Water_Test(int argc, char *argv[]);
 double set_WetStroke_Test(int argc, char *argv[]);
 double Paint_Water_Stroke_Test(int argc, char *argv[]);
-void SimulateCapillaryFlow_Test(int argc, char *argv[]);
-void SimulateCapillaryFlow_PaintTest(int argc, char *argv[]);
+double SimulateCapillaryFlow_Test(int argc, char *argv[]);
+double SimulateCapillaryFlow_PaintTest(int argc, char *argv[]);
 
 
 
@@ -30,7 +29,7 @@ void SimulateCapillaryFlow_PaintTest(int argc, char *argv[]);
 
 
 int main(int argc, char *argv[]){
-    int i, trials=10;
+    int i, trials=1;
     double tmp, Ave_TIME=0, min=9999, max=0;
     my_clock();
 
@@ -150,8 +149,8 @@ double UpdateVelocity_Test(int argc, char *argv[])
     int i,j;
     int width=128, height=128;
     Point rectangleP[2] = {
-        {0,128},
-        {0,128}
+        {0,0},
+        {127,127}
     };
     double t;
     double** u = create_dally(width+1, height);
@@ -209,8 +208,8 @@ double RelaxDivergence_Test(int argc, char *argv[])
     int i,j;
     int width=128, height=128;
     Point rectangleP[2] = {
-        {0,128},
-        {0,128}
+        {0,0},
+        {127,127}
     };
     double t;
     double** u = create_dally(width+1, height);
@@ -371,8 +370,8 @@ double MovePigment_Test(int argc, char *argv[]){
     int i,j;
     int width=128, height=128;
     Point rectangleP[2] = {
-        {0,128},
-        {0,128}
+        {0,0},
+        {127,127}
     };
     double t;
     double** u = create_dally(width+1, height);
@@ -492,8 +491,8 @@ double TransferPigment_Test(int argc, char *argv[])
     int i,j;
     int width=128, height=128;
     Point rectangleP[2] = {
-        {0,128},
-        {0,128}
+        {0,0},
+        {127,127}
     };
     double t;
     double** u = create_dally(width+1, height);
@@ -671,8 +670,8 @@ double Paint_Water_Test(int argc, char *argv[])
     int i,j;
     int width=640, height=430;
     Point rectangleP[2] = {
-        {0,640},
-        {0,430}
+        {0,0},
+        {640,430}
     };
     double** u = create_dally(width+1, height);
     double** v = create_dally(width, height+1);
@@ -1031,9 +1030,10 @@ double Paint_Water_Stroke_Test(int argc, char *argv[])
 
 
 
-void SimulateCapillaryFlow_Test(int argc, char *argv[])
+double SimulateCapillaryFlow_Test(int argc, char *argv[])
 {
     int i,j;
+    double end;
     int width=128, height=128;
     double t;
     double var_t=0.5;
@@ -1067,7 +1067,9 @@ void SimulateCapillaryFlow_Test(int argc, char *argv[])
     write_ppm("WetAreaO.ppm", fig_img);
 
     for (t = 0; t < 10; t+=var_t){
+        double start = my_clock();
         SimulateCapillaryFlow(M, p, h, s, var_t, width, height);
+		end = my_clock()-start;
         
         snprintf(count_name, 16, "%02d", (int)(t*2));
 
@@ -1089,19 +1091,20 @@ void SimulateCapillaryFlow_Test(int argc, char *argv[])
         write_ppm(out_name, fig_img);
     }
     
-
+    return end;
 }
 
 
-void SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
+double SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
 {
     int i,j;
+    double end=0;
     double t;
     double max=0,var_t;
     int width=128, height=128;
     Point rectangleP[2] = {
-        {0,128},
-        {0,128}
+        {0,0},
+        {127,127}
     };
     double** u = create_dally(width+1, height);
     double** v = create_dally(width, height+1);
@@ -1157,52 +1160,96 @@ void SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
                 M[i][j] = 1;
                 p[i][j] = (128-abs(64-i)-abs(64-j))/128.0; //(256-abs(256-i-j))/256;
                 gR[i][j] = 1;
+                gG[i][j] = 1;
             }  else M[i][j]=0;
+            M[i][j] = 1;
             // if(i!=0 && j!=0) (128-abs(64-i)-abs(64-j))/128.0; 
         }
     }
 
 
-    for(i=0; i<width; i++){
-        for(j=0; j<height; j++){
-            u[i][j] = u[i][j] - grad_hx[i][j];
-            max = fmax( max, fabs(u[i][j]) );
-            v[i][j] = v[i][j] - grad_hy[i][j];
-            max = fmax( max, fabs(v[i][j]) );
+    for(i=1; i<width-1; i++){
+        for(j=1; j<height-1; j++){
+                u[i][j] = u[i][j] - grad_hx[i][j];
+                max = fmax( max, fabs(u[i][j]) );
+                v[i][j] = v[i][j] - grad_hy[i][j];
+                max = fmax( max, fabs(v[i][j]) );
         }
     }
+    // 水のある場所以外の速度を０に
+    // for(i=1; i<width-1; i++){
+    //     for(j=1; j<height-1; j++){
+    //         if(p[i][j]<=0){
+    //             u[i][j] = 0;
+    //             v[i][j] = 0;
+    //             u[i+1][j] = 0;
+    //             v[i][j+1] = 0;
+    //         }
+    //     }
+    // }
 
-    var_t = fmin(1/max, opt_SoakTimeStep);  // maxは１以下なのでおかしい・・・おかしくない？
-    pd("var_t", var_t);
+    var_t = opt_SoakTimeStep;  // maxは１以下なのでおかしい・・・おかしくない？
 
     for ( t = 0; t < opt_SoakTime; t=t+var_t)
     {   
-        UpdateVelocities(M, u, v, p, var_t, width, height, rectangleP);	
+        paint_count++;
+        if((int)(t/var_t) % 10 == 0 ){
+            for (i = 0; i < width; i++) {	
+                for (j = 0; j < height; j++) {
+                    dM[i][j] = M[i][j];
+                    Canvas_img->dataR[i][j] = (1 - dR[i][j]) * 255;    //CMY[0,1]->RGB[0,255]
+                    Canvas_img->dataG[i][j] = (1 - dG[i][j]) * 255;
+                    Canvas_img->dataB[i][j] = (1 - dB[i][j]) * 255;
+                }
+            }
+            snprintf(count_name, 16, "%02d", paint_count);
+            strcpy(out_name, "Can");
+            strcat(out_name, count_name);
+            strcat(out_name, ".ppm");
+            write_ppm(out_name, Canvas_img);
+
+            for (i = 0; i < width; i++) {	
+                for (j = 0; j < height; j++) {
+                    Canvas_img->dataR[i][j] = (1 - gR[i][j]) * 255;    //CMY[0,1]->RGB[0,255]
+                    Canvas_img->dataG[i][j] = (1 - gG[i][j]) * 255;
+                    Canvas_img->dataB[i][j] = (1 - gB[i][j]) * 255;
+                }
+            }
+            snprintf(count_name, 16, "%02d", paint_count);
+            strcpy(out_name, "g");
+            strcat(out_name, count_name);
+            strcat(out_name, ".ppm");
+            write_ppm(out_name, Canvas_img);
+
+            // strcpy(out_name, "WetArea");
+            // strcat(out_name, count_name);
+            // strcat(out_name, ".ppm");
+            // trans_Vector_img(fig_img, dM, width, height);
+            // write_ppm(out_name, fig_img);
+
+            strcpy(out_name, "u");
+            strcat(out_name, count_name);
+            strcat(out_name, ".ppm");
+            trans_Vector_img(fig_img, u, width, height);
+            write_ppm(out_name, fig_img);
+
+            strcpy(out_name, "p");
+            strcat(out_name, count_name);
+            strcat(out_name, ".ppm");
+            trans_Vector_img(fig_img, p, width, height);
+            write_ppm(out_name, fig_img);
+        }
+        
+        double start = my_clock();
+        UpdateVelocities(M, u, v, p, var_t, width, height, rectangleP);
         RelaxDivergence(M, u, v, p, var_t, width, height, rectangleP);
+        // MoveWater(M, u, v, p, var_t, width, height);
         FlowOutward(M, p, c, filter, var_t, width, height, rectangleP);
         MovePigment(M, u, v, gR, gG, gB, var_t, width, height, rectangleP);
         TransferPigment(M, h, gR, gG, gB, dR, dG, dB, var_t, width, height);
         if(opt_USE_Backrun) SimulateCapillaryFlow(M, p, h, s, var_t, width, height);
-
-        for (i = 0; i < width; i++) {	
-            for (j = 0; j < height; j++) {
-                dM[i][j] = M[i][j];
-                Canvas_img->dataR[i][j] = (1 - dR[i][j]) * 255;    //CMY[0,1]->RGB[0,255]
-                Canvas_img->dataG[i][j] = (1 - dG[i][j]) * 255;
-                Canvas_img->dataB[i][j] = (1 - dB[i][j]) * 255;
-            }
-        }
-        paint_count++;
-        snprintf(count_name, 16, "%02d", paint_count);
-        strcpy(out_name, "WetArea");
-        strcat(out_name, count_name);
-        strcat(out_name, ".ppm");
-        trans_Vector_img(fig_img, dM, width, height);
-        write_ppm(out_name, fig_img);
-        strcpy(out_name, "Can");
-        strcat(out_name, count_name);
-        strcat(out_name, ".ppm");
-        write_ppm(out_name, Canvas_img);
+		end += my_clock()-start;
     }
 
+    return end;
 }

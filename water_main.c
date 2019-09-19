@@ -696,13 +696,13 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 		}
 	}
 
-
-	strcpy(out_filename, dir_path);
-	strcat(out_filename, in_filename);
-	strcat(out_filename, "__EdgeMap");
-	strcat(out_filename, ".pgm");
-	if(write_pgm(out_filename, EdgeMap)){ printf("WRITE PNG ERROR.");}
-
+	if(thick_max){
+		strcpy(out_filename, dir_path);
+		strcat(out_filename, in_filename);
+		strcat(out_filename, "__EdgeMap");
+		strcat(out_filename, ".pgm");
+		if(write_pgm(out_filename, EdgeMap)){ printf("WRITE PNG ERROR.");}
+	}
 	
 	double MSE = image_MSE(nimgC, in);
 	Add_dictionary_to_sentence(log_sentence, "MSE", (int)MSE);
@@ -1480,12 +1480,13 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 		}
 	}
 
-	strcpy(out_filename, dir_path);
-	strcat(out_filename, in_filename);
-	strcat(out_filename, "__EdgeMap");
-	strcat(out_filename, ".pgm");
-	if(write_pgm(out_filename, EdgeMap)){ printf("WRITE PNG ERROR.");}
-
+	if(thick_max){
+		strcpy(out_filename, dir_path);
+		strcat(out_filename, in_filename);
+		strcat(out_filename, "__EdgeMap");
+		strcat(out_filename, ".pgm");
+		if(write_pgm(out_filename, EdgeMap)){ printf("WRITE PNG ERROR.");}
+	}
 	
 	double MSE = image_MSE(nimgC, in);
 	Add_dictionary_to_sentence(log_sentence, "MSE", (int)MSE);

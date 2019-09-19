@@ -7,7 +7,7 @@
 // UpdateVelocities：Bの係数(def:0.1)
 #define opt_mhu 0.1
 // UpdateVelocities：粘性抵抗(def:0.01)
-#define opt_kappa 0.01
+#define opt_kappa 0.1
 // RelaxDivergence：減衰の繰り返し回数(def:50)
 #define opt_N 50
 // RelaxDivergence：減衰の閾値(def:0.01)
@@ -36,8 +36,8 @@
 
 
 // 水と顔料を定着させる時間
-#define opt_SoakTime 5
-#define opt_SoakTimeStep 1
+#define opt_SoakTime 10
+#define opt_SoakTimeStep 0.5
 // perlinノイズのパラメータ
 #define opt_perlin_freq 0.1
 #define opt_perlin_depth 6

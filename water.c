@@ -130,6 +130,67 @@ void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** C
 }
 
 
+
+// void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height)
+// {
+//     static int first_flag=1;
+//     int i,j;
+//     Point rectangleP[2];
+//     set_Stroke_rectangle(&rectangleP[0], &rectangleP[1], StrokeP, pnum, thick, width, height);
+
+//     static int** M;
+//     static double **u,**v,**p,**gR,**gG,**gB,**dR,**dG,**dB;
+//     if(first_flag){
+//         u = create_dally(width+1, height);
+//         v = create_dally(width, height+1);
+//         M = create_ally(width, height);
+//         p = create_dally(width, height);
+//         gR = create_dally(width, height);
+//         gG = create_dally(width, height);
+//         gB = create_dally(width, height);
+//         dR = create_dally(width, height);
+//         dG = create_dally(width, height);
+//         dB = create_dally(width, height);
+
+//         first_flag=0;
+//     }
+
+//     format_dally(u, width+1, height, 0);
+//     format_dally(v, width, height+1, 0);
+//     format_ally(M, width, height, 0);
+//     format_dally(p, width, height, 0);
+//     format_dally(gR, width, height, 0);
+//     format_dally(gG, width, height, 0);
+//     format_dally(gB, width, height, 0);
+
+
+//     // キャンバスの色をCMYに変換し堆積顔料を計算
+//     #pragma omp parallel for private(i,j)
+//     for(i=0; i<width; i++) {
+//         for(j=0; j<height; j++) {
+//             dR[i][j] = 1 - CanR[i][j]/255.0;    //RGB[0,255]->CMY[0,1]
+//             dG[i][j] = 1 - CanG[i][j]/255.0;
+//             dB[i][j] = 1 - CanB[i][j]/255.0;
+//         }
+//     }
+
+//     set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, color, gauce_filter, width, height);   //ストロークのエリアと水量を計算
+//     Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
+
+//     // 堆積顔料をRGBに変換しキャンバスの色を計算
+//     #pragma omp parallel for private(i,j)
+//     for(i=0; i<width; i++) {
+//         for(j=0; j<height; j++) {
+//             CanR[i][j] = (1 - dR[i][j]) * 255;    //CMY[0,1]->RGB[0,255]
+//             CanG[i][j] = (1 - dG[i][j]) * 255;
+//             CanB[i][j] = (1 - dB[i][j]) * 255;
+//         }
+//     }
+
+// }
+
+
+
 // ストローク点に従いウェットエリアと水量を計算
 void set_WetStroke(int** M, double** p, double** gR, double** gG, double** gB, Point SP[], int pnum, int thick, RGB color, double** gauce_filter, int width, int height)
 {
@@ -220,12 +281,8 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
     static int first_flag=1;
     int i,j;
     double t, var_t;
-    double** s;
-    if(opt_USE_Backrun) {
-        s = create_dally(width, height);
-        format_dally(s, width, height, 0);
-    }
 
+    static double** s;
     static int w;
     static int c;
     static double** filter;
@@ -239,8 +296,11 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
             }
         }
 
+        s = create_dally(width, height);
+
         first_flag=0;
     }
+    format_dally(s, width, height, 0);
 
     // char count_name[8];
     // char out_name[32];
@@ -265,9 +325,10 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
         // double start = my_clock();
         UpdateVelocities(M, u, v, p, var_t, width, height, rectangleP);	
         // pd("    UV[s]",my_clock()-start);
-        if(opt_USE_MoveWater) MoveWater(M, u, v, p, var_t, width, height);
         // start = my_clock();
-        RelaxDivergence(M, u, v, p, var_t, width, height, rectangleP);
+        if(opt_USE_MoveWater) {
+            MoveWater(M, u, v, p, var_t, width, height);
+        } else { RelaxDivergence(M, u, v, p, var_t, width, height, rectangleP); }
         // pd("    RD[s]",my_clock()-start);
         // start = my_clock();
         FlowOutward(M, p, c, filter, var_t, width, height, rectangleP);
@@ -319,7 +380,6 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
         //     write_ppm(out_name, Canvas_img);
         // }
     }
-    if(opt_USE_Backrun) Free_dally(s, w);
 }
 
 
@@ -336,6 +396,8 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
     if(first_flag){
         new_u = create_dally(width+1, height);
         new_v = create_dally(width, height+1);
+        format_dally(new_u, width+1, height, 0);
+        format_dally(new_v, width, height+1, 0);
 
         first_flag=0;
     }
@@ -354,7 +416,7 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
         }
     }
     double UV_var_t = fmin(var_t, 1/max_verocity);
-    // printf("maxv%f \n", max_verocity);
+    printf("maxverocity:%f \n", max_verocity);
 
     for ( t = 0; t < var_t; t=t+UV_var_t)
     {   
@@ -403,15 +465,15 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
             #pragma omp for private(i,j)
             // for (i = 0; i < width-2; i++){    // -2にしないと0が拡がる
             //     for (j = 1; j < height-1; j++)    // 
-            for(i=(int)rectangleP[0].x+1; i<=(int)rectangleP[1].x-1; i++){
-                for(j=(int)rectangleP[0].y+1; j<=(int)rectangleP[1].y-1; j++)
-                    {u[i+1][j] = new_u[i+1][j];}}
+            for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x+1; i++){
+                for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++)
+                    {u[i][j] = new_u[i][j];}}
             #pragma omp for private(i,j)
             // for (i = 1; i < width-1; i++){
             //     for (j = 0; j < height-2; j++)    // -2にしないと0が拡がる
-            for(i=(int)rectangleP[0].x+1; i<=(int)rectangleP[1].x-1; i++){
-                for(j=(int)rectangleP[0].y+1; j<=(int)rectangleP[1].y-1; j++)
-                    {v[i][j+1] = new_v[i][j+1];}}
+            for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
+                for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y+1; j++)
+                    {v[i][j] = new_v[i][j];}}
         }
     }
 }
@@ -434,8 +496,8 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
 
     for (t = 0; t < opt_N; t++)
     {
-        rect_copy_dally(u, new_u, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y);
-        rect_copy_dally(v, new_v, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y);
+        rect_copy_dally(u, new_u, (int)rectangleP[0].x, (int)rectangleP[1].x+1, (int)rectangleP[0].y, (int)rectangleP[1].y);
+        rect_copy_dally(v, new_v, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y+1);
 
         #ifdef _OPENMP  // OpenMP用の処理
         int Break_flag=1;
@@ -448,7 +510,8 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
                 for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y -1; j++){
                     if(M[i][j]==1){
                         delta = opt_xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
-                        p[i][j] =  fmax(0, p[i][j] - delta);     // 計算符号正負不明、fmaxがないと水量が負になる
+                        // p[i][j] =  fmax(0, p[i][j] - delta);     // 計算符号正負不明、fmaxがないと水量が負になる
+                        p[i][j] =  p[i][j] - delta;
                         new_u[i][j] = new_u[i][j] + delta;
                         new_v[i][j+1] = new_v[i][j+1] - delta;
                         new_v[i][j] = new_v[i][j] + delta;
@@ -472,15 +535,26 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
 
         #else  // 逐次用の処理
         double delta_MAX=0;
-        for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x -1; i++){  // INDEX+1の計算をするので－1
-            for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y -1; j++){
+        for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){  // INDEX+1の計算をするので－1
+            for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
                 if(M[i][j]==1){
+                    // delta = opt_xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
                     delta = opt_xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
-                    p[i][j] = fmax(0, p[i][j] - delta);     // 計算符号正負不明、fmaxがないと水量が負になる
+                    // if(i==width) delta -= opt_xi*u[i+1][j] ;
+                    // if(i==0) delta += opt_xi*u[i][j] ;
+                    // if(j==height) delta -= opt_xi*v[i][j+1] ;
+                    // if(j==0) delta += opt_xi*v[i][j] ;
+                    // p[i][j] = fmax(0, p[i][j] - delta);     // 計算符号正負不明、fmaxがないと水量が負になる
+                    p[i][j] =  p[i][j] - delta;
+                    // if(i!=width) new_u[i+1][j] = new_u[i+1][j] - delta;
+                    // if(i!=0) new_u[i][j] = new_u[i][j] + delta;
+                    // if(j!=height) new_v[i][j+1] = new_v[i][j+1] - delta;
+                    // if(j!=0)new_v[i][j] = new_v[i][j] + delta;
                     new_u[i+1][j] = new_u[i+1][j] - delta;
                     new_u[i][j] = new_u[i][j] + delta;
                     new_v[i][j+1] = new_v[i][j+1] - delta;
                     new_v[i][j] = new_v[i][j] + delta;
+
                     delta_MAX = fmax(fabs(delta), delta_MAX);
                 }
             }
@@ -489,10 +563,9 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
         #endif
 
         // pd("deltaMAX",delta_MAX);
-        rect_copy_dally(new_u, u, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y);
-        rect_copy_dally(new_v, v, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y);
+        rect_copy_dally(new_u, u, (int)rectangleP[0].x, (int)rectangleP[1].x+1, (int)rectangleP[0].y, (int)rectangleP[1].y);
+        rect_copy_dally(new_v, v, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y+1);
     }
-
 }
 
 
@@ -555,7 +628,8 @@ void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t
     for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
         for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
             if(M[i][j]==1){
-                p[i][j] = fmax(0, p[i][j] - opt_eta*var_t*(1-gauss_M[i][j])*M[i][j]);
+                // p[i][j] = fmax(0, p[i][j] - opt_eta*var_t*(1-gauss_M[i][j])*M[i][j]);
+                p[i][j] = p[i][j] - opt_eta*var_t*(1-gauss_M[i][j])*M[i][j];
             }
         }
     }
@@ -643,8 +717,8 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
     }
 
     #else  // 逐次用の処理
-        for(i=left_end; i<=right_end; i++){
-            for(j=upper_end; j<=lower_end; j++){
+    for(i=left_end; i<=right_end; i++){
+        for(j=upper_end; j<=lower_end; j++){
             if(M[i][j]==1){
                 // R
                 new_gR[i+1][j] = new_gR[i+1][j] + fmax(0, var_t*u[i+1][j]*gR[i][j]);
@@ -731,10 +805,15 @@ void TransferPigment(int** M, double** h, double** gR, double** gG, double** gB,
 // 水の浸透を計算しバックランをシミュレーション
 void SimulateCapillaryFlow(int** M, double** p, double** c, double** s, double var_t, int width, int height)
 {
+    static int first_flag=1;
     int i,j,k,l;
+    static double **new_s;
+    if(first_flag){
+        new_s = create_dally(width, height);
+        first_flag=0;
+    }
     double var_s;
     double alpha=opt_alpha, epsilon=opt_epsilon, delta=opt_delta, sigma=opt_sigma;
-    double** new_s = create_dally(width, height);
 
     for(i=0; i<width; i++){
         for(j=0; j<height; j++){
@@ -767,8 +846,6 @@ void SimulateCapillaryFlow(int** M, double** p, double** c, double** s, double v
             if(s[i][j] > sigma) M[i][j]=1;
         }
     }
-
-    Free_dally(new_s, width);
 }
 
 
@@ -948,7 +1025,7 @@ void SINGLE_Paint_Water(int** M, double** u, double** v, double** p, double** h,
     }
 
     
-    if(opt_USE_Backrun) Free_dally(s, w);
+    if(opt_USE_Backrun) Free_dally(s, width);
 }
 
 // SINGLE_Paint_Waterの初期化
@@ -1355,23 +1432,43 @@ double vf(double** v, double x, double y){
 // 自作関数
 void MoveWater(int** M,  double** u, double** v, double** p, double var_t, int width, int height)
 {
+    static int first_flag=1;
     int i,j;
-    double** new_p = create_dally(width, height);
+    double sum, left_dp, right_dp, upper_dp, lower_dp;
+    static double** new_p;
+
+    if(first_flag){
+        new_p = create_dally(width, height);
+
+        first_flag = 0;
+    }
+
     copy_dally(p, new_p, width, height);
 
     for(i=1; i<width-1; i++){
         for(j=1; j<height-1; j++){
             if(M[i][j]==1){
-                // R
-                new_p[i+1][j] = new_p[i+1][j] + fmax(0, var_t*u[i+1][j]*p[i][j]);
-                new_p[i-1][j] = new_p[i-1][j] + fmax(0, var_t*-u[i][j]*p[i][j]);
-                new_p[i][j+1] = new_p[i][j+1] + fmax(0, var_t*v[i][j+1]*p[i][j]);
-                new_p[i][j-1] = new_p[i][j-1] + fmax(0, var_t*-v[i][j]*p[i][j]);
-                new_p[i][j] = new_p[i][j] - fmax(0, var_t*u[i+1][j]*p[i][j]) - fmax(0, var_t*-u[i][j]*p[i][j]) - fmax(0, var_t*v[i][j+1]*p[i][j]) - fmax(0, var_t*-v[i][j]*p[i][j]);
+                left_dp = fmax(0, var_t*-u[i][j]*p[i][j]);
+                right_dp = fmax(0, var_t*u[i+1][j]*p[i][j]);
+                upper_dp = fmax(0, var_t*-v[i][j]*p[i][j]);
+                lower_dp = fmax(0, var_t*v[i][j+1]*p[i][j]);
+                sum = left_dp + right_dp + upper_dp + lower_dp;
+                if(sum > p[i][j]){
+                    double per = p[i][j] / sum;
+                    left_dp *= per;
+                    right_dp *= per;
+                    upper_dp *= per;
+                    lower_dp *= per;
+                }
+
+                new_p[i+1][j] = new_p[i+1][j] + right_dp;
+                new_p[i-1][j] = new_p[i-1][j] + left_dp;
+                new_p[i][j+1] = new_p[i][j+1] + lower_dp;
+                new_p[i][j-1] = new_p[i][j-1] + upper_dp;
+                new_p[i][j] = new_p[i][j] - right_dp - left_dp - lower_dp - upper_dp;
             }
         }
     }
 
     copy_dally(new_p, p, width, height);
-    Free_dally(new_p, width);
 }
