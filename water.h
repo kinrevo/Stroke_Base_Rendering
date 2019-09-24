@@ -36,8 +36,8 @@
 
 
 // 水と顔料を定着させる時間
-#define opt_SoakTime 10
-#define opt_SoakTimeStep 0.5
+#define opt_SoakTime 5
+#define opt_SoakTimeStep 1
 // perlinノイズのパラメータ
 #define opt_perlin_freq 0.1
 #define opt_perlin_depth 6

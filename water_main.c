@@ -938,7 +938,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			
 		//ストロークサイズのガウスフィルタを生成
 		gauce_filter = create_dally(2*t+1, 2*t+1);
-		sigma = t/2.0;	// Water:3sigma -> 2
+		sigma = t/0.1;	// Water:3sigma -> 0.1
 		for(i=0; i<2*t+1; i++){
 	        for(j=0; j<2*t+1; j++){
 	        	gauce_filter[i][j] = gause_func(i-t, j-t, sigma);

@@ -38,7 +38,7 @@ int main(int argc, char *argv[]){
     #endif
 
     for (i = 0; i < trials; i++) {
-        tmp = Paint_Water_Stroke_Test(argc, argv);
+        tmp = SimulateCapillaryFlow_PaintTest(argc, argv);
         Ave_TIME += tmp;
         if(max<tmp) max=tmp;
         if(min>tmp) min=tmp;
@@ -671,7 +671,7 @@ double Paint_Water_Test(int argc, char *argv[])
     int width=640, height=430;
     Point rectangleP[2] = {
         {0,0},
-        {640,430}
+        {639,429}
     };
     double** u = create_dally(width+1, height);
     double** v = create_dally(width, height+1);

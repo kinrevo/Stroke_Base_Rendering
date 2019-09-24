@@ -415,8 +415,8 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
             }
         }
     }
-    double UV_var_t = fmin(var_t, 1/max_verocity);
-    printf("maxverocity:%f \n", max_verocity);
+    double UV_var_t = fmin(var_t, var_t/max_verocity);
+    // printf("maxverocity:%f \n", max_verocity);
 
     for ( t = 0; t < var_t; t=t+UV_var_t)
     {   
@@ -426,14 +426,16 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
             for (i = 0; i < width-1; i++){    // x:[i-0.5,i+1.5]
                 for (j = 1; j < height-1; j++)    // y:[j-1.0,j+1.0]
                 {
-                    // (uv)i+0.5,j-0.5 = uf(u, i+0.5, j)*vf(v, i, j-0.5)
                     //u[i][j]はu[i+0.5][j]
                     if(M[i][j]==1){
+                        // (uv)i+0.5,j-0.5 = uf(u, i+0.5, j-0.5)*vf(v, i+0.5, j-0.5)
                         A = pow((u[i][j]+u[i+1][j])/2, 2) - pow((u[i+1][j]+u[i+2][j])/2, 2) + (u[i+1][j-1]+u[i+1][j])/2*(v[i][j]+v[i+1][j])/2 - (u[i+1][j]+u[i+1][j+1])/2*(v[i][j+1]+v[i+1][j+1])/2;
+                        // paper_DETAIL
+                        // A = pow((u[i][j]+u[i+1][j])/2, 2) - pow((u[i+1][j]+u[i+2][j])/2, 2) + (u[i+1][j-1]+u[i+1][j])*(v[i][j]+v[i-1][j+1])/4 - (u[i][j]+u[i+1][j+1])*(v[i][j+1]+v[i+1][j+1])/4;
                         B = u[i+2][j] + u[i][j] + u[i+1][j+1] + u[i+1][j-1] - 4*u[i+1][j];
-                        new_u[i+1][j] = u[i+1][j] + UV_var_t*(A - opt_mhu*B + p[i][j] - p[i+1][j] - opt_kappa*u[i+1][j]);  
+                        new_u[i+1][j] = u[i+1][j] + UV_var_t*(A - opt_mhu*B + p[i][j] - p[i+1][j] - opt_kappa*u[i+1][j]);
                     }else{   //ウェットエリア外を速度０に
-                        // new_u[i][j] = 0;
+                        new_u[i][j] = 0;
                         new_u[i+1][j] = 0;
                     }
                 }
@@ -445,10 +447,11 @@ void UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t
                 {
                     if(M[i][j]==1){
                         A = pow((v[i][j]+v[i][j+1])/2, 2) - pow((v[i][j+1]+v[i][j+2])/2, 2) + (u[i][j]+u[i][j+1])/2*(v[i-1][j+1]+v[i][j+1])/2 - (u[i+1][j]+u[i+1][j+1])/2*(v[i][j+1]+v[i+1][j+1])/2;
+                        // A = pow((v[i][j]+v[i][j+1])/2, 2) - pow((v[i][j+1]+v[i][j+2])/2, 2) + (u[i][j]+u[i][j+1])*(v[i-1][j+1]+v[i][j+1])/4 - (u[i+1][j]+u[i+1][j+1])*(v[i][j+1]+v[i+1][j+1])/4;
                         B = v[i+1][j+1] + v[i-1][j+1] + v[i][j+2] + v[i][j] - 4*v[i][j+1];
-                        new_v[i][j+1] = v[i][j+1] + UV_var_t*(A - opt_mhu*B + p[i][j] - p[i][j+1] - opt_kappa*v[i][j+1]); 
+                        new_v[i][j+1] = v[i][j+1] + UV_var_t*(A - opt_mhu*B + p[i][j] - p[i][j+1] - opt_kappa*v[i][j+1]);
                     }else{   //ウェットエリア外を速度０に
-                        // new_v[i][j] = 0;
+                        new_v[i][j] = 0;
                         new_v[i][j+1] = 0;
                     }
                 }
@@ -1445,13 +1448,27 @@ void MoveWater(int** M,  double** u, double** v, double** p, double var_t, int w
 
     copy_dally(p, new_p, width, height);
 
+    double max_verocity=0;
     for(i=1; i<width-1; i++){
         for(j=1; j<height-1; j++){
             if(M[i][j]==1){
-                left_dp = fmax(0, var_t*-u[i][j]*p[i][j]);
-                right_dp = fmax(0, var_t*u[i+1][j]*p[i][j]);
-                upper_dp = fmax(0, var_t*-v[i][j]*p[i][j]);
-                lower_dp = fmax(0, var_t*v[i][j+1]*p[i][j]);
+                max_verocity = fmax( max_verocity, fabs(u[i][j]) );
+                max_verocity = fmax( max_verocity, fabs(v[i][j]) );
+            }
+        }
+    }
+    double UV_var_t = fmin(var_t, 1/max_verocity);
+    printf("MWmaxverocity:%f \n", max_verocity);
+
+   for (double t = 0; t < var_t; t=t+UV_var_t)
+    {   
+    for(i=1; i<width-1; i++){
+        for(j=1; j<height-1; j++){
+            if(M[i][j]==1){
+                left_dp = fmax(0, UV_var_t*-u[i][j]*p[i][j]);
+                right_dp = fmax(0, UV_var_t*u[i+1][j]*p[i][j]);
+                upper_dp = fmax(0, UV_var_t*-v[i][j]*p[i][j]);
+                lower_dp = fmax(0, UV_var_t*v[i][j+1]*p[i][j]);
                 sum = left_dp + right_dp + upper_dp + lower_dp;
                 if(sum > p[i][j]){
                     double per = p[i][j] / sum;
@@ -1469,6 +1486,6 @@ void MoveWater(int** M,  double** u, double** v, double** p, double var_t, int w
             }
         }
     }
-
+    }
     copy_dally(new_p, p, width, height);
 }
