@@ -29,6 +29,11 @@
 #define opt_USE_input_progress_image 0
 #define opt_progress_image_address "ex_tmp/ex_tmp__t06.png"
 
+// キャンバスのスケーリングを行うか
+#define opt_USE_Canvas_Scaling_Method 1
+// キャンバスの拡大率
+#define opt_canvas_scaling_ratio 8.0
+
 // ストロークの描画の濃さ。この値が大きいほど下地の色を無視して塗りつぶす
 #define opt_ratio 0.05
 

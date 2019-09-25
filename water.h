@@ -34,6 +34,8 @@
 // SimulateCapillaryFlow：毛細層の水がこれより多いとウェットエリアに加えられる(def:)
 #define opt_sigma 0.1
 
+// set_WetStroke：水量の初期値をどれだけ中心に寄せるか(def:1.0)
+#define opt_variance_ratio 3.0
 
 // 水と顔料を定着させる時間
 #define opt_SoakTime 5
@@ -68,6 +70,8 @@ int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, i
 
 void write_Vector_img(PPM* img, double** u, int width, int height);
 void trans_Vector_img(PPM* img, double** u, int width, int height);
+
+void SINGLE_Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height);
 
 
 #endif

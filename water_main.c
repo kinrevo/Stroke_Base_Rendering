@@ -887,6 +887,23 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	nimgC->dataG = nimgG->data;
 	nimgC->dataB = nimgB->data;
 
+
+	// スケーリングキャンバスの生成
+	Point *scaling_p;
+	double **gauce_filter_Scaling;
+	PGM *nimgR_Scaling = create_pgm(gray->width*opt_canvas_scaling_ratio, gray->height*opt_canvas_scaling_ratio, gray->bright); 
+	PGM *nimgG_Scaling = create_pgm(gray->width*opt_canvas_scaling_ratio, gray->height*opt_canvas_scaling_ratio, gray->bright); 
+	PGM *nimgB_Scaling = create_pgm(gray->width*opt_canvas_scaling_ratio, gray->height*opt_canvas_scaling_ratio, gray->bright); 
+	PPM *nimgC_Scaling = create_ppm(in->width*opt_canvas_scaling_ratio, in->height*opt_canvas_scaling_ratio, in->bright); //実際に描画するキャンバス（拡縮描画用）
+	nimgC_Scaling->dataR = nimgR_Scaling->data;
+	nimgC_Scaling->dataG = nimgG_Scaling->data;
+	nimgC_Scaling->dataB = nimgB_Scaling->data;
+	double** h_Scaling = perlin_img(nimgC_Scaling->width, nimgC_Scaling->height, opt_perlin_freq, opt_perlin_depth);
+    double** grad_hx_Scaling = create_dally(nimgC_Scaling->width+1, nimgC_Scaling->height); 
+    double** grad_hy_Scaling = create_dally(nimgC_Scaling->width, nimgC_Scaling->height+1); 
+    calcu_grad_h(h_Scaling, grad_hx_Scaling, grad_hy_Scaling, nimgC_Scaling->width, nimgC_Scaling->height);
+
+
 	PPM *test_Canvas;
 	// #ifndef _OPENMP
 		test_Canvas = create_ppm(in->width, in->height, in->bright);
@@ -915,7 +932,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	// int diff_stroke=0;
 	// Point before_P={0,0};
 
-    //Water実装
     double** h = perlin_img(in->width, in->height, opt_perlin_freq, opt_perlin_depth);
     double** grad_hx = create_dally(in->width+1, in->height); 
     double** grad_hy = create_dally(in->width, in->height+1); 
@@ -935,16 +951,26 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			}
 			if(thick_flag) continue;
 		}
-			
+
+				
 		//ストロークサイズのガウスフィルタを生成
 		gauce_filter = create_dally(2*t+1, 2*t+1);
-		sigma = t/0.1;	// Water:3sigma -> 0.1
+		sigma = t/3.0*opt_variance_ratio;	// Water:3sigma -> 0.1
 		for(i=0; i<2*t+1; i++){
 	        for(j=0; j<2*t+1; j++){
 	        	gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
 	        }
 	    }
-				
+					
+		//ストロークサイズのガウスフィルタを生成(スケーリングキャンバス))
+		int t_Scaling = t*opt_canvas_scaling_ratio;
+		gauce_filter_Scaling = create_dally(2*t_Scaling+1, 2*t_Scaling+1);
+		sigma = t_Scaling/3.0*opt_variance_ratio;	// Water:3sigma -> 0.1
+		for(i=0; i<2*t_Scaling+1; i++){
+	        for(j=0; j<2*t_Scaling+1; j++){
+	        	gauce_filter_Scaling[i][j] = gause_func(i-t_Scaling, j-t_Scaling, sigma);
+	        }
+	    }				
 
 		
 		stroke_num=99999;
@@ -1213,6 +1239,31 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 				y_defo += 1;
 				if(y_defo>t) y_defo -= t;
 			}
+			
+
+			/// 制御点を全てとブラシサイズを拡大率に従いスケーリングし、拡大キャンバスに描画
+			if(opt_USE_Canvas_Scaling_Method){
+				scaling_p = scaling_point(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, opt_canvas_scaling_ratio);
+				SINGLE_Paint_Water_Stroke(scaling_p, best_stroke_map[best_x][best_y]->pnum, t_Scaling, best_stroke_map[best_x][best_y]->color, nimgR_Scaling->data, nimgG_Scaling->data, nimgB_Scaling->data, h_Scaling, grad_hx_Scaling, grad_hy_Scaling, gauce_filter_Scaling, nimgC_Scaling->width, nimgC_Scaling->height);
+				free(scaling_p);
+				
+				if(nc%100==0 || nc<=100)
+				{
+					strcpy(out_filename, dir_path);
+					strcat(out_filename, in_filename);
+					strcat(out_filename, "_SC");
+					snprintf(count_name, 16, "%d", nc);
+					strcat(out_filename, "_s");
+					strcat(out_filename, count_name);
+					strcat(out_filename, ".png");
+					out_png = PPM_to_image(nimgC_Scaling);
+					if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+					free_image(out_png);
+					printf("%s\n",out_filename);
+					printf("%d:",t);
+					pd("TIME[s]",my_clock());
+				}
+			}
 		}
 
 		{
@@ -1233,6 +1284,22 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			// snprintf(count_name, 16, "%f", (double)(clock()-start)/CLOCKS_PER_SEC);
 			// strcat(log_sentence, count_name);
 			// strcat(log_sentence, "\r\n");
+			pd("TIME[s]",my_clock());
+		}
+
+		if(opt_USE_Canvas_Scaling_Method){
+			strcpy(out_filename, dir_path);
+			strcat(out_filename, in_filename);
+			strcat(out_filename, "_SC");
+			snprintf(count_name, 16, "%02d", t);
+			strcat(out_filename, "__t");
+			strcat(out_filename, count_name);
+			strcat(out_filename, ".png");
+			out_png = PPM_to_image(nimgC_Scaling);
+			if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+			free_image(out_png);
+			printf("%s\n",out_filename);
+			printf("%d:",t);
 			pd("TIME[s]",my_clock());
 		}
 
@@ -1412,30 +1479,36 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					Paint_Bezier_ex(p, pnum, nimgR, t, bright.R, ratio);	
 					Paint_Bezier_ex(p, pnum, nimgG, t, bright.G, ratio);	
 					Paint_Bezier_ex(p, pnum, nimgB, t, bright.B, ratio);	
-					// stroke_histogram[pnum]++;  
+
+					// 制御点を全てとブラシサイズを拡大率に従いスケーリングし、拡大キャンバスに描画
+					if(opt_USE_Canvas_Scaling_Method){
+						scaling_p = scaling_point(p, pnum, opt_canvas_scaling_ratio);
+						Paint_Bezier_ex(scaling_p, pnum, nimgR_Scaling, t*opt_canvas_scaling_ratio, bright.R, ratio);	
+						Paint_Bezier_ex(scaling_p, pnum, nimgG_Scaling, t*opt_canvas_scaling_ratio, bright.G, ratio);	
+						Paint_Bezier_ex(scaling_p, pnum, nimgB_Scaling, t*opt_canvas_scaling_ratio, bright.B, ratio);
+					}
 				}
 
 				paint_count++;
 				nc++;
-				// if(nc%1==0)
-				if(nc%100==0 || nc<=100)
-				{
-						strcpy(out_filename, dir_path);
-						strcat(out_filename, in_filename);
-						// snprintf(count_name, 16, "%02d", t);
-						// strcat(out_filename, "_t");
-						// strcat(out_filename, count_name);
-						snprintf(count_name, 16, "%d", nc);
-						strcat(out_filename, "_s");
-						strcat(out_filename, count_name);
-						strcat(out_filename, ".png");
-						out_png = PPM_to_image(nimgC);
-						if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
-						free_image(out_png);
-						printf("%s\n",out_filename);
-						printf("%d:",t);
-						pd("TIME[s]",my_clock());
-				}
+				// if(nc%100==0 || nc<=100)
+				// {
+				// 		strcpy(out_filename, dir_path);
+				// 		strcat(out_filename, in_filename);
+				// 		// snprintf(count_name, 16, "%02d", t);
+				// 		// strcat(out_filename, "_t");
+				// 		// strcat(out_filename, count_name);
+				// 		snprintf(count_name, 16, "%d", nc);
+				// 		strcat(out_filename, "_s");
+				// 		strcat(out_filename, count_name);
+				// 		strcat(out_filename, ".png");
+				// 		out_png = PPM_to_image(nimgC);
+				// 		if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+				// 		free_image(out_png);
+				// 		printf("%s\n",out_filename);
+				// 		printf("%d:",t);
+				// 		pd("TIME[s]",my_clock());
+				// }
 			}
 		}
 		
@@ -1448,6 +1521,30 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			tc=t;	
 			strcpy(out_filename, dir_path);
 			strcat(out_filename, in_filename);
+			snprintf(count_name, 16, "%02d", t);
+			strcat(out_filename, "__st");
+			strcat(out_filename, count_name);
+			snprintf(count_name, 16, "%02d", lc);
+			strcat(out_filename, "_lc");
+			strcat(out_filename, count_name);
+			strcat(out_filename, ".png");
+			out_png = PPM_to_image(nimgC);
+			if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+			free_image(out_png);
+			printf("%s\n",out_filename);
+			printf("%d:",t);
+			strcat(log_sentence, "\r\n");
+			Add_dictionary_to_sentence(log_sentence, "t", t);
+			Add_dictionary_to_sentence(log_sentence, "s_count", paint_count);
+			Add_dictionary_to_sentence_d(log_sentence, "TIME[s]", my_clock());
+			pd("TIME[s]",my_clock());
+		}
+
+		if(opt_USE_Canvas_Scaling_Method){
+			tc=t;	
+			strcpy(out_filename, dir_path);
+			strcat(out_filename, in_filename);
+			strcat(out_filename, "_SC");
 			snprintf(count_name, 16, "%02d", t);
 			strcat(out_filename, "__st");
 			strcat(out_filename, count_name);
