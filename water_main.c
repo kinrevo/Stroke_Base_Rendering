@@ -184,13 +184,20 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "xi", (int)(opt_xi*100));
 	Add_dictionary_to_sentence(log_sentence, "K", opt_K);
 	Add_dictionary_to_sentence(log_sentence, "eta", (int)(opt_eta*100));
-	Add_dictionary_to_sentence(log_sentence, "gamma", (int)(opt_gamma*100));
-	Add_dictionary_to_sentence(log_sentence, "rho", (int)(opt_rho*100));
-	Add_dictionary_to_sentence(log_sentence, "omega", (int)(opt_omega*100));
+	if(opt_USE_DETAIL_TP){
+		Add_dictionary_to_sentence(log_sentence, "deposit", (int)(opt_deposit*100));
+		Add_dictionary_to_sentence(log_sentence, "lift", (int)(opt_lift*100));
+		Add_dictionary_to_sentence(log_sentence, "exposure", (int)(opt_exposure*100));
+	}else{
+		Add_dictionary_to_sentence(log_sentence, "gamma", (int)(opt_gamma*100));
+		Add_dictionary_to_sentence(log_sentence, "rho", (int)(opt_rho*100));
+		Add_dictionary_to_sentence(log_sentence, "omega", (int)(opt_omega*100));
+	}
 	Add_dictionary_to_sentence(log_sentence, "SoakTme", opt_SoakTime);
 	Add_dictionary_to_sentence(log_sentence, "SoakTimeStep", (int)(opt_SoakTimeStep*100));
 	Add_dictionary_to_sentence(log_sentence, "perlin_freq", (int)(opt_perlin_freq*100));
 	Add_dictionary_to_sentence(log_sentence, "perlin_depth", opt_perlin_depth);
+	Add_dictionary_to_sentence(log_sentence, "variance_ratio", (int)(opt_variance_ratio*100));
 	if(opt_USE_Backrun){
 		Add_dictionary_to_sentence(log_sentence, "alpha", (int)(opt_alpha*100));
 		Add_dictionary_to_sentence(log_sentence, "epsilon", (int)(opt_epsilon*100));
@@ -293,12 +300,19 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 			
 		//ストロークサイズのガウスフィルタを生成
 		gauce_filter = create_dally(2*t+1, 2*t+1);
-		sigma = t/2.0;	// Water:3sigma -> 2
+		sum = 0;
+		sigma = t/3.0*opt_variance_ratio;
 		for(i=0; i<2*t+1; i++){
-	        for(j=0; j<2*t+1; j++){
-	        	gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
-	        }
-	    }
+			for(j=0; j<2*t+1; j++){
+				gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
+				sum += gauce_filter[i][j];
+			}
+		}
+		for(i=0; i<2*t+1; i++){
+			for(j=0; j<2*t+1; j++){
+				gauce_filter[i][j] = gauce_filter[i][j] / sum;
+			}
+		}
 				
 		//vecデータ書き込み
 		// strcpy(vec_sentence, "t");
@@ -423,12 +437,12 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 
 				if(pnum>=min_stroke) { 
 					// double start_PWS = my_clock();
-                    Paint_Water_Stroke(p, pnum, t, bright, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);
+                    Paint_Water_Stroke_V2(p, pnum, t, bright, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);
 					// pd("PWS[s]",my_clock()-start_PWS);
 					stroke_histogram[pnum]++;  
 					paint_count++;
 				}
-				if(paint_count%500==0)
+				if(paint_count%500==0 || paint_count<100)
        			 // if(t!=tc)
 				{
 					strcpy(out_filename, dir_path);
@@ -819,9 +833,15 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "xi", (int)(opt_xi*100));
 	Add_dictionary_to_sentence(log_sentence, "K", opt_K);
 	Add_dictionary_to_sentence(log_sentence, "eta", (int)(opt_eta*100));
-	Add_dictionary_to_sentence(log_sentence, "gamma", (int)(opt_gamma*100));
-	Add_dictionary_to_sentence(log_sentence, "rho", (int)(opt_rho*100));
-	Add_dictionary_to_sentence(log_sentence, "omega", (int)(opt_omega*100));
+	if(opt_USE_DETAIL_TP){
+		Add_dictionary_to_sentence(log_sentence, "deposit", (int)(opt_deposit*100));
+		Add_dictionary_to_sentence(log_sentence, "lift", (int)(opt_lift*100));
+		Add_dictionary_to_sentence(log_sentence, "exposure", (int)(opt_exposure*100));
+	}else{
+		Add_dictionary_to_sentence(log_sentence, "gamma", (int)(opt_gamma*100));
+		Add_dictionary_to_sentence(log_sentence, "rho", (int)(opt_rho*100));
+		Add_dictionary_to_sentence(log_sentence, "omega", (int)(opt_omega*100));
+	}
 	Add_dictionary_to_sentence(log_sentence, "SoakTme", opt_SoakTime);
 	Add_dictionary_to_sentence(log_sentence, "SoakTimeStep", (int)(opt_SoakTimeStep*100));
 	Add_dictionary_to_sentence(log_sentence, "perlin_freq", (int)(opt_perlin_freq*100));
@@ -955,22 +975,36 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 				
 		//ストロークサイズのガウスフィルタを生成
 		gauce_filter = create_dally(2*t+1, 2*t+1);
-		sigma = t/3.0*opt_variance_ratio;	// Water:3sigma -> 0.1
+		sigma = t/3.0*opt_variance_ratio;
+		sum = 0;
 		for(i=0; i<2*t+1; i++){
-	        for(j=0; j<2*t+1; j++){
-	        	gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
-	        }
-	    }
+			for(j=0; j<2*t+1; j++){
+				gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
+				sum += gauce_filter[i][j];
+			}
+		}
+		for(i=0; i<2*t+1; i++){
+			for(j=0; j<2*t+1; j++){
+				gauce_filter[i][j] = gauce_filter[i][j] / sum;
+			}
+		}
 					
 		//ストロークサイズのガウスフィルタを生成(スケーリングキャンバス))
 		int t_Scaling = t*opt_canvas_scaling_ratio;
 		gauce_filter_Scaling = create_dally(2*t_Scaling+1, 2*t_Scaling+1);
-		sigma = t_Scaling/3.0*opt_variance_ratio;	// Water:3sigma -> 0.1
+		sigma = t_Scaling/3.0*opt_variance_ratio;
+		sum = 0;
 		for(i=0; i<2*t_Scaling+1; i++){
 	        for(j=0; j<2*t_Scaling+1; j++){
 	        	gauce_filter_Scaling[i][j] = gause_func(i-t_Scaling, j-t_Scaling, sigma);
+				sum += gauce_filter_Scaling[i][j];
 	        }
-	    }				
+	    }
+		for(i=0; i<2*t+1; i++){
+			for(j=0; j<2*t+1; j++){
+				gauce_filter_Scaling[i][j] = gauce_filter_Scaling[i][j] / sum;
+			}
+		}
 
 		
 		stroke_num=99999;
@@ -1200,7 +1234,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			
 			
 			//算出したpnum個の制御点を用いてストロークを描画
-			Paint_Water_Stroke(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, t, best_stroke_map[best_x][best_y]->color, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);	
+			Paint_Water_Stroke_V2(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, t, best_stroke_map[best_x][best_y]->color, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);	
 			// printf("C:[%d,%d,%d]",best_stroke_map[best_x][best_y]->color.R, best_stroke_map[best_x][best_y]->color.G, best_stroke_map[best_x][best_y]->color.B);
 			// display_Point_ally(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum);
 			

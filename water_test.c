@@ -20,6 +20,7 @@ double Paint_Water_Test(int argc, char *argv[]);
 double Circle_fill_Water_Test(int argc, char *argv[]);
 double set_WetStroke_Test(int argc, char *argv[]);
 double Paint_Water_Stroke_Test(int argc, char *argv[]);
+double Paint_Water_Stroke_V2_Test(int argc, char *argv[]);
 double SimulateCapillaryFlow_Test(int argc, char *argv[]);
 double SimulateCapillaryFlow_PaintTest(int argc, char *argv[]);
 
@@ -38,7 +39,7 @@ int main(int argc, char *argv[]){
     #endif
 
     for (i = 0; i < trials; i++) {
-        tmp = SimulateCapillaryFlow_PaintTest(argc, argv);
+        tmp = Paint_Water_Stroke_V2_Test(argc, argv);
         Ave_TIME += tmp;
         if(max<tmp) max=tmp;
         if(min>tmp) min=tmp;
@@ -946,62 +947,60 @@ double Paint_Water_Stroke_Test(int argc, char *argv[])
     double Ex_TIME=0;
     int i,j;
     int t=10;
-    int pnum1=7,pnum2=6;
+    int pnum1=7,pnum2=7;
     RGB color = {50, 10, 250}, color2={250,20,70};
     // RGB color = {200, 0, 100}, color2={0,0,0};
     double sigma;
     int width=460, height=360;
     // int width=640, height=480;
-    double** h = perlin_img(width, height, 0.1, 4);
+    double** h = perlin_img(width, height, opt_perlin_freq, opt_perlin_depth);
     double** grad_hx = create_dally(width+1, height); 
     double** grad_hy = create_dally(width, height+1); 
     calcu_grad_h(h, grad_hx, grad_hy, width, height);
     PPM* Canvas_img = create_ppm(width, height, 255);
+    // Point SP1[7]= {
+    //     {60.5,60.5},
+    //     {53.5,53.5},
+    //     {53.5,43.5},
+    //     {58.5,34.8},
+    //     {63.5,26.1},
+    //     {73.5,26.1},
+    //     {80.6,33.2}
+    // };
     Point SP1[7]= {
-        {60.5,60.5},
-        {53.5,53.5},
-        {53.5,43.5},
-        {58.5,34.8},
-        {63.5,26.1},
-        {73.5,26.1},
-        {80.6,33.2}
+        {10,10},
+        {40,40},
+        {60,60},
+        {100,100},
+        {120,120},
+        {130,150},
+        {150,160}
     };
-    // Point SP1[6]= {
-    //     {391.5,346.5},
-    //     {400.9,350},
-    //     {410.9,349.5},
-    //     {420.9,349.0},
-    //     {430.8,348.5},
-    //     {440.8,347.9}
-    // };
-    // Point SP1[5]= {
-    //     {10,10},
-    //     {40,40},
-    //     {60,60},
-    //     {100,100},
-    //     {120,120}
-    // };
-    // Point SP2[6]= {
-    //     {110,10},
-    //     {80,40},
-    //     {60,60},
-    //     {40,100},
-    //     {10,120},
-    //     {0,150}
-    // };
+    Point SP2[7]= {
+        {140,5},
+        {110,10},
+        {80,40},
+        {60,60},
+        {40,100},
+        {10,120},
+        {0,150}
+    };
     char filename[64]={};
 
     double** gauce_filter = create_dally(2*t+1, 2*t+1);
-    sigma = t/3.0;
+    double sum = 0;
+    sigma = t/3.0*opt_variance_ratio;	// Water:3sigma -> 0.1
     for(i=0; i<2*t+1; i++){
         for(j=0; j<2*t+1; j++){
             gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
+            sum += gauce_filter[i][j];
         }
     }
-
-    // strcpy(filename, "C0_");    // ペイント前のキャンバスを出力
-    // strcat(filename, argv[1]);
-    // write_ppm(filename, Canvas_img);
+    for(i=0; i<2*t+1; i++){
+        for(j=0; j<2*t+1; j++){
+            gauce_filter[i][j] = gauce_filter[i][j] / sum;
+        }
+    }
 
     clock_gettime(CLOCK_MONOTONIC, &start);
     Paint_Water_Stroke(SP1, pnum1, t, color, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
@@ -1012,11 +1011,90 @@ double Paint_Water_Stroke_Test(int argc, char *argv[])
     strcat(filename, argv[1]);
     write_ppm(filename, Canvas_img);
 
-    // Paint_Water_Stroke(SP2, pnum2, t, color2, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
+    Paint_Water_Stroke(SP2, pnum2, t, color2, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
 
-    // strcpy(filename, "C2_");    // ペイント2後のキャンバスを出力
+    strcpy(filename, "C2_");    // ペイント2後のキャンバスを出力
+    strcat(filename, argv[1]);
+    write_ppm(filename, Canvas_img);
+
+    Free_dally(h,width);
+    Free_dally(grad_hx,width+1);
+    Free_dally(grad_hy,width);
+    Free_dally(gauce_filter,2*t+1);
+    FreePPM(Canvas_img);
+                 
+	pd("PWS_Execution_TIME", Ex_TIME);
+    return Ex_TIME;
+}
+
+
+
+double Paint_Water_Stroke_V2_Test(int argc, char *argv[]) 
+{
+    struct timespec start,end;
+    double Ex_TIME=0;
+    int i,j;
+    int t=10;
+    int pnum1=6,pnum2=6;
+    RGB color = {50, 10, 250}, color2={250,20,70};
+    // RGB color = {200, 0, 100}, color2={0,0,0};
+    double sigma;
+    int width=460, height=360;
+    // int width=640, height=480;
+    double** h = perlin_img(width, height, opt_perlin_freq, opt_perlin_depth);
+    double** grad_hx = create_dally(width+1, height); 
+    double** grad_hy = create_dally(width, height+1); 
+    calcu_grad_h(h, grad_hx, grad_hy, width, height);
+    PPM* Canvas_img = create_ppm(width, height, 255);
+
+    Point SP1[6]= {
+        {10,10},
+        {40,40},
+        {60,60},
+        {100,100},
+        {120,120},
+        {130,150}
+    };
+    Point SP2[6]= {
+        {110,10},
+        {80,40},
+        {60,60},
+        {40,100},
+        {10,120},
+        {0,150}
+    };
+    char filename[64]={};
+
+    double** gauce_filter = create_dally(2*t+1, 2*t+1);
+    double sum = 0;
+    sigma = t/3.0*opt_variance_ratio;	// Water:3sigma -> 0.1
+    for(i=0; i<2*t+1; i++){
+        for(j=0; j<2*t+1; j++){
+            gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
+            sum += gauce_filter[i][j];
+        }
+    }
+    for(i=0; i<2*t+1; i++){
+        for(j=0; j<2*t+1; j++){
+            gauce_filter[i][j] = gauce_filter[i][j] / sum;
+        }
+    }
+
+
+    // clock_gettime(CLOCK_MONOTONIC, &start);
+    // Paint_Water_Stroke_V2(SP1, pnum1, t, color, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
+    // clock_gettime(CLOCK_MONOTONIC, &end);
+    // Ex_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
+
+    // strcpy(filename, "C1_");    // ペイント1後のキャンバスを出力
     // strcat(filename, argv[1]);
     // write_ppm(filename, Canvas_img);
+
+    Paint_Water_Stroke_V2(SP2, pnum2, t, color2, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
+
+    strcpy(filename, "C2_");    // ペイント2後のキャンバスを出力
+    strcat(filename, argv[1]);
+    write_ppm(filename, Canvas_img);
 
     Free_dally(h,width);
     Free_dally(grad_hx,width+1);
@@ -1162,7 +1240,7 @@ double SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
                 gR[i][j] = 1;
                 gG[i][j] = 1;
             }  else M[i][j]=0;
-            M[i][j] = 1;
+            // M[i][j] = 1;
             // if(i!=0 && j!=0) (128-abs(64-i)-abs(64-j))/128.0; 
         }
     }
@@ -1188,7 +1266,7 @@ double SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
     //     }
     // }
 
-    var_t = opt_SoakTimeStep;  // maxは１以下なのでおかしい・・・おかしくない？
+    var_t = opt_SoakTimeStep;
 
     for ( t = 0; t < opt_SoakTime; t=t+var_t)
     {   
@@ -1221,11 +1299,11 @@ double SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
             strcat(out_name, ".ppm");
             write_ppm(out_name, Canvas_img);
 
-            // strcpy(out_name, "WetArea");
-            // strcat(out_name, count_name);
-            // strcat(out_name, ".ppm");
-            // trans_Vector_img(fig_img, dM, width, height);
-            // write_ppm(out_name, fig_img);
+            strcpy(out_name, "WetArea");
+            strcat(out_name, count_name);
+            strcat(out_name, ".ppm");
+            trans_Vector_img(fig_img, dM, width, height);
+            write_ppm(out_name, fig_img);
 
             strcpy(out_name, "u");
             strcat(out_name, count_name);

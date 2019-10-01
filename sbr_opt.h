@@ -23,7 +23,7 @@
 #define opt_USE_Best_Stroke_Method 1
 
 // 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
-#define opt_optimal_improved_value_border 1
+#define opt_optimal_improved_value_border 10000
 
 // キャンバスを描画途中画像から始めるかどうかとそのアドレス
 #define opt_USE_input_progress_image 0
@@ -32,10 +32,10 @@
 // キャンバスのスケーリングを行うか
 #define opt_USE_Canvas_Scaling_Method 1
 // キャンバスの拡大率
-#define opt_canvas_scaling_ratio 8.0
+#define opt_canvas_scaling_ratio 4.0
 
 // ストロークの描画の濃さ。この値が大きいほど下地の色を無視して塗りつぶす
-#define opt_ratio 0.05
+#define opt_ratio 0.5
 
 // ストロークの半径ごとの繰り返し数。多いと丁寧に塗りつぶす
 #define opt_loop_cont 1

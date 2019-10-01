@@ -18,6 +18,7 @@
 #define pp(p) printf("x:%f y:%f\n",p.x,p.y)
 #define pn printf("\n")
 #define Free_ally(ally, w) do {	for(i=0; i < w; i++) { free(ally[i]);}	free(ally);}while(0)
+#define LIMIT_RANGE(x,min,max) ((x= (x<min  ? min : x<max ? x : max)))
 
 #include "ImageIO/image.h"
 
