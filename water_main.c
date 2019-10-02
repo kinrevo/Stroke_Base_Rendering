@@ -243,7 +243,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	if(opt_USE_input_progress_image){
 		//描画中キャンバス画像を読み込む
 		image_t *in_img;
-		char name[64] = opt_progress_image_address;
+		char name[128] = opt_progress_image_address;
 		char* ext = get_extension(name);
 
 		if (strcmp("ppm", ext) == 0 || strcmp("pnm", ext) == 0) {
@@ -879,7 +879,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	if(opt_USE_input_progress_image){
 		//描画中キャンバス画像を読み込む
 		image_t *in_img;
-		char name[64] = opt_progress_image_address;
+		char name[128] = opt_progress_image_address;
 		char* ext = get_extension(name);
 
 		if (strcmp("ppm", ext) == 0 || strcmp("pnm", ext) == 0) {
@@ -1278,7 +1278,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			/// 制御点を全てとブラシサイズを拡大率に従いスケーリングし、拡大キャンバスに描画
 			if(opt_USE_Canvas_Scaling_Method){
 				scaling_p = scaling_point(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, opt_canvas_scaling_ratio);
-				SINGLE_Paint_Water_Stroke(scaling_p, best_stroke_map[best_x][best_y]->pnum, t_Scaling, best_stroke_map[best_x][best_y]->color, nimgR_Scaling->data, nimgG_Scaling->data, nimgB_Scaling->data, h_Scaling, grad_hx_Scaling, grad_hy_Scaling, gauce_filter_Scaling, nimgC_Scaling->width, nimgC_Scaling->height);
+				SINGLE_Paint_Water_Stroke_V2(scaling_p, best_stroke_map[best_x][best_y]->pnum, t_Scaling, best_stroke_map[best_x][best_y]->color, nimgR_Scaling->data, nimgG_Scaling->data, nimgB_Scaling->data, h_Scaling, grad_hx_Scaling, grad_hy_Scaling, gauce_filter_Scaling, nimgC_Scaling->width, nimgC_Scaling->height);
 				free(scaling_p);
 				
 				if(nc%100==0 || nc<=100)

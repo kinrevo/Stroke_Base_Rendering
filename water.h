@@ -46,15 +46,16 @@
 // Option機能
 #define opt_USE_MoveWater 0
 #define opt_USE_Backrun 1
-    #define exp_DiffuseNum 3
+    #define exp_DiffuseNum 1
 #define opt_USE_DETAIL_TP 1
-    #define opt_deposit 0.01
-    #define opt_lift 0.005
+    #define opt_deposit 0.1
+    #define opt_lift 0.05
     #define opt_exposure 0.8
 
 //////　実験動作  /////
 #define exp_RaiseWater 0  // FlowOutward:負の水量が現れたときそれに合わせて全体を底上げする
-#define opt_StopSoakVero 5  // UpdateVelocities：水速度が暴走したときに停止する速度条件
+#define opt_StopSoakVero 2  // UpdateVelocities：水速度が暴走したときに停止する速度条件
+// #define _DEBUG_PaintWater
 
 
 double uf(double** u, double x, double y);
@@ -80,6 +81,7 @@ void write_Vector_img(PPM* img, double** u, int width, int height);
 void trans_Vector_img(PPM* img, double** u, int width, int height);
 
 void SINGLE_Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height);
+void SINGLE_Paint_Water_Stroke_V2(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height);
 
 void Paint_Water_Stroke_V2(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height);
 
