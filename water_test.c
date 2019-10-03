@@ -1063,6 +1063,10 @@ double Paint_Water_Stroke_V2_Test(int argc, char *argv[])
         {10,120},
         {0,150}
     };
+    // Point SP2[2]= {
+    //     {110,110},
+    //     {120,120}
+    // };
     char filename[64]={};
 
     double** gauce_filter = create_dally(2*t+1, 2*t+1);

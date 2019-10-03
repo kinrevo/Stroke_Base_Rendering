@@ -155,6 +155,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	strcat(log_sentence, "<");
 	strcat(log_sentence, in_filename);
 	strcat(log_sentence, ">\r\n");
+	strcat(log_sentence, "Stroke_Method:Raster\r\n");
 	Add_dictionary_to_sentence(log_sentence, "width", in->width);
 	Add_dictionary_to_sentence(log_sentence, "height", in->height);
 	Add_dictionary_to_sentence(log_sentence, "thick_max", thick_max);
@@ -163,7 +164,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "min_stroke", min_stroke);
 	Add_dictionary_to_sentence(log_sentence, "window_diff_border", window_diff_border);
 	Add_dictionary_to_sentence(log_sentence, "color_diff_border", color_diff_border);
-	Add_dictionary_to_sentence(log_sentence, "ratio", (int)(ratio*100));
+	Add_dictionary_to_sentence_d(log_sentence, "ratio", ratio);
 	Add_dictionary_to_sentence(log_sentence, "histogram_partition", histogram_partition);
 	Add_dictionary_to_sentence(log_sentence, "loop_cont", loop_cont);
 	Add_dictionary_to_sentence(log_sentence, "USE_calcu_color_bi", opt_USE_calcu_color_bi);
@@ -173,36 +174,36 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 		Add_dictionary_to_sentence(log_sentence, "thick_max[2]", opt2_thick_max);
 		Add_dictionary_to_sentence(log_sentence, "thick_min[2]", opt2_thick_min);
 		Add_dictionary_to_sentence(log_sentence, "min_stroke[2]", opt2_min_stroke);
-		Add_dictionary_to_sentence(log_sentence, "ratio[2]", (int)(opt2_ratio*100));
+		Add_dictionary_to_sentence_d(log_sentence, "ratio[2]", opt2_ratio);
 		Add_dictionary_to_sentence(log_sentence, "loop_cont[2]", opt2_loop_cont);
 	}
 	strcat(log_sentence, "[Water Option]\r\n");
-	Add_dictionary_to_sentence(log_sentence, "mhu", (int)(opt_mhu*100));
-	Add_dictionary_to_sentence(log_sentence, "kappa", (int)(opt_kappa*100));
+	Add_dictionary_to_sentence_d(log_sentence, "mhu", opt_mhu);
+	Add_dictionary_to_sentence_d(log_sentence, "kappa", opt_kappa);
 	Add_dictionary_to_sentence(log_sentence, "N", opt_N);
-	Add_dictionary_to_sentence(log_sentence, "tau", (int)(opt_tau*100));
-	Add_dictionary_to_sentence(log_sentence, "xi", (int)(opt_xi*100));
+	Add_dictionary_to_sentence_d(log_sentence, "tau", opt_tau);
+	Add_dictionary_to_sentence_d(log_sentence, "xi", opt_xi);
 	Add_dictionary_to_sentence(log_sentence, "K", opt_K);
-	Add_dictionary_to_sentence(log_sentence, "eta", (int)(opt_eta*100));
+	Add_dictionary_to_sentence_d(log_sentence, "eta", opt_eta);
 	if(opt_USE_DETAIL_TP){
-		Add_dictionary_to_sentence(log_sentence, "deposit", (int)(opt_deposit*100));
-		Add_dictionary_to_sentence(log_sentence, "lift", (int)(opt_lift*100));
-		Add_dictionary_to_sentence(log_sentence, "exposure", (int)(opt_exposure*100));
+		Add_dictionary_to_sentence_d(log_sentence, "deposit", opt_deposit);
+		Add_dictionary_to_sentence_d(log_sentence, "lift", opt_lift);
+		Add_dictionary_to_sentence_d(log_sentence, "exposure", opt_exposure);
 	}else{
-		Add_dictionary_to_sentence(log_sentence, "gamma", (int)(opt_gamma*100));
-		Add_dictionary_to_sentence(log_sentence, "rho", (int)(opt_rho*100));
-		Add_dictionary_to_sentence(log_sentence, "omega", (int)(opt_omega*100));
+		Add_dictionary_to_sentence_d(log_sentence, "gamma", opt_gamma);
+		Add_dictionary_to_sentence_d(log_sentence, "rho", opt_rho);
+		Add_dictionary_to_sentence_d(log_sentence, "omega", opt_omega);
 	}
 	Add_dictionary_to_sentence(log_sentence, "SoakTme", opt_SoakTime);
-	Add_dictionary_to_sentence(log_sentence, "SoakTimeStep", (int)(opt_SoakTimeStep*100));
-	Add_dictionary_to_sentence(log_sentence, "perlin_freq", (int)(opt_perlin_freq*100));
+	Add_dictionary_to_sentence_d(log_sentence, "SoakTimeStep", opt_SoakTimeStep);
+	Add_dictionary_to_sentence_d(log_sentence, "perlin_freq", opt_perlin_freq);
 	Add_dictionary_to_sentence(log_sentence, "perlin_depth", opt_perlin_depth);
-	Add_dictionary_to_sentence(log_sentence, "variance_ratio", (int)(opt_variance_ratio*100));
+	Add_dictionary_to_sentence_d(log_sentence, "variance_ratio", opt_variance_ratio);
 	if(opt_USE_Backrun){
-		Add_dictionary_to_sentence(log_sentence, "alpha", (int)(opt_alpha*100));
-		Add_dictionary_to_sentence(log_sentence, "epsilon", (int)(opt_epsilon*100));
-		Add_dictionary_to_sentence(log_sentence, "delta", (int)(opt_delta*100));
-		Add_dictionary_to_sentence(log_sentence, "sigma", (int)(opt_sigma*100));
+		Add_dictionary_to_sentence_d(log_sentence, "alpha", opt_alpha);
+		Add_dictionary_to_sentence_d(log_sentence, "epsilon", opt_epsilon);
+		Add_dictionary_to_sentence_d(log_sentence, "delta", opt_delta);
+		Add_dictionary_to_sentence_d(log_sentence, "sigma", opt_sigma);
 	}
 	#ifdef _OPENMP
 		Add_dictionary_to_sentence(log_sentence, "OMP_NUM_THREADS", omp_get_max_threads());
@@ -336,7 +337,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 					for(yc=-t; yc<=t; yc++) {
 						if((y+yc)<0 || (y+yc)>in->height-1) {	offscrn_count++;
 						}else{
-							//diff_sum += abs(nimgV->data[x+xc][y+yc] - cmpr->data[x+xc][y+yc]);
 							diff_sum += abs(nimgR->data[x+xc][y+yc] - cmprR->data[x+xc][y+yc]);
 							diff_sum += abs(nimgG->data[x+xc][y+yc] - cmprG->data[x+xc][y+yc]);
 							diff_sum += abs(nimgB->data[x+xc][y+yc] - cmprB->data[x+xc][y+yc]);
@@ -347,7 +347,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 				
 				//差分の合計平均(画素当たりの差分)が一定以上ならストローク開始位置とする
 				if(diff_sum < window_diff_border) {
-					stroke_histogram[pnum]++;
 					continue;
 				}
 				pnum=1;		//第一点確定
@@ -387,7 +386,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 					p[1] = calcu_point(cmpr, p[0], t, theta);
 					
 					//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
-					//sum = diffsum_clr(cmpr, nimgV, p[1], t, bright);  //点当たりの差異平均
 					sum = 0;
 					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
 					sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
@@ -397,9 +395,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 					if( sum < color_diff_border) {
 						stroke_histogram[pnum]++;
 						continue;
-					}
-					else{ 
-						// reversal_map[x][y]=Reversal_ON;
 					}
 				}
 
@@ -437,13 +432,13 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 
 				if(pnum>=min_stroke) { 
 					// double start_PWS = my_clock();
-                    Paint_Water_Stroke_V2(p, pnum, t, bright, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);
+                    Paint_Water_Stroke(p, pnum, t, bright, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);
 					// pd("PWS[s]",my_clock()-start_PWS);
 					stroke_histogram[pnum]++;  
 					paint_count++;
 				}
+
 				if(paint_count%500==0 || paint_count<100)
-       			 // if(t!=tc)
 				{
 					strcpy(out_filename, dir_path);
 					strcat(out_filename, in_filename);
@@ -467,7 +462,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
         nc++;
 
 						
-		// if(t!=tc)
 		{
 			tc=t;	
 			strcpy(out_filename, dir_path);
@@ -609,7 +603,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 					p[1] = calcu_point(cmpr, p[0], t, theta);
 					
 					//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
-					//sum = diffsum_clr(cmpr, nimgV, p[1], t, bright);  //点当たりの差異平均
 					sum = 0;
 					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
 					sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
@@ -617,8 +610,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 					
 					//どちらの第二点も不適切なら描画をせず次のループへ
 					if( sum < color_diff_border) {
-						// inapp_count++;
-						// stroke_histogram[pnum]++;
 						continue;
 					}
 				}
@@ -661,7 +652,6 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 					Paint_Bezier_ex(p, pnum, nimgR, t, bright.R, ratio);	
 					Paint_Bezier_ex(p, pnum, nimgG, t, bright.G, ratio);	
 					Paint_Bezier_ex(p, pnum, nimgB, t, bright.B, ratio);	
-					// stroke_histogram[pnum]++;  
 				}
 
 				paint_count++;
@@ -804,6 +794,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	strcat(log_sentence, "<");
 	strcat(log_sentence, in_filename);
 	strcat(log_sentence, ">\r\n");
+	strcat(log_sentence, "Stroke_Method:BestStroke\r\n");
 	Add_dictionary_to_sentence(log_sentence, "width", in->width);
 	Add_dictionary_to_sentence(log_sentence, "height", in->height);
 	Add_dictionary_to_sentence(log_sentence, "thick_max", thick_max);
@@ -812,7 +803,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "min_stroke", min_stroke);
 	Add_dictionary_to_sentence(log_sentence, "window_diff_border", window_diff_border);
 	Add_dictionary_to_sentence(log_sentence, "color_diff_border", color_diff_border);
-	Add_dictionary_to_sentence(log_sentence, "ratio", (int)(ratio*100));
+	Add_dictionary_to_sentence_d(log_sentence, "ratio", ratio);
 	Add_dictionary_to_sentence(log_sentence, "histogram_partition", histogram_partition);
 	Add_dictionary_to_sentence(log_sentence, "loop_cont", loop_cont);
 	Add_dictionary_to_sentence(log_sentence, "USE_calcu_color_bi", opt_USE_calcu_color_bi);
@@ -822,35 +813,36 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 		Add_dictionary_to_sentence(log_sentence, "thick_max[2]", opt2_thick_max);
 		Add_dictionary_to_sentence(log_sentence, "thick_min[2]", opt2_thick_min);
 		Add_dictionary_to_sentence(log_sentence, "min_stroke[2]", opt2_min_stroke);
-		Add_dictionary_to_sentence(log_sentence, "ratio[2]", (int)(opt2_ratio*100));
+		Add_dictionary_to_sentence_d(log_sentence, "ratio[2]", opt2_ratio);
 		Add_dictionary_to_sentence(log_sentence, "loop_cont[2]", opt2_loop_cont);
 	}
 	strcat(log_sentence, "[Water Option]\r\n");
-	Add_dictionary_to_sentence(log_sentence, "mhu", (int)(opt_mhu*100));
-	Add_dictionary_to_sentence(log_sentence, "kappa", (int)(opt_kappa*100));
+	Add_dictionary_to_sentence_d(log_sentence, "mhu", opt_mhu);
+	Add_dictionary_to_sentence_d(log_sentence, "kappa", opt_kappa);
 	Add_dictionary_to_sentence(log_sentence, "N", opt_N);
-	Add_dictionary_to_sentence(log_sentence, "tau", (int)(opt_tau*100));
-	Add_dictionary_to_sentence(log_sentence, "xi", (int)(opt_xi*100));
+	Add_dictionary_to_sentence_d(log_sentence, "tau", opt_tau);
+	Add_dictionary_to_sentence_d(log_sentence, "xi", opt_xi);
 	Add_dictionary_to_sentence(log_sentence, "K", opt_K);
-	Add_dictionary_to_sentence(log_sentence, "eta", (int)(opt_eta*100));
+	Add_dictionary_to_sentence_d(log_sentence, "eta", opt_eta);
 	if(opt_USE_DETAIL_TP){
-		Add_dictionary_to_sentence(log_sentence, "deposit", (int)(opt_deposit*100));
-		Add_dictionary_to_sentence(log_sentence, "lift", (int)(opt_lift*100));
-		Add_dictionary_to_sentence(log_sentence, "exposure", (int)(opt_exposure*100));
+		Add_dictionary_to_sentence_d(log_sentence, "deposit", opt_deposit);
+		Add_dictionary_to_sentence_d(log_sentence, "lift", opt_lift);
+		Add_dictionary_to_sentence_d(log_sentence, "exposure", opt_exposure);
 	}else{
-		Add_dictionary_to_sentence(log_sentence, "gamma", (int)(opt_gamma*100));
-		Add_dictionary_to_sentence(log_sentence, "rho", (int)(opt_rho*100));
-		Add_dictionary_to_sentence(log_sentence, "omega", (int)(opt_omega*100));
+		Add_dictionary_to_sentence_d(log_sentence, "gamma", opt_gamma);
+		Add_dictionary_to_sentence_d(log_sentence, "rho", opt_rho);
+		Add_dictionary_to_sentence_d(log_sentence, "omega", opt_omega);
 	}
 	Add_dictionary_to_sentence(log_sentence, "SoakTme", opt_SoakTime);
-	Add_dictionary_to_sentence(log_sentence, "SoakTimeStep", (int)(opt_SoakTimeStep*100));
-	Add_dictionary_to_sentence(log_sentence, "perlin_freq", (int)(opt_perlin_freq*100));
+	Add_dictionary_to_sentence_d(log_sentence, "SoakTimeStep", opt_SoakTimeStep);
+	Add_dictionary_to_sentence_d(log_sentence, "perlin_freq", opt_perlin_freq);
 	Add_dictionary_to_sentence(log_sentence, "perlin_depth", opt_perlin_depth);
+	Add_dictionary_to_sentence_d(log_sentence, "variance_ratio", opt_variance_ratio);
 	if(opt_USE_Backrun){
-		Add_dictionary_to_sentence(log_sentence, "alpha", (int)(opt_alpha*100));
-		Add_dictionary_to_sentence(log_sentence, "epsilon", (int)(opt_epsilon*100));
-		Add_dictionary_to_sentence(log_sentence, "delta", (int)(opt_delta*100));
-		Add_dictionary_to_sentence(log_sentence, "sigma", (int)(opt_sigma*100));
+		Add_dictionary_to_sentence_d(log_sentence, "alpha", opt_alpha);
+		Add_dictionary_to_sentence_d(log_sentence, "epsilon", opt_epsilon);
+		Add_dictionary_to_sentence_d(log_sentence, "delta", opt_delta);
+		Add_dictionary_to_sentence_d(log_sentence, "sigma", opt_sigma);
 	}
 	#ifdef _OPENMP
 		Add_dictionary_to_sentence(log_sentence, "OMP_NUM_THREADS", omp_get_max_threads());
@@ -943,13 +935,11 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	int diff_stroke_max=0;
 	int tmp_num;
 	int diff_stroke_max_ave[50]={};
-	// int **reversal_map = create_ally(in->width, in->height);
 	int best_x=0, best_y=0;
 	// int miss_stroke_count=0;
 	Stroke*** best_stroke_map = create_Stroke_ally(in->width, in->height, max_stroke);
 	Point best_P;
 	int optimal_improved_value_border = opt_optimal_improved_value_border;
-	// int diff_stroke=0;
 	// Point before_P={0,0};
 
     double** h = perlin_img(in->width, in->height, opt_perlin_freq, opt_perlin_depth);
@@ -1037,7 +1027,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					if(GLOBAL_improved_value_map->data[x][y] != UNCALCULATED) continue;
 				
 					diff_sum = break_flag = pnum = 0;
-					// diff_stroke=0;	//Greedyアプローチ
 					
 					//ウィンドウの中の差分の合計を取る
 					offscrn_count = 0;
@@ -1110,9 +1099,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 							// stroke_histogram[pnum]++;
 							GLOBAL_improved_value_map->data[x][y] = MIN_STROKE;
 							continue;
-						}
-						else{ 
-							// reversal_map[x][y]=Reversal_ON;
 						}
 					}
 
@@ -1202,8 +1188,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 				tmp_num=0;
 				// for(i=0; i<50; i++) tmp_num+=diff_test_stroke_ave[i];
 				// p("test_STROKE_AVE", tmp_num);
-				// printf("C:[%d,%d,%d]",best_stroke_map[best_x][best_y]->color.R, best_stroke_map[best_x][best_y]->color.G, best_stroke_map[best_x][best_y]->color.B);
-				// display_Point_ally(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum);
 				// if(tmp_num/50 < optimal_improved_value_border) {
 				// 	strcat(log_sentence, "\r\n");
 				// 	Add_dictionary_to_sentence(log_sentence, "t", t);
@@ -1234,9 +1218,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			
 			
 			//算出したpnum個の制御点を用いてストロークを描画
-			Paint_Water_Stroke_V2(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, t, best_stroke_map[best_x][best_y]->color, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);	
-			// printf("C:[%d,%d,%d]",best_stroke_map[best_x][best_y]->color.R, best_stroke_map[best_x][best_y]->color.G, best_stroke_map[best_x][best_y]->color.B);
-			// display_Point_ally(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum);
+			Paint_Water_Stroke(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, t, best_stroke_map[best_x][best_y]->color, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);	
 			
 			// 描画したストロークの周囲のみ改善値マップをリセット
 			reset_improved_value_map(GLOBAL_improved_value_map, best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, best_stroke_map, t, max_stroke);
@@ -1278,7 +1260,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			/// 制御点を全てとブラシサイズを拡大率に従いスケーリングし、拡大キャンバスに描画
 			if(opt_USE_Canvas_Scaling_Method){
 				scaling_p = scaling_point(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, opt_canvas_scaling_ratio);
-				SINGLE_Paint_Water_Stroke_V2(scaling_p, best_stroke_map[best_x][best_y]->pnum, t_Scaling, best_stroke_map[best_x][best_y]->color, nimgR_Scaling->data, nimgG_Scaling->data, nimgB_Scaling->data, h_Scaling, grad_hx_Scaling, grad_hy_Scaling, gauce_filter_Scaling, nimgC_Scaling->width, nimgC_Scaling->height);
+				SINGLE_Paint_Water_Stroke(scaling_p, best_stroke_map[best_x][best_y]->pnum, t_Scaling, best_stroke_map[best_x][best_y]->color, nimgR_Scaling->data, nimgG_Scaling->data, nimgB_Scaling->data, h_Scaling, grad_hx_Scaling, grad_hy_Scaling, gauce_filter_Scaling, nimgC_Scaling->width, nimgC_Scaling->height);
 				free(scaling_p);
 				
 				if(nc%100==0 || nc<=100)
@@ -1461,7 +1443,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					p[1] = calcu_point(cmpr, p[0], t, theta);
 					
 					//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
-					//sum = diffsum_clr(cmpr, nimgV, p[1], t, bright);  //点当たりの差異平均
 					sum = 0;
 					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
 					sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
@@ -1469,8 +1450,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					
 					//どちらの第二点も不適切なら描画をせず次のループへ
 					if( sum < color_diff_border) {
-						// inapp_count++;
-						// stroke_histogram[pnum]++;
 						continue;
 					}
 				}

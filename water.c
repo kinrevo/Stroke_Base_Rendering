@@ -56,7 +56,7 @@ int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, i
     // if(opt_USE_Best_Stroke_Method){
     //     SINGLE_Paint_Water_Stroke(stroke->p, stroke->pnum, t, stroke->color, test_Canvas->dataR, test_Canvas->dataG, test_Canvas->dataB, h, grad_hx, grad_hy, gauce_filter, nimgC->width, nimgC->height);
     // }else{
-	    Paint_Water_Stroke_V2(stroke->p, stroke->pnum, t, stroke->color, test_Canvas->dataR, test_Canvas->dataG, test_Canvas->dataB, h, grad_hx, grad_hy, gauce_filter, nimgC->width, nimgC->height);
+	    Paint_Water_Stroke(stroke->p, stroke->pnum, t, stroke->color, test_Canvas->dataR, test_Canvas->dataG, test_Canvas->dataB, h, grad_hx, grad_hy, gauce_filter, nimgC->width, nimgC->height);
     // }
 	//試し描きによる変化を確認
 	for(i=left_end; i<=right_end; i++) {
@@ -76,6 +76,7 @@ void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** C
 {
     static int first_flag=1;
     int i,j;
+    double pigment_density;
 
     Point rectangleP[2];
     set_Stroke_rectangle(&rectangleP[0], &rectangleP[1], StrokeP, pnum, thick, width, height);
@@ -115,30 +116,51 @@ void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** C
     format_dally(gG, width, height, 0);
     format_dally(gB, width, height, 0);
 
+    // シミュレーション終了時に水中の顔料を落とすか拭き取るか
+    if(opt_RemovePigmentInwater){
+        // キャンバスの色をCMYに変換し堆積顔料を計算
+        #pragma omp parallel for private(i,j)
+        for(i=0; i<width; i++) {
+            for(j=0; j<height; j++) {
+                dR[i][j] = 1 - CanR[i][j]/255.0;    //RGB[0,255]->CMY[0,1]
+                dG[i][j] = 1 - CanG[i][j]/255.0;
+                dB[i][j] = 1 - CanB[i][j]/255.0;
+            }
+        }
 
-    // キャンバスの色をCMYに変換し堆積顔料を計算
-    #pragma omp parallel for private(i,j)
-    for(i=0; i<width; i++) {
-        for(j=0; j<height; j++) {
-            dR[i][j] = 1 - CanR[i][j]/255.0;    //RGB[0,255]->CMY[0,1]
-            dG[i][j] = 1 - CanG[i][j]/255.0;
-            dB[i][j] = 1 - CanB[i][j]/255.0;
+        set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, color, gauce_filter, width, height);   //ストロークのエリアと水量を計算
+        Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
+
+        // 堆積顔料をRGBに変換しキャンバスの色を計算
+        #pragma omp parallel for private(i,j)
+        for(i=0; i<width; i++) {
+            for(j=0; j<height; j++) {
+                CanR[i][j] = (1 - dR[i][j]) * 255;    //CMY[0,1]->RGB[0,255]
+                CanG[i][j] = (1 - dG[i][j]) * 255;
+                CanB[i][j] = (1 - dB[i][j]) * 255;
+            }
+        }
+    }else{
+        format_dally(dR, width, height, 0);
+        format_dally(dG, width, height, 0);
+        format_dally(dB, width, height, 0);
+
+        RGB tmp_density = {255-255*opt_ratio, 255-255*opt_ratio, 255-255*opt_ratio};
+        set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, tmp_density, gauce_filter, width, height);   //ストロークのエリアと水量を計算
+        Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
+
+        // 堆積顔料をRGBに変換しキャンバスの色を計算
+        #pragma omp parallel for private(i,j,pigment_density)
+        for(i=0; i<width; i++) {
+            for(j=0; j<height; j++) {
+                pigment_density = gR[i][j] + dR[i][j];
+                LIMIT_RANGE(pigment_density, 0, 1);
+                CanR[i][j] = (1-pigment_density) * CanR[i][j] + pigment_density * color.R;
+                CanG[i][j] = (1-pigment_density) * CanG[i][j] + pigment_density * color.G;
+                CanB[i][j] = (1-pigment_density) * CanB[i][j] + pigment_density * color.B;
+            }
         }
     }
-
-    set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, color, gauce_filter, width, height);   //ストロークのエリアと水量を計算
-    Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
-
-    // 堆積顔料をRGBに変換しキャンバスの色を計算
-    #pragma omp parallel for private(i,j)
-    for(i=0; i<width; i++) {
-        for(j=0; j<height; j++) {
-            CanR[i][j] = (1 - dR[i][j]) * 255;    //CMY[0,1]->RGB[0,255]
-            CanG[i][j] = (1 - dG[i][j]) * 255;
-            CanB[i][j] = (1 - dB[i][j]) * 255;
-        }
-    }
-
 }
 
 
@@ -219,8 +241,6 @@ void Circle_fill_Water(int** M, double** p, double** gR, double** gG, double** g
                 gR[x][y] = 1-color.R/255.0;     //RGB[0,255]->CMY[0,1]
                 gG[x][y] = 1-color.G/255.0;
                 gB[x][y] = 1-color.B/255.0;
-                
-                // GLOBAL_improved_value_map->data[x][y] = UNCALCULATED;
 			}
 		}
 	}
@@ -360,8 +380,6 @@ double UpdateVelocities(int** M,  double** u, double** v, double** p, double var
 
         first_flag=0;
     }
-    // format_dally(new_u, width+1, height, 0);    
-    // format_dally(new_v, width, height+1, 0);
 
 
     // 最大初速度が大きいほど細かく更新を行う
@@ -397,7 +415,6 @@ double UpdateVelocities(int** M,  double** u, double** v, double** p, double var
                         // LIMIT_RANGE(p_grad, -1,1);
                         new_u[i+1][j] = u[i+1][j] + UV_var_t*(A - opt_mhu*B + p_grad - opt_kappa*exp(-0.1*(p[i][j]+p[i+1][j])/2)*u[i+1][j]);
                     }else{   //ウェットエリア外を速度０に
-                        // new_u[i][j] = 0;
                         new_u[i+1][j] = 0;
                     }
                 }
@@ -416,19 +433,11 @@ double UpdateVelocities(int** M,  double** u, double** v, double** p, double var
                         // LIMIT_RANGE(p_grad, -1,1);
                         new_v[i][j+1] = v[i][j+1] + UV_var_t*(A - opt_mhu*B + p_grad - opt_kappa*exp(-0.1*(p[i][j]+p[i][j+1])/2)*v[i][j+1]);
                     }else{   //ウェットエリア外を速度０に
-                        // new_v[i][j] = 0;
                         new_v[i][j+1] = 0;
                     }
                 }
             }
 
-
-        // for (i = 0; i < width-1; i++){  //端付近は計算していないのでwidth-1にすべき？（しないと0が増殖）
-        //     for (j = 0; j < height-1; j++) {
-        //         if(j!=0) u[i][j] = new_u[i][j];
-        //         if(i!=0) v[i][j] = new_v[i][j];
-        //     }
-        // }
 
             #pragma omp for private(i,j)
             // for (i = 0; i < width-2; i++){    // -2にしないと0が拡がる
@@ -606,7 +615,7 @@ void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t
             }
         }
     }
-    // 実験的実装
+    // 実験的実装：水を底上げする
     if(exp_RaiseWater){
         if(min_p < 0){
             #pragma omp parallel for private(i,j)
@@ -799,7 +808,7 @@ void TransferPigment(int** M, double** h, double** gR, double** gG, double** gB,
 void SimulateCapillaryFlow(int** M, double** p, double** c, double** s, double var_t, int width, int height)
 {
     static int first_flag=1;
-    int i,j,k,l;
+    int i,j,k,l,t;
     static double **new_s;
     if(first_flag){
         new_s = create_dally(width, height);
@@ -819,7 +828,7 @@ void SimulateCapillaryFlow(int** M, double** p, double** c, double** s, double v
     copy_dally(s, new_s, width, height);
 
     #pragma omp parallel for private(i,j,var_s) schedule(static, 3)
-    for (int t = 0; t < exp_DiffuseNum; t++){
+    for (t = 0; t < exp_DiffuseNum; t++){
         for(i=1; i<width-1; i++){
             for(j=1; j<height-1; j++){
                 if(s[i][j] < epsilon) continue;    //水量が０であるほとんどの領域をスキップ
@@ -890,149 +899,6 @@ void trans_Vector_img(PPM* img, double** u, int width, int height)
 
 
 
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-//滲み用ストローク（顔料を全て落とす）
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-
-
-void Paint_Water_Stroke_V2(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height)
-{
-    static int first_flag=1;
-    int i,j;
-    double pigment_density;
-
-    Point rectangleP[2];
-    set_Stroke_rectangle(&rectangleP[0], &rectangleP[1], StrokeP, pnum, thick, width, height);
-    if(opt_USE_Backrun){
-        rectangleP[0].x -= 2*thick;
-        rectangleP[0].y -= 2*thick;
-        rectangleP[1].x += 2*thick;
-        rectangleP[1].y += 2*thick;
-        if(rectangleP[0].x<0) rectangleP[0].x=0;
-        if(width <= rectangleP[1].x) rectangleP[1].x=width-1;
-        if(rectangleP[0].y<0) rectangleP[0].y=0;
-        if(height <= rectangleP[1].y) rectangleP[1].y=height-1;
-    }
-
-    static int** M;
-    static double **u,**v,**p,**gR,**gG,**gB,**dR,**dG,**dB;
-    if(first_flag){
-        u = create_dally(width+1, height);
-        v = create_dally(width, height+1);
-        M = create_ally(width, height);
-        p = create_dally(width, height);
-        gR = create_dally(width, height);
-        gG = create_dally(width, height);
-        gB = create_dally(width, height);
-        dR = create_dally(width, height);
-        dG = create_dally(width, height);
-        dB = create_dally(width, height);
-
-        first_flag=0;
-    }
-
-    format_dally(u, width+1, height, 0);
-    format_dally(v, width, height+1, 0);
-    format_ally(M, width, height, 0);
-    format_dally(p, width, height, 0);
-    format_dally(gR, width, height, 0);
-    format_dally(gG, width, height, 0);
-    format_dally(gB, width, height, 0);
-    format_dally(dR, width, height, 0);
-    format_dally(dG, width, height, 0);
-    format_dally(dB, width, height, 0);
-
-    RGB tmp_density = {255-255*opt_ratio, 255-255*opt_ratio, 255-255*opt_ratio};
-    set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, tmp_density, gauce_filter, width, height);   //ストロークのエリアと水量を計算
-    Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
-
-    // 堆積顔料をRGBに変換しキャンバスの色を計算
-    #pragma omp parallel for private(i,j,pigment_density)
-    for(i=0; i<width; i++) {
-        for(j=0; j<height; j++) {
-            pigment_density = gR[i][j] + dR[i][j];
-            LIMIT_RANGE(pigment_density, 0, 1);
-            CanR[i][j] = (1-pigment_density) * CanR[i][j] + pigment_density * color.R;
-            CanG[i][j] = (1-pigment_density) * CanG[i][j] + pigment_density * color.G;
-            CanB[i][j] = (1-pigment_density) * CanB[i][j] + pigment_density * color.B;
-        }
-    }
-}
-
-
-void SINGLE_Paint_Water_Stroke_V2(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height)
-{
-    int i,j;
-    double pigment_density;
-
-    Point rectangleP[2];
-    set_Stroke_rectangle(&rectangleP[0], &rectangleP[1], StrokeP, pnum, thick, width, height);
-    if(opt_USE_Backrun){
-        rectangleP[0].x -= 2*thick;
-        rectangleP[0].y -= 2*thick;
-        rectangleP[1].x += 2*thick;
-        rectangleP[1].y += 2*thick;
-        if(rectangleP[0].x<0) rectangleP[0].x=0;
-        if(width <= rectangleP[1].x) rectangleP[1].x=width-1;
-        if(rectangleP[0].y<0) rectangleP[0].y=0;
-        if(height <= rectangleP[1].y) rectangleP[1].y=height-1;
-    }
-
-    int** M;
-    double **u,**v,**p,**gR,**gG,**gB,**dR,**dG,**dB;
-    u = create_dally(width+1, height);
-    v = create_dally(width, height+1);
-    M = create_ally(width, height);
-    p = create_dally(width, height);
-    gR = create_dally(width, height);
-    gG = create_dally(width, height);
-    gB = create_dally(width, height);
-    dR = create_dally(width, height);
-    dG = create_dally(width, height);
-    dB = create_dally(width, height);
-
-    format_dally(u, width+1, height, 0);
-    format_dally(v, width, height+1, 0);
-    format_ally(M, width, height, 0);
-    format_dally(p, width, height, 0);
-    format_dally(gR, width, height, 0);
-    format_dally(gG, width, height, 0);
-    format_dally(gB, width, height, 0);
-    format_dally(dR, width, height, 0);
-    format_dally(dG, width, height, 0);
-    format_dally(dB, width, height, 0);
-
-    RGB tmp_density = {255-255*opt_ratio, 255-255*opt_ratio, 255-255*opt_ratio};
-    set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, tmp_density, gauce_filter, width, height);   //ストロークのエリアと水量を計算
-    SINGLE_Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
-
-    // 堆積顔料をRGBに変換しキャンバスの色を計算
-    #pragma omp parallel for private(i,j,pigment_density)
-    for(i=0; i<width; i++) {
-        for(j=0; j<height; j++) {
-            pigment_density = gR[i][j] + dR[i][j];
-            LIMIT_RANGE(pigment_density, 0, 1);
-            CanR[i][j] = (1-pigment_density) * CanR[i][j] + pigment_density * color.R;
-            CanG[i][j] = (1-pigment_density) * CanG[i][j] + pigment_density * color.G;
-            CanB[i][j] = (1-pigment_density) * CanB[i][j] + pigment_density * color.B;
-        }
-    }
-    
-    Free_dally(u, width+1);
-    Free_dally(v, width);
-    Free_ally(M, width);
-    Free_dally(p, width);
-    Free_dally(gR, width);
-    Free_dally(gG, width);
-    Free_dally(gB, width);
-    Free_dally(dR, width);
-    Free_dally(dG, width);
-    Free_dally(dB, width);
-}
-
-
 
 
 
@@ -1046,6 +912,7 @@ void SINGLE_Paint_Water_Stroke_V2(Point StrokeP[], int pnum, int thick, RGB colo
 void SINGLE_Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height)
 {
     int i,j;
+    double pigment_density;
     Point rectangleP[2];
     set_Stroke_rectangle(&rectangleP[0], &rectangleP[1], StrokeP, pnum, thick, width, height);
 
@@ -1071,26 +938,49 @@ void SINGLE_Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, 
     format_dally(gB, width, height, 0);
 
 
-    // キャンバスの色をCMYに変換し堆積顔料を計算
-    #pragma omp parallel for private(i,j)
-    for(i=0; i<width; i++) {
-        for(j=0; j<height; j++) {
-            dR[i][j] = 1 - CanR[i][j]/255.0;    //RGB[0,255]->CMY[0,1]
-            dG[i][j] = 1 - CanG[i][j]/255.0;
-            dB[i][j] = 1 - CanB[i][j]/255.0;
+    // シミュレーション終了時に水中の顔料を落とすか拭き取るか
+    if(opt_RemovePigmentInwater){
+        // キャンバスの色をCMYに変換し堆積顔料を計算
+        #pragma omp parallel for private(i,j)
+        for(i=0; i<width; i++) {
+            for(j=0; j<height; j++) {
+                dR[i][j] = 1 - CanR[i][j]/255.0;    //RGB[0,255]->CMY[0,1]
+                dG[i][j] = 1 - CanG[i][j]/255.0;
+                dB[i][j] = 1 - CanB[i][j]/255.0;
+            }
         }
-    }
 
-    set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, color, gauce_filter, width, height);   //ストロークのエリアと水量を計算
-    SINGLE_Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
+        set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, color, gauce_filter, width, height);   //ストロークのエリアと水量を計算
+        Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
 
-    // 堆積顔料をRGBに変換しキャンバスの色を計算
-    #pragma omp parallel for private(i,j)
-    for(i=0; i<width; i++) {
-        for(j=0; j<height; j++) {
-            CanR[i][j] = (1 - dR[i][j]) * 255;    //CMY[0,1]->RGB[0,255]
-            CanG[i][j] = (1 - dG[i][j]) * 255;
-            CanB[i][j] = (1 - dB[i][j]) * 255;
+        // 堆積顔料をRGBに変換しキャンバスの色を計算
+        #pragma omp parallel for private(i,j)
+        for(i=0; i<width; i++) {
+            for(j=0; j<height; j++) {
+                CanR[i][j] = (1 - dR[i][j]) * 255;    //CMY[0,1]->RGB[0,255]
+                CanG[i][j] = (1 - dG[i][j]) * 255;
+                CanB[i][j] = (1 - dB[i][j]) * 255;
+            }
+        }
+    }else{
+        format_dally(dR, width, height, 0);
+        format_dally(dG, width, height, 0);
+        format_dally(dB, width, height, 0);
+
+        RGB tmp_density = {255-255*opt_ratio, 255-255*opt_ratio, 255-255*opt_ratio};
+        set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, tmp_density, gauce_filter, width, height);   //ストロークのエリアと水量を計算
+        Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
+
+        // 堆積顔料をRGBに変換しキャンバスの色を計算
+        #pragma omp parallel for private(i,j,pigment_density)
+        for(i=0; i<width; i++) {
+            for(j=0; j<height; j++) {
+                pigment_density = gR[i][j] + dR[i][j];
+                LIMIT_RANGE(pigment_density, 0, 1);
+                CanR[i][j] = (1-pigment_density) * CanR[i][j] + pigment_density * color.R;
+                CanG[i][j] = (1-pigment_density) * CanG[i][j] + pigment_density * color.G;
+                CanB[i][j] = (1-pigment_density) * CanB[i][j] + pigment_density * color.B;
+            }
         }
     }
 
@@ -1105,6 +995,8 @@ void SINGLE_Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, 
     Free_dally(dG, width);
     Free_dally(dB, width);
 }
+
+
 
 
 
@@ -1469,7 +1361,7 @@ void SINGLE_MovePigment(int** M,  double** u, double** v, double** gR, double** 
 // 水の浸透を計算しバックランをシミュレーション
 void SINGLE_SimulateCapillaryFlow(int** M, double** p, double** c, double** s, double var_t, int width, int height)
 {
-    int i,j,k,l;
+    int i,j,k,l,t;
     double **new_s = create_dally(width, height);
     double var_s;
     double alpha=opt_alpha, epsilon=opt_epsilon, delta=opt_delta, sigma=opt_sigma;
@@ -1483,7 +1375,7 @@ void SINGLE_SimulateCapillaryFlow(int** M, double** p, double** c, double** s, d
     }
     copy_dally(s, new_s, width, height);
 
-    for (int t = 0; t < exp_DiffuseNum; t++){
+    for (t = 0; t < exp_DiffuseNum; t++){
         for(i=1; i<width-1; i++){
             for(j=1; j<height-1; j++){
                 if(s[i][j] < epsilon) continue;    //水量が０であるほとんどの領域をスキップ
@@ -1631,7 +1523,7 @@ void MoveWater(int** M,  double** u, double** v, double** p, double var_t, int w
 {
     static int first_flag=1;
     int i,j;
-    double sum, left_dp, right_dp, upper_dp, lower_dp;
+    double sum, left_dp, right_dp, upper_dp, lower_dp, t;
     static double** new_p;
 
     if(first_flag){
@@ -1654,7 +1546,7 @@ void MoveWater(int** M,  double** u, double** v, double** p, double var_t, int w
     double UV_var_t = fmin(var_t, 1/max_verocity);
     printf("MWmaxverocity:%f \n", max_verocity);
 
-   for (double t = 0; t < var_t; t=t+UV_var_t)
+   for (t = 0; t < var_t; t=t+UV_var_t)
     {   
     for(i=1; i<width-1; i++){
         for(j=1; j<height-1; j++){
