@@ -117,7 +117,7 @@ void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** C
     format_dally(gB, width, height, 0);
 
     // シミュレーション終了時に水中の顔料を落とすか拭き取るか
-    if(opt_RemovePigmentInwater){
+    if(opt_RemovePigmentInWater){
         // キャンバスの色をCMYに変換し堆積顔料を計算
         #pragma omp parallel for private(i,j)
         for(i=0; i<width; i++) {
@@ -141,25 +141,59 @@ void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** C
             }
         }
     }else{
-        format_dally(dR, width, height, 0);
-        format_dally(dG, width, height, 0);
-        format_dally(dB, width, height, 0);
+        if(opt_FloatPigmentOnPaper){
+            // キャンバスの色をCMYに変換し堆積顔料を計算
+            #pragma omp parallel for private(i,j)
+            for(i=0; i<width; i++) {
+                for(j=0; j<height; j++) {
+                    dR[i][j] = 1 - CanR[i][j]/255.0;    //RGB[0,255]->CMY[0,1]
+                    dG[i][j] = 1 - CanG[i][j]/255.0;
+                    dB[i][j] = 1 - CanB[i][j]/255.0;
+                }
+            }
 
-        RGB tmp_density = {255-255*opt_ratio, 255-255*opt_ratio, 255-255*opt_ratio};
-        set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, tmp_density, gauce_filter, width, height);   //ストロークのエリアと水量を計算
-        Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
+            RGB tmp_density = {255-(255-color.R)*opt_ratio, 255-(255-color.G)*opt_ratio, 255-(255-color.B)*opt_ratio};    // ＜ー用確認
+            set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, tmp_density, gauce_filter, width, height);   //ストロークのエリアと水量を計算
+            Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
 
-        // 堆積顔料をRGBに変換しキャンバスの色を計算
-        #pragma omp parallel for private(i,j,pigment_density)
-        for(i=0; i<width; i++) {
-            for(j=0; j<height; j++) {
-                pigment_density = gR[i][j] + dR[i][j];
-                LIMIT_RANGE(pigment_density, 0, 1);
-                CanR[i][j] = (1-pigment_density) * CanR[i][j] + pigment_density * color.R;
-                CanG[i][j] = (1-pigment_density) * CanG[i][j] + pigment_density * color.G;
-                CanB[i][j] = (1-pigment_density) * CanB[i][j] + pigment_density * color.B;
+            // 堆積顔料をRGBに変換しキャンバスの色を計算
+            #pragma omp parallel for private(i,j,pigment_density)
+            for(i=0; i<width; i++) {
+                for(j=0; j<height; j++) {
+                    pigment_density = gR[i][j] + dR[i][j];
+                    LIMIT_RANGE(pigment_density, 0, 1);
+                    CanR[i][j] = (1 - pigment_density) * 255;    //CMY[0,1]->RGB[0,255]
+                    pigment_density = gG[i][j] + dG[i][j];
+                    LIMIT_RANGE(pigment_density, 0, 1);
+                    CanG[i][j] = (1 - pigment_density) * 255;
+                    pigment_density = gB[i][j] + dB[i][j];
+                    LIMIT_RANGE(pigment_density, 0, 1);
+                    CanB[i][j] = (1 - pigment_density) * 255;
+                }
+            }
+        }else {
+            format_dally(dR, width, height, 0);
+            format_dally(dG, width, height, 0);
+            format_dally(dB, width, height, 0);
+            
+            RGB tmp_density = {255-255*opt_ratio, 255-255*opt_ratio, 255-255*opt_ratio};
+            set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, tmp_density, gauce_filter, width, height);   //ストロークのエリアと水量を計算
+            Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
+
+            // 堆積顔料をRGBに変換しキャンバスの色を計算
+            #pragma omp parallel for private(i,j,pigment_density)
+            for(i=0; i<width; i++) {
+                for(j=0; j<height; j++) {
+                    pigment_density = gR[i][j] + dR[i][j];
+                    LIMIT_RANGE(pigment_density, 0, 1);
+                    CanR[i][j] = (1-pigment_density) * CanR[i][j] + pigment_density * color.R;
+                    CanG[i][j] = (1-pigment_density) * CanG[i][j] + pigment_density * color.G;
+                    CanB[i][j] = (1-pigment_density) * CanB[i][j] + pigment_density * color.B;
+                }
             }
         }
+
+
     }
 }
 
@@ -939,7 +973,7 @@ void SINGLE_Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, 
 
 
     // シミュレーション終了時に水中の顔料を落とすか拭き取るか
-    if(opt_RemovePigmentInwater){
+    if(opt_RemovePigmentInWater){
         // キャンバスの色をCMYに変換し堆積顔料を計算
         #pragma omp parallel for private(i,j)
         for(i=0; i<width; i++) {

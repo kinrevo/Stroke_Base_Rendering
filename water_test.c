@@ -1031,7 +1031,6 @@ double Paint_Water_Stroke_Test(int argc, char *argv[])
 
 double Paint_Water_Stroke_V2_Test(int argc, char *argv[]) 
 {
-    struct timespec start,end;
     double Ex_TIME=0;
     int i,j;
     int t=10;
@@ -1085,16 +1084,13 @@ double Paint_Water_Stroke_V2_Test(int argc, char *argv[])
     }
 
 
-    // clock_gettime(CLOCK_MONOTONIC, &start);
-    // Paint_Water_Stroke_V2(SP1, pnum1, t, color, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
-    // clock_gettime(CLOCK_MONOTONIC, &end);
-    // Ex_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
+    Paint_Water_Stroke(SP1, pnum1, t, color, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
 
-    // strcpy(filename, "C1_");    // ペイント1後のキャンバスを出力
-    // strcat(filename, argv[1]);
-    // write_ppm(filename, Canvas_img);
+    strcpy(filename, "C1_");    // ペイント1後のキャンバスを出力
+    strcat(filename, argv[1]);
+    write_ppm(filename, Canvas_img);
 
-    Paint_Water_Stroke_V2(SP2, pnum2, t, color2, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
+    Paint_Water_Stroke(SP2, pnum2, t, color2, Canvas_img->dataR, Canvas_img->dataG, Canvas_img->dataB, h, grad_hx, grad_hy, gauce_filter, width, height);
 
     strcpy(filename, "C2_");    // ペイント2後のキャンバスを出力
     strcat(filename, argv[1]);

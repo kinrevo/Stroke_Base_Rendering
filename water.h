@@ -56,7 +56,8 @@
 //////　実験動作  /////
 #define exp_RaiseWater 0  // FlowOutward:負の水量が現れたときそれに合わせて全体を底上げする
 #define opt_StopSoakVero 2  // UpdateVelocities：水速度が暴走したときに停止する速度条件(diffuse:2.0)
-#define opt_RemovePigmentInwater 0
+#define opt_RemovePigmentInWater 0
+#define opt_FloatPigmentOnPaper 1
 // #define _DEBUG_PaintWater
 
 

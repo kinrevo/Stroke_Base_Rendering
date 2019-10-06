@@ -35,7 +35,7 @@
 #define opt_canvas_scaling_ratio 4.0
 
 // ストロークの描画の濃さ。この値が大きいほど下地の色を無視して塗りつぶす
-#define opt_ratio 0.5
+#define opt_ratio 0.2
 
 // ストロークの半径ごとの繰り返し数。多いと丁寧に塗りつぶす
 #define opt_loop_cont 1
