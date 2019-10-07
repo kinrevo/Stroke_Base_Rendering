@@ -23,7 +23,7 @@
 #define opt_USE_Best_Stroke_Method 1
 
 // 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
-#define opt_optimal_improved_value_border 10000
+#define opt_optimal_improved_value_border 1000
 
 // キャンバスを描画途中画像から始めるかどうかとそのアドレス
 #define opt_USE_input_progress_image 0

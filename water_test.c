@@ -56,17 +56,17 @@ int main(int argc, char *argv[]){
 // int main(int argc, char *argv[])
 // {
 // 	clock_t start = clock();
-	
+
 // 	PPM *in_ppm, *trans_ppm;
 // 	char *name;
 // 	char *ext;
 // 	name = argv[1];
-	
+
 //     in_ppm = create_ppm(width, height, bright);
 
 // 	//水彩描画
 // 	trans_ppm = (in_ppm);
-	
+
 // 	//出力ファイル名に従って画像を出力
 // 	ext = get_extension(argv[1]);
 // 	if (strcmp("ppm", ext) == 0 || strcmp("pnm", ext) == 0) {
@@ -76,9 +76,9 @@ int main(int argc, char *argv[]){
 // 	} else if (strcmp("png", ext) == 0) {
 // 		if(write_png_file(argv[1], PPM_to_image(trans_ppm))){ printf("WRITE PNG ERROR.");}
 // 	}
-	
+
 // 	FreePPM(trans_ppm);
-	
+
 // 	pd("TOTAL_TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
 // 	return 0;
 // }
@@ -93,7 +93,7 @@ void ufvf_Test(int argc, char *argv[])
     width=height=512;
     double** u = create_dally(width+1, height);
     double** v = create_dally(width, height+1);
-    
+
 	// uf
     for (i = 0; i < width+1; i++) {  //doubleによる添字の実験
         for (j = 0; j < height; j++) {
@@ -138,7 +138,7 @@ void ufvf_Test(int argc, char *argv[])
         }
         // pn;
     }
-    
+
     Free_dally(u, width+1);
     Free_dally(v, width);
 }
@@ -279,7 +279,7 @@ double RelaxDivergence_Test(int argc, char *argv[])
             write_ppm(filename, p_img);
         }
     }
-     
+
 	pd("RD_Execution_TIME", Ex_TIME);
     return Ex_TIME;
 }
@@ -299,7 +299,7 @@ void FlowOutward_Test(int argc, char *argv[]){
     double** revers_gauss_M = create_dally(width, height);
     double** remove_p = create_dally(width, height);
     PPM* fig_img = create_ppm(width, height, 256);
-    
+
     for (i = 0; i < width; i++) {	//pの初期化
         for (j = 0; j < height; j++) {
             p[i][j] = (128-abs(64-i)-abs(64-j))/128.0; //(256-abs(256-i-j))/256;
@@ -315,11 +315,11 @@ void FlowOutward_Test(int argc, char *argv[]){
             dM[i][j] = M[i][j];
         }
     }
-    
+
     int w = (int)( ceil(3.0*K/6.0+0.5)*2-1 );
 	int c=(w-1)/2;
 	double** filter = create_dally(w, w);
-	
+
 	#ifdef _OPENMP
 		#pragma omp parallel for
     #endif
@@ -353,7 +353,7 @@ void FlowOutward_Test(int argc, char *argv[]){
     trans_Vector_img(fig_img, p, width, height);
     write_ppm("orig_p.ppm", fig_img);
 
-    
+
     for(i=0; i<width; i++){
         for(j=0; j<height; j++){
             p[i][j] = p[i][j] - remove_p[i][j]/eta;
@@ -394,7 +394,7 @@ double MovePigment_Test(int argc, char *argv[]){
 
 	int w = (int)( ceil(3.0*opt_K/6+0.5)*2-1 ); //とりあえず動く計算
 	int c=(w-1)/2;
-	double** filter = create_dally(w, w);	
+	double** filter = create_dally(w, w);
 	#ifdef _OPENMP
 		#pragma omp parallel for private(i,j)
     #endif
@@ -412,7 +412,7 @@ double MovePigment_Test(int argc, char *argv[]){
                 M[i][j] = 1;
             }  else M[i][j]=0;
             p[i][j] = (128-abs(64-i)-abs(64-j))/128.0; //(256-abs(256-i-j))/256;
-            if(i!=0 && j!=0) gR[i][j] = 0.5;//(128-abs(64-i)-abs(64-j))/128.0; 
+            if(i!=0 && j!=0) gR[i][j] = 0.5;//(128-abs(64-i)-abs(64-j))/128.0;
         }
     }
 
@@ -455,7 +455,7 @@ double MovePigment_Test(int argc, char *argv[]){
             trans_Vector_img(u_img, p, width-1, height);
             write_ppm(filename, u_img);
         }
- 
+
         clock_gettime(CLOCK_MONOTONIC, &start);
         MovePigment(M, u, v, gR, gG, gB, var_t, width, height, rectangleP);	// MovePigmentの変化の推移を出力
         clock_gettime(CLOCK_MONOTONIC, &end);
@@ -475,7 +475,7 @@ double MovePigment_Test(int argc, char *argv[]){
             write_ppm(filename, paint_img);
         }
     }
-         
+
 	pd("UV_Execution_TIME", UV_TIME);
 	pd("RD_Execution_TIME", RD_TIME);
 	pd("FO_Execution_TIME", FO_TIME);
@@ -525,7 +525,7 @@ double TransferPigment_Test(int argc, char *argv[])
 
 	int w = (int)( ceil(3.0*opt_K/6+0.5)*2-1 ); //とりあえず動く計算
 	int c=(w-1)/2;
-	double** filter = create_dally(w, w);	
+	double** filter = create_dally(w, w);
 	#ifdef _OPENMP
 		#pragma omp parallel for private(i,j)
     #endif
@@ -543,7 +543,7 @@ double TransferPigment_Test(int argc, char *argv[])
                 M[i][j] = 1;
                 p[i][j] = 0.5;//(128-abs(64-i)-abs(64-j))/128.0; //(256-abs(256-i-j))/256;
             }  else M[i][j]=0;
-            if(i!=0 && j!=0) gR[i][j] = 0.7;//(128-abs(64-i)-abs(64-j))/128.0; 
+            if(i!=0 && j!=0) gR[i][j] = 0.7;//(128-abs(64-i)-abs(64-j))/128.0;
         }
     }
 
@@ -583,7 +583,7 @@ double TransferPigment_Test(int argc, char *argv[])
             trans_Vector_img(p_img, p, width, height);
             write_ppm(filename, p_img);
         }
- 
+
         MovePigment(M, u, v, gR, gG, gB, var_t, width, height, rectangleP);	// MovePigmentの変化の推移を出力
         // if((int)(t/var_t) % 10 == 0 ){
         //     printf("%03d\n", (int)(t/var_t));
@@ -618,7 +618,7 @@ double TransferPigment_Test(int argc, char *argv[])
             write_ppm(filename, paint_img);
         }
     }
-         
+
 	pd("TP_Execution_TIME", Ex_TIME);
     return Ex_TIME;
 }
@@ -629,9 +629,9 @@ void calcu_grad_h_Test(int argc, char *argv[])
 {
     int i,j;
     int width=8, height=8;
-    double** h = create_dally(width, height); 
-    double** grad_hx = create_dally(width+1, height); 
-    double** grad_hy = create_dally(width, height+1); 
+    double** h = create_dally(width, height);
+    double** grad_hx = create_dally(width+1, height);
+    double** grad_hy = create_dally(width, height+1);
 
     for (i = 0; i < width; i++) {  //doubleによる添字の実験
         for (j = 0; j < height; j++) {
@@ -683,8 +683,8 @@ double Paint_Water_Test(int argc, char *argv[])
     format_dally(p, width, height, 0);
     double** h = create_dally(width, height);
     h = perlin_img(width, height, 0.1, 4);
-    double** grad_hx = create_dally(width+1, height); 
-    double** grad_hy = create_dally(width, height+1); 
+    double** grad_hx = create_dally(width+1, height);
+    double** grad_hy = create_dally(width, height+1);
     calcu_grad_h(h, grad_hx, grad_hy, width, height);
     double** gR = create_dally(width, height);
     double** gG = create_dally(width, height);
@@ -712,7 +712,7 @@ double Paint_Water_Test(int argc, char *argv[])
                 M[i][j] = 1;
                 p[i][j] = (128-abs(64-i)-abs(64-j))/128.0; //(256-abs(256-i-j))/256;
             }  else M[i][j]=0;
-            if(i!=0 && j!=0) gR[i][j] = (128-abs(64-i)-abs(64-j))/128.0; 
+            if(i!=0 && j!=0) gR[i][j] = (128-abs(64-i)-abs(64-j))/128.0;
         }
     }
 
@@ -758,13 +758,13 @@ double Paint_Water_Test(int argc, char *argv[])
         }
     }
     write_ppm(filename, paint_img);
-             
+
 	pd("PW_Execution_TIME", Ex_TIME);
     return Ex_TIME;
 }
 
 
-double Circle_fill_Water_Test(int argc, char *argv[]) 
+double Circle_fill_Water_Test(int argc, char *argv[])
 {
     struct timespec start,end;
     double Ex_TIME=0;
@@ -794,14 +794,14 @@ double Circle_fill_Water_Test(int argc, char *argv[])
             gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
         }
     }
-    
+
     double** dM = create_dally(width, height);  //関数に渡すためにdouble型に変換
 
     strcpy(filename, "p0_");		//pの初期速度を画像として出力
     strcat(filename, argv[1]);
     trans_Vector_img(p_img, p, width, height);
     write_ppm(filename, p_img);
-    
+
     for(i=0; i<width; i++){
         for(j=0; j<height; j++){
             dM[i][j] = M[i][j];
@@ -835,7 +835,7 @@ double Circle_fill_Water_Test(int argc, char *argv[])
     strcpy(filename, "M1_");		//pの初期速度を画像として出力
     strcat(filename, argv[1]);
     trans_Vector_img(p_img, dM, width, height);
-    write_ppm(filename, p_img);          
+    write_ppm(filename, p_img);
 
 	pd("CfW_Execution_TIME", Ex_TIME);
     return Ex_TIME;
@@ -881,14 +881,14 @@ double set_WetStroke_Test(int argc, char *argv[])
             gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
         }
     }
-    
+
     double** dM = create_dally(width, height);  //関数に渡すためにdouble型に変換
 
     strcpy(filename, "p0_");		//pを画像として出力
     strcat(filename, argv[1]);
     trans_Vector_img(p_img, p, width, height);
     write_ppm(filename, p_img);
-    
+
     for(i=0; i<width; i++){
         for(j=0; j<height; j++){
             dM[i][j] = M[i][j];
@@ -903,7 +903,7 @@ double set_WetStroke_Test(int argc, char *argv[])
     set_WetStroke(M, p, gR, gG, gB, SP, pnum, t, color, gauce_filter, width, height);
     clock_gettime(CLOCK_MONOTONIC, &end);
     Ex_TIME += (double)(end.tv_sec-start.tv_sec)+(double)(end.tv_nsec-start.tv_nsec)/1e+9;
-    
+
     for(i=0; i<width; i++){
         for(j=0; j<height; j++){
             p[i][j] = p[i][j];
@@ -934,14 +934,14 @@ double set_WetStroke_Test(int argc, char *argv[])
         }
     }
     write_ppm(filename, paint_img);
-                 
+
 	pd("sWS_Execution_TIME", Ex_TIME);
     return Ex_TIME;
 }
 
 
 
-double Paint_Water_Stroke_Test(int argc, char *argv[]) 
+double Paint_Water_Stroke_Test(int argc, char *argv[])
 {
     struct timespec start,end;
     double Ex_TIME=0;
@@ -954,8 +954,8 @@ double Paint_Water_Stroke_Test(int argc, char *argv[])
     int width=460, height=360;
     // int width=640, height=480;
     double** h = perlin_img(width, height, opt_perlin_freq, opt_perlin_depth);
-    double** grad_hx = create_dally(width+1, height); 
-    double** grad_hy = create_dally(width, height+1); 
+    double** grad_hx = create_dally(width+1, height);
+    double** grad_hy = create_dally(width, height+1);
     calcu_grad_h(h, grad_hx, grad_hy, width, height);
     PPM* Canvas_img = create_ppm(width, height, 255);
     // Point SP1[7]= {
@@ -1022,14 +1022,14 @@ double Paint_Water_Stroke_Test(int argc, char *argv[])
     Free_dally(grad_hy,width);
     Free_dally(gauce_filter,2*t+1);
     FreePPM(Canvas_img);
-                 
+
 	pd("PWS_Execution_TIME", Ex_TIME);
     return Ex_TIME;
 }
 
 
 
-double Paint_Water_Stroke_V2_Test(int argc, char *argv[]) 
+double Paint_Water_Stroke_V2_Test(int argc, char *argv[])
 {
     double Ex_TIME=0;
     int i,j;
@@ -1041,8 +1041,8 @@ double Paint_Water_Stroke_V2_Test(int argc, char *argv[])
     int width=460, height=360;
     // int width=640, height=480;
     double** h = perlin_img(width, height, opt_perlin_freq, opt_perlin_depth);
-    double** grad_hx = create_dally(width+1, height); 
-    double** grad_hy = create_dally(width, height+1); 
+    double** grad_hx = create_dally(width+1, height);
+    double** grad_hy = create_dally(width, height+1);
     calcu_grad_h(h, grad_hx, grad_hy, width, height);
     PPM* Canvas_img = create_ppm(width, height, 255);
 
@@ -1101,7 +1101,7 @@ double Paint_Water_Stroke_V2_Test(int argc, char *argv[])
     Free_dally(grad_hy,width);
     Free_dally(gauce_filter,2*t+1);
     FreePPM(Canvas_img);
-                 
+
 	pd("PWS_Execution_TIME", Ex_TIME);
     return Ex_TIME;
 }
@@ -1125,7 +1125,7 @@ double SimulateCapillaryFlow_Test(int argc, char *argv[])
     PPM* fig_img = create_ppm(width, height, 255);
     char count_name[8];
     char out_name[32];
-    
+
     for (i = 0; i < width; i++) {	//pの初期化
         for (j = 0; j < height; j++) {
             p[i][j] = (128-abs(64-i)-abs(64-j))/128.0; //(256-abs(256-i-j))/256;
@@ -1135,7 +1135,7 @@ double SimulateCapillaryFlow_Test(int argc, char *argv[])
         }
     }
 
-    for (i = 0; i < width; i++) {	
+    for (i = 0; i < width; i++) {
         for (j = 0; j < height; j++) {
             dM[i][j] = M[i][j];
         }
@@ -1148,7 +1148,7 @@ double SimulateCapillaryFlow_Test(int argc, char *argv[])
         double start = my_clock();
         SimulateCapillaryFlow(M, p, h, s, var_t, width, height);
 		end = my_clock()-start;
-        
+
         snprintf(count_name, 16, "%02d", (int)(t*2));
 
         strcpy(out_name, "capillaryWater");
@@ -1157,7 +1157,7 @@ double SimulateCapillaryFlow_Test(int argc, char *argv[])
         trans_Vector_img(fig_img, s, width, height);
         write_ppm(out_name, fig_img);
 
-        for (i = 0; i < width; i++) {	
+        for (i = 0; i < width; i++) {
             for (j = 0; j < height; j++) {
                 dM[i][j] = M[i][j];
             }
@@ -1168,7 +1168,7 @@ double SimulateCapillaryFlow_Test(int argc, char *argv[])
         trans_Vector_img(fig_img, dM, width, height);
         write_ppm(out_name, fig_img);
     }
-    
+
     return end;
 }
 
@@ -1192,8 +1192,8 @@ double SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
     double** p = create_dally(width, height);
     format_dally(p, width, height, 0);
     double** h = perlin_img(width, height, 0.1, 4);
-    double** grad_hx = create_dally(width+1, height); 
-    double** grad_hy = create_dally(width, height+1); 
+    double** grad_hx = create_dally(width+1, height);
+    double** grad_hy = create_dally(width, height+1);
     calcu_grad_h(h, grad_hx, grad_hy, width, height);
     PPM* fig_img = create_ppm(width, height, 255);
     PPM* Canvas_img = create_ppm(width, height, 255);
@@ -1212,7 +1212,7 @@ double SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
 
 	int w = (int)( ceil(3.0*opt_K/6+0.5)*2-1 ); //とりあえず動く計算
 	int c=(w-1)/2;
-	double** filter = create_dally(w, w);	
+	double** filter = create_dally(w, w);
 	#ifdef _OPENMP
 		#pragma omp parallel for private(i,j)
     #endif
@@ -1241,7 +1241,7 @@ double SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
                 gG[i][j] = 1;
             }  else M[i][j]=0;
             // M[i][j] = 1;
-            // if(i!=0 && j!=0) (128-abs(64-i)-abs(64-j))/128.0; 
+            // if(i!=0 && j!=0) (128-abs(64-i)-abs(64-j))/128.0;
         }
     }
 
@@ -1269,10 +1269,10 @@ double SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
     var_t = opt_SoakTimeStep;
 
     for ( t = 0; t < opt_SoakTime; t=t+var_t)
-    {   
+    {
         paint_count++;
         if((int)(t/var_t) % 10 == 0 ){
-            for (i = 0; i < width; i++) {	
+            for (i = 0; i < width; i++) {
                 for (j = 0; j < height; j++) {
                     dM[i][j] = M[i][j];
                     Canvas_img->dataR[i][j] = (1 - dR[i][j]) * 255;    //CMY[0,1]->RGB[0,255]
@@ -1286,7 +1286,7 @@ double SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
             strcat(out_name, ".ppm");
             write_ppm(out_name, Canvas_img);
 
-            for (i = 0; i < width; i++) {	
+            for (i = 0; i < width; i++) {
                 for (j = 0; j < height; j++) {
                     Canvas_img->dataR[i][j] = (1 - gR[i][j]) * 255;    //CMY[0,1]->RGB[0,255]
                     Canvas_img->dataG[i][j] = (1 - gG[i][j]) * 255;
@@ -1317,7 +1317,7 @@ double SimulateCapillaryFlow_PaintTest(int argc, char *argv[])
             trans_Vector_img(fig_img, p, width, height);
             write_ppm(out_name, fig_img);
         }
-        
+
         double start = my_clock();
         UpdateVelocities(M, u, v, p, var_t, width, height, rectangleP);
         RelaxDivergence(M, u, v, p, var_t, width, height, rectangleP);

@@ -111,7 +111,7 @@ void Paint_Spline(Point p1, Point p2, Point p3, PGM* in_img, int thick, int brig
 Point Rotate_dot(Point p, double theta, Point center);
 void sobel_calcu(PGM *pgm, double **sobel_abs, double **sobel_angle);
 void Paint_Bezier_ex(Point p[], int pnum, PGM* in_img, int thick, int bright, double ratio);
-double calcu_histogram(PGM* cmpr, double **sobel_abs, double **sobel_angle, int partition, 
+double calcu_histogram(PGM* cmpr, double **sobel_abs, double **sobel_angle, int partition,
 		double **gauce_filter, int x, int y, int t, int *break_flag);
 Point calcu_point(PGM *in, Point a, int t, double theta);
 void devide_ppm(PPM *ppm, PGM* ppmR, PGM* ppmG, PGM* ppmB);
@@ -149,10 +149,10 @@ int vec_print(char* filename, Point *p, int pnum, int brightR, int brightG, int 
 int test_stroke(PGM* test_Canvas, PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimgG, PGM* nimgB, Point p[], int pnum, int t, int brightR, int brightG, int brightB, double ratio);
 
 int calcu_Stroke_Point(PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimgG, PGM* nimgB,
-		double **sobel_abs, double **sobel_angle, double **gauce_filter, 
+		double **sobel_abs, double **sobel_angle, double **gauce_filter,
 		int t, int max_stroke, Point Start_P, int brightR, int brightG, int brightB,
 		Point* Stroke_P, int direct_reversal_flag);
-		
+
 Point search_max_Point(int **ally, int w, int h);
 Stroke *create_Stroke(int pnum);
 Stroke ***create_Stroke_ally(int width, int height, int max_stroke);

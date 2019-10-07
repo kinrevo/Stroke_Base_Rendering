@@ -19,15 +19,15 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Usage: program <inputfile> <outputfile>\n");
 		exit(1);
 	}
-	
+
 	image_t *in_img;
 	PPM *in_ppm, *trans_ppm;
 
-	
+
 	char *name;
 	char *ext;
 	name = argv[1];
-	
+
 	//入力画像を読み込む
 	ext = get_extension(name);
 	if (strcmp("ppm", ext) == 0 || strcmp("pnm", ext) == 0) {
@@ -46,10 +46,10 @@ int main(int argc, char *argv[])
 		printf("Plese use JPEG,PNG or PPM!\n");
 		exit(1);
 	}
-	
+
 	//入力画像の絵画化
 	trans_ppm = c_Illust_brush(in_ppm, argv[2]);
-	
+
 	//出力ファイル名に従って画像を出力
 	ext = get_extension(argv[2]);
 	if (strcmp("ppm", ext) == 0 || strcmp("pnm", ext) == 0) {
@@ -59,10 +59,10 @@ int main(int argc, char *argv[])
 	} else if (strcmp("png", ext) == 0) {
 		if(write_png_file(argv[2], PPM_to_image(trans_ppm))){ printf("WRITE PNG ERROR.");}
 	}
-	
+
 	FreePPM(in_ppm);
 	FreePPM(trans_ppm);
-		
+
 	// 複数ファイルをまとめて処理するコード
 	/*
 	int i;
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 	for(i=0; i < file_num; i++) { free(file_list[i]);}
 	free(file_list);
 	*/
-	
+
 	pd("TOTAL_TIME[s]",(double)(clock()-start)/CLOCKS_PER_SEC);
 	return 0;
 }
