@@ -49,6 +49,9 @@
 // ストローク方向を決定する際の、方向の種類の数。小さいと大雑把な方向に線を引く
 #define opt_histogram_partition 31
 
+// 描画色の計算法においてKmeanによるカラーセットを用いるか
+#define opt_USE_calcu_Kmean_ColorSet 1
+    #define opt_Kmean_ClusterNum 6
 // 描画色の計算法においてバイラテラル距離を用いるか
 #define opt_USE_calcu_color_bi 0
 

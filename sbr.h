@@ -180,4 +180,13 @@ double my_clock();
 void set_Stroke_rectangle(Point* smaller_edge, Point* lager_edge, Point StrokeP[], int pnum, int thick, int width, int height);
 
 void rect_copy_dally(double **ally, double **ally2, int x_min, int x_max, int y_min, int y_max);
+
+Lab RGB2Lab(RGB in);
+RGB Lab2RGB(Lab in);
+RGB* Kmeans_ImageLab3D(PPM* img, int cluster_num, int maxiter, int* x_centlabel, int* num_cluster);
+void KmeansPlus(double* x, int data_num, int dimension_num, int cluster_num, double* centroid);
+void Kmeans(double *x, int data_num, int dimension_num, double *cen, int cluster_num, int *cl, int maxiter, int *nc, double *wss);
+PPM* Visualize_ColorSet(RGB* color_set, int cluster_num, int* num_cluster);
+int** ReshapeInt_1to2(int* x, int width, int height);
+PPM* Visualize_KmeanImg(PPM* in, RGB* color_set, int** x_centlabel);
 #endif

@@ -286,6 +286,14 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
     calcu_grad_h(h, grad_hx, grad_hy, in->width, in->height);
 
 
+	// Kmeanカラーセット
+	if(opt_USE_calcu_Kmean_ColorSet){
+		int* x_centlabel = (int*)malloc(sizeof(int) * in->width*in->height);
+		int* num_cluster = (int*)malloc(sizeof(int) * opt_Kmean_ClusterNum);
+		RGB* ColorSet = Kmeans_ImageLab3D(in, opt_Kmean_ClusterNum, 50, x_centlabel, num_cluster);
+	}
+
+
 	///////////////////preprocess終了/////////////////
 	Add_dictionary_to_sentence_d(log_sentence, "\r\nPreProsessTIME[s]", my_clock());
 	pd("PreProsessTIME[s]",my_clock());
