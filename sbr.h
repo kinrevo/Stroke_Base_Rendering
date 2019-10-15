@@ -59,6 +59,12 @@ typedef struct {
 }RGB;
 
 typedef struct {
+	double L;
+	double a;
+	double b;
+}Lab;
+
+typedef struct {
 	int pnum;
 	Point* p;
 	RGB color;
