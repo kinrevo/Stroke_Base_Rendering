@@ -1010,23 +1010,23 @@ RGB Lab2RGB(Lab in) {
     double yn = (in.L + 16.0) / 116.0;
     double xn = yn + in.a / 500.0;
     double zn = yn - in.b / 200.0;
-    
+
     double fxn = xn > 6.0/29 ? pow(xn, 3) : 3*pow(6.0/29, 2.0) * (xn - 4.0/29);
     double fyn = yn > 6.0/29 ? pow(yn, 3) : 3*pow(6.0/29, 2.0) * (yn - 4.0/29);
     double fzn = zn > 6.0/29 ? pow(zn, 3) : 3*pow(6.0/29, 2.0) * (zn - 4.0/29);
-    
+
     double x = fxn * 0.95047;
     double y = fyn * 1.00000;
     double z = fzn * 1.08883;
-    
+
     double lr =   3.24062547732005470 * x - 1.53720797221031910 * y - 0.49862859869824794 * z;
     double lg = - 0.96893071472931970 * x + 1.87575606088524200 * y + 0.04151752384295397 * z;
     double lb =   0.05571012044551063 * x - 0.20402105059848677 * y + 1.05699594225438860 * z;
-    
+
     double r = lr <= 0.0031308 ? lr * 12.92 : pow(lr, 1 / 2.4) * 1.055 - 0.055;
     double g = lg <= 0.0031308 ? lg * 12.92 : pow(lg, 1 / 2.4) * 1.055 - 0.055;
     double b = lb <= 0.0031308 ? lb * 12.92 : pow(lb, 1 / 2.4) * 1.055 - 0.055;
-    
+
     out.R = r * 255;
     out.G = g * 255;
     out.B = b * 255;
@@ -1097,7 +1097,7 @@ void KmeansPlus(double* x, int data_num, int dimension_num, int cluster_num, dou
     for (dim = 0; dim < dimension_num; dim++) {
         centroid[cen + cluster_num*dim] =x[d + data_num*dim];
     }
-    
+
     //残りのセントロイドを順に決定
     for (cen = 1; cen<cluster_num; cen++) {
         double max_dist = 0;
@@ -1139,7 +1139,7 @@ void Kmeans(double *x, int data_num, int dimension_num, double *cen, int cluster
     int iter, d, c, dim, it, inew = 0;
     double best, dd, tmp;
     int updated;
-    /* cl[d]はd番目のデータが第何クラスタに所属しているかを表わす */
+    /* cl[d]はd番目のデータが第何クラスタ[1~]に所属しているかを表わす */
     for(d = 0; d < data_num; d++) cl[d] = -1;
 
     for(iter = 0; iter < maxiter; iter++) {
@@ -1217,7 +1217,7 @@ PPM* Visualize_ColorSet(RGB* color_set, int cluster_num, int* num_cluster) {
     int paint_sum=0;
     int paint_num=0;
     // クラスタの割合分、左から塗りつぶしていく
-    for (c = 0; c < cluster_num; c++) 
+    for (c = 0; c < cluster_num; c++)
     {
         paint_num = ppm->width * (double)num_cluster[c]/sum_cn + 0.5;
         for(i=paint_sum; i<paint_sum + paint_num; i++) {

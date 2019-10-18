@@ -157,7 +157,7 @@ Point calcu_point(PGM *in, Point a, int t, double theta){
 }
 
 
-//与えられた点周りで描画色を塗った際の改善値を求める
+//与えられた点周りで描画色を塗った際の改善値を求める（マンハッタン距離）
 double diffsum_clr(PGM* cmpr, PGM* nimg, Point p, int t, int bright){
 	int i,j, offscrn_count=0;
 	double sum=0;
@@ -172,6 +172,42 @@ double diffsum_clr(PGM* cmpr, PGM* nimg, Point p, int t, int bright){
 			}
 		}
 	}
+	sum = sum / ((2*t+1)*(2*t+1)-offscrn_count);  //点当たりの差異平均
+	return sum;
+}
+
+
+//与えられた点周りで描画色を塗った際の改善値を求める（Lab空間のユークリッド距離）
+double diffsum_Lab(Lab** in_Lab, PPM* Can, Point p, int t, RGB bright, double PaintRatio){
+	int i,j, offscrn_count=0;
+	double sum=0;
+	RGB tmpRGB;
+	Lab CanLab, testCanLab;
+
+	//注目している周囲tピクセルのLab誤差値を合計し平均する
+	for(i=p.x-t; i<=p.x+t; i++) {
+		for(j=p.y-t; j<=p.y+t; j++) {
+			if(i<0 || i>Can->width-1 || j<0 || j>Can->height-1) {
+				offscrn_count++;
+			}else if( (i-p.x)*(i-p.x)+(j-p.y)*(j-p.y) > t*t ){
+				offscrn_count++;
+			}else {
+				tmpRGB.R = Can->dataR[i][j];
+				tmpRGB.G = Can->dataG[i][j];
+				tmpRGB.B = Can->dataB[i][j];
+				CanLab = RGB2Lab(tmpRGB);
+				tmpRGB.R = Can->dataR[i][j] * (1-PaintRatio) + bright.R * PaintRatio;
+				tmpRGB.G = Can->dataG[i][j] * (1-PaintRatio) + bright.G * PaintRatio;
+				tmpRGB.B = Can->dataB[i][j] * (1-PaintRatio) + bright.B * PaintRatio;
+				testCanLab = RGB2Lab(tmpRGB);
+				// 描画前後のLab空間におけるユークリッド距離誤算の変化を求める
+				double diff_before = sqrt( pow(in_Lab[i][j].L-CanLab.L, 2) + pow(in_Lab[i][j].a-CanLab.a, 2) + pow(in_Lab[i][j].b-CanLab.b, 2) );
+				double diff_after = sqrt( pow(in_Lab[i][j].L-testCanLab.L, 2) + pow(in_Lab[i][j].a-testCanLab.a, 2) + pow(in_Lab[i][j].b-testCanLab.b, 2) );
+				sum += diff_before - diff_after;	// 誤差の改善値
+			}
+		}
+	}
+
 	sum = sum / ((2*t+1)*(2*t+1)-offscrn_count);  //点当たりの差異平均
 	return sum;
 }

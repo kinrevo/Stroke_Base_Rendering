@@ -24,8 +24,29 @@ void SINGLE_SimulateCapillaryFlow(int** M, double** p, double** c, double** s, d
 //　試しに描いてみて誤差を確認(water)
 int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, int t, double** h, double** grad_hx, double** grad_hy, double** gauce_filter)
 {
+    // static int first_flag=1;
 	int i,j,diffsum=0;
 	double left_end,right_end,upper_end,lower_end;//upper,lowerは画像の見かけの上下（値の上下ではない）
+    RGB tmpRGB;
+    Lab CanLab, tesCanLab;
+    Lab in_Lab;
+    // Lab** in_Lab;
+    // if(first_flag){
+	// 	in_Lab = (Lab**)malloc(sizeof(Lab*)*(cmpr->width));
+	// 	for(i=0; i<cmpr->width; i++){
+	// 		in_Lab[i] = (Lab*)malloc(sizeof(Lab)*(cmpr->height));
+	// 	}
+
+	// 	for(i=0; i<cmpr->width; i++){
+	// 		for(j=0; j<cmpr->height; j++){
+	// 			CanRGB.R = cmpr->dataR[i][j];
+	// 			CanRGB.G = cmpr->dataG[i][j];
+	// 			CanRGB.B = cmpr->dataB[i][j];
+	// 			in_Lab[i][j] = RGB2Lab(CanRGB);
+	// 		}
+	// 	}
+    //     // first_flag = 0;
+    // }
 
 	//ストローク点を囲む端の座標を特定
 	left_end=right_end=stroke->p[0].x;
@@ -59,13 +80,36 @@ int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, i
 	    Paint_Water_Stroke(stroke->p, stroke->pnum, t, stroke->color, test_Canvas->dataR, test_Canvas->dataG, test_Canvas->dataB, h, grad_hx, grad_hy, gauce_filter, nimgC->width, nimgC->height);
     // }
 	//試し描きによる変化を確認
-	for(i=left_end; i<=right_end; i++) {
-		for(j=upper_end; j<=lower_end; j++) {
-			diffsum += abs(cmpr->dataR[i][j]-nimgC->dataR[i][j]) - abs(cmpr->dataR[i][j]-test_Canvas->dataR[i][j]);
-			diffsum += abs(cmpr->dataG[i][j]-nimgC->dataG[i][j]) - abs(cmpr->dataG[i][j]-test_Canvas->dataG[i][j]);
-			diffsum += abs(cmpr->dataB[i][j]-nimgC->dataB[i][j]) - abs(cmpr->dataB[i][j]-test_Canvas->dataB[i][j]);
-		}
-	}
+	if(opt_USE_Lab_ColorDiff){
+        for(i=left_end; i<=right_end; i++) {
+            for(j=upper_end; j<=lower_end; j++) {
+				tmpRGB.R = nimgC->dataR[i][j];
+				tmpRGB.G = nimgC->dataG[i][j];
+				tmpRGB.B = nimgC->dataB[i][j];
+				CanLab = RGB2Lab(tmpRGB);
+				tmpRGB.R = test_Canvas->dataR[i][j];
+				tmpRGB.G = test_Canvas->dataG[i][j];
+				tmpRGB.B = test_Canvas->dataB[i][j];
+				tesCanLab = RGB2Lab(tmpRGB);
+				tmpRGB.R = cmpr->dataR[i][j];
+				tmpRGB.G = cmpr->dataG[i][j];
+				tmpRGB.B = cmpr->dataB[i][j];
+				in_Lab = RGB2Lab(tmpRGB);
+				// 描画前後のLab空間におけるユークリッド距離誤算の変化を求める
+				double diff_before = sqrt( pow(in_Lab.L-CanLab.L, 2) + pow(in_Lab.a-CanLab.a, 2) + pow(in_Lab.b-CanLab.b, 2) );
+				double diff_after = sqrt( pow(in_Lab.L-tesCanLab.L, 2) + pow(in_Lab.a-tesCanLab.a, 2) + pow(in_Lab.b-tesCanLab.b, 2) );
+				diffsum += diff_before - diff_after;	// 誤差の改善値
+            }
+        }
+    }else {
+        for(i=left_end; i<=right_end; i++) {
+            for(j=upper_end; j<=lower_end; j++) {
+                diffsum += abs(cmpr->dataR[i][j]-nimgC->dataR[i][j]) - abs(cmpr->dataR[i][j]-test_Canvas->dataR[i][j]);
+                diffsum += abs(cmpr->dataG[i][j]-nimgC->dataG[i][j]) - abs(cmpr->dataG[i][j]-test_Canvas->dataG[i][j]);
+                diffsum += abs(cmpr->dataB[i][j]-nimgC->dataB[i][j]) - abs(cmpr->dataB[i][j]-test_Canvas->dataB[i][j]);
+            }
+        }
+    }
 
 	return diffsum;
 }
@@ -183,57 +227,6 @@ void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** C
                 CanB[i][j] = (1-pigment_density) * CanB[i][j] + pigment_density * color.B;
             }
         }
-    }
-
-
-    if(opt_RemovePigmentInWater){
-        // キャンバスの色をCMYに変換し堆積顔料を計算
-        #pragma omp parallel for private(i,j)
-        for(i=0; i<width; i++) {
-            for(j=0; j<height; j++) {
-                dR[i][j] = 1 - CanR[i][j]/255.0;    //RGB[0,255]->CMY[0,1]
-                dG[i][j] = 1 - CanG[i][j]/255.0;
-                dB[i][j] = 1 - CanB[i][j]/255.0;
-            }
-        }
-
-        set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, color, gauce_filter, width, height);   //ストロークのエリアと水量を計算
-        Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
-
-        // 堆積顔料をRGBに変換しキャンバスの色を計算
-        #pragma omp parallel for private(i,j)
-        for(i=0; i<width; i++) {
-            for(j=0; j<height; j++) {
-                CanR[i][j] = (1 - dR[i][j]) * 255;    //CMY[0,1]->RGB[0,255]
-                CanG[i][j] = (1 - dG[i][j]) * 255;
-                CanB[i][j] = (1 - dB[i][j]) * 255;
-            }
-        }
-    }else{
-        if(opt_FloatPigmentOnPaper){
-            RGB tmp_density = {255-(255-color.R)*opt_ratio, 255-(255-color.G)*opt_ratio, 255-(255-color.B)*opt_ratio};    // ＜ー用確認
-            set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, tmp_density, gauce_filter, width, height);   //ストロークのエリアと水量を計算
-            Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
-
-            // 堆積顔料をRGBに変換しキャンバスの色を計算
-            #pragma omp parallel for private(i,j,pigment_density)
-            for(i=0; i<width; i++) {
-                for(j=0; j<height; j++) {
-                    pigment_density = gR[i][j] + dR[i][j];
-                    LIMIT_RANGE(pigment_density, 0, 1);
-                    CanR[i][j] = (1 - pigment_density) * 255;    //CMY[0,1]->RGB[0,255]
-                    pigment_density = gG[i][j] + dG[i][j];
-                    LIMIT_RANGE(pigment_density, 0, 1);
-                    CanG[i][j] = (1 - pigment_density) * 255;
-                    pigment_density = gB[i][j] + dB[i][j];
-                    LIMIT_RANGE(pigment_density, 0, 1);
-                    CanB[i][j] = (1 - pigment_density) * 255;
-                }
-            }
-        }else {
-        }
-
-
     }
 }
 
@@ -638,7 +631,7 @@ void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t
     format_dally(gauss_M, width, height, 0);
 
 
-	// #pragma omp parallel for private(i,j)
+	// #pragma omp parallel for private(i,j,k,l)
     // for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
     //     for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
     //         //注目しているセルがウェットエリアならガウスフィルタによる拡散された値を周囲に足し込む
@@ -655,7 +648,7 @@ void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t
 	// 	}
 	// }
 
-	#pragma omp parallel for private(i,j)
+	#pragma omp parallel for private(i,j,k,l,sum,fil_sum)
     for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
         for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
             //注目しているセルがウェットエリアならガウスフィルタによる拡散された値を周囲に足し込む
@@ -1367,7 +1360,7 @@ void SINGLE_FlowOutward(int** M, double** p, int c, double** gause_filter, doubl
     gauss_M = create_dally(width, height);
     format_dally(gauss_M, width, height, 0);
 
-    #pragma omp parallel for private(i,j)
+    #pragma omp parallel for private(i,j,k,l,sum,fil_sum)
     for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x; i++){
         for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
             //注目しているセルがウェットエリアならガウスフィルタによる拡散された値を周囲に足し込む

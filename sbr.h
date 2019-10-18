@@ -189,4 +189,5 @@ void Kmeans(double *x, int data_num, int dimension_num, double *cen, int cluster
 PPM* Visualize_ColorSet(RGB* color_set, int cluster_num, int* num_cluster);
 int** ReshapeInt_1to2(int* x, int width, int height);
 PPM* Visualize_KmeanImg(PPM* in, RGB* color_set, int** x_centlabel);
+double diffsum_Lab(Lab** in_Lab, PPM* Can, Point p, int t, RGB bright, double PaintRatio);
 #endif
