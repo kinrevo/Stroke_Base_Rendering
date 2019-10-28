@@ -19,7 +19,7 @@
 #define opt_min_stroke 2
 
 // 最適ストローク手法を用いるかどうか
-#define opt_USE_Best_Stroke_Method 1
+#define opt_USE_Best_Stroke_Method 0
     // 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
     #define opt_optimal_improved_value_border 100
 
@@ -34,7 +34,7 @@
     #define opt_progress_image_address ".png"
 
 // キャンバスのスケーリングを行うか
-#define opt_USE_Canvas_Scaling_Method 1
+#define opt_USE_Canvas_Scaling_Method 0
     // キャンバスの拡大率
     #define opt_canvas_scaling_ratio 4.0
 
@@ -52,8 +52,11 @@
 // 描画色の計算法においてバイラテラル距離を用いるか
 #define opt_USE_calcu_color_bi 0
 // 描画色の計算法においてKmeanによるカラーセットを用いるか
-#define opt_USE_calcu_Kmean_ColorSet 1
+#define opt_USE_calcu_Kmean_ColorSet 0
     #define opt_Kmean_ClusterNum 12
+// 描画色の計算法においてJIS規格のカラーセットを用いるか
+#define opt_USE_calcu_JIS_ColorSet 1
+    #define opt_JIS_ClusterNum 36
 
 // ストローク方向を決定する際の、方向の種類の数。小さいと大雑把な方向に線を引く
 #define opt_histogram_partition 31

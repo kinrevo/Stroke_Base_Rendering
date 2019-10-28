@@ -172,8 +172,11 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "USE_gause_histogram", opt_USE_gause_histogram);
 	Add_dictionary_to_sentence(log_sentence, "optimal_improved_value_border", opt_optimal_improved_value_border);
 	Add_dictionary_to_sentence_d(log_sentence, "StrokeWindowStep", opt_StrokeWindowStep/t);
-	if(opt_USE_calcu_Kmean_ColorSet)
+	if(opt_USE_calcu_Kmean_ColorSet){
 		Add_dictionary_to_sentence(log_sentence, "Kmean_ClusterNum", opt_Kmean_ClusterNum);
+	}else if(opt_USE_calcu_JIS_ColorSet){
+		Add_dictionary_to_sentence(log_sentence, "JIS_ClusterNum", opt_JIS_ClusterNum);
+	}
 	if(opt2_thick_max){
 		Add_dictionary_to_sentence(log_sentence, "thick_max[2]", opt2_thick_max);
 		Add_dictionary_to_sentence(log_sentence, "thick_min[2]", opt2_thick_min);
@@ -290,8 +293,8 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
     calcu_grad_h(h, grad_hx, grad_hy, in->width, in->height);
 
 
-	// Kmeanカラーセット
-	int CentLabel=0;
+	// KmeanカラーセットまたはJISカラーセット
+	int CentLabel = 0, JISLabel = 0;
 	int *num_cluster, *x_centlabel;
 	int** x_centlabel_2D;
 	RGB* ColorSet;
@@ -313,6 +316,9 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 		strcat(out_filename, "__ColorSet");
 		strcat(out_filename, ".png");
 		if(write_png_file(out_filename, PPM_to_image(ColorSet_Img))){ printf("WRITE PNG ERROR.");}
+	}
+	else if(opt_USE_calcu_JIS_ColorSet){
+		ColorSet = create_JIS_ColorSet(opt_JIS_ClusterNum);
 	}
 
 	// Lab誤差
@@ -420,7 +426,17 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 
 					// CentLabel = x_centlabel_2D[x][y] - 1;	//Label番号をIndexに―１
 					bright = ColorSet[CentLabel];
-				} else{
+				}else if(opt_USE_calcu_JIS_ColorSet){
+					double max = 0;
+					for (i = 0; i < opt_JIS_ClusterNum; i++) {
+						diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], opt_ratio);
+						if(diff_sum > max){
+							max = diff_sum;
+							JISLabel = i;
+						}
+					}
+					bright = ColorSet[JISLabel];
+				}else{
 					bright.R = calcu_color(cmprR->data, cmprR->width, cmprR->height, x, y, t);
 					bright.G = calcu_color(cmprG->data, cmprG->width, cmprG->height, x, y, t);
 					bright.B = calcu_color(cmprB->data, cmprB->width, cmprB->height, x, y, t);
@@ -899,8 +915,11 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "USE_gause_histogram", opt_USE_gause_histogram);
 	Add_dictionary_to_sentence(log_sentence, "optimal_improved_value_border", opt_optimal_improved_value_border);
 	Add_dictionary_to_sentence_d(log_sentence, "StrokeWindowStep", opt_StrokeWindowStep/t);
-	if(opt_USE_calcu_Kmean_ColorSet)
+	if(opt_USE_calcu_Kmean_ColorSet){
 		Add_dictionary_to_sentence(log_sentence, "Kmean_ClusterNum", opt_Kmean_ClusterNum);
+	}else if(opt_USE_calcu_JIS_ColorSet){
+		Add_dictionary_to_sentence(log_sentence, "JIS_ClusterNum", opt_JIS_ClusterNum);
+	}
 	if(opt2_thick_max){
 		Add_dictionary_to_sentence(log_sentence, "thick_max[2]", opt2_thick_max);
 		Add_dictionary_to_sentence(log_sentence, "thick_min[2]", opt2_thick_min);
@@ -1041,8 +1060,8 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
     double** grad_hy = create_dally(in->width, in->height+1);
     calcu_grad_h(h, grad_hx, grad_hy, in->width, in->height);
 
-	// Kmeanカラーセット
-	int CentLabel=0;
+	// KmeanカラーセットまたはJISカラーセット
+	int CentLabel = 0, JISLabel = 0;
 	int *num_cluster, *x_centlabel;
 	int** x_centlabel_2D;
 	RGB* ColorSet;
@@ -1064,6 +1083,9 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 		strcat(out_filename, "__ColorSet");
 		strcat(out_filename, ".png");
 		if(write_png_file(out_filename, PPM_to_image(ColorSet_Img))){ printf("WRITE PNG ERROR.");}
+	}
+	else if(opt_USE_calcu_JIS_ColorSet){
+		ColorSet = create_JIS_ColorSet(opt_JIS_ClusterNum);
 	}
 
 	// Lab誤差
@@ -1209,7 +1231,17 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 						}
 						// CentLabel = x_centlabel_2D[x][y] - 1;	//Label番号をIndexに―１
 						best_stroke_map[x][y]->color = ColorSet[CentLabel];
-					} else{
+					}else if(opt_USE_calcu_JIS_ColorSet){
+						double max = 0;
+						for (i = 0; i < opt_JIS_ClusterNum; i++) {
+							diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], opt_ratio);
+							if(diff_sum > max){
+								max = diff_sum;
+								JISLabel = i;
+							}
+						}
+						bright = ColorSet[JISLabel];
+					}else{
 						best_stroke_map[x][y]->color.R = calcu_color(cmprR->data, cmprR->width, cmprR->height, x, y, t);
 						best_stroke_map[x][y]->color.G = calcu_color(cmprG->data, cmprG->width, cmprG->height, x, y, t);
 						best_stroke_map[x][y]->color.B = calcu_color(cmprB->data, cmprB->width, cmprB->height, x, y, t);
