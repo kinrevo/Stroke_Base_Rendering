@@ -168,6 +168,8 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "histogram_partition", histogram_partition);
 	Add_dictionary_to_sentence(log_sentence, "loop_cont", loop_cont);
 	Add_dictionary_to_sentence(log_sentence, "USE_Lab_ColorDiff", opt_USE_Lab_ColorDiff);
+	Add_dictionary_to_sentence(log_sentence, "USE_Lab_ColorDiff_Weight", opt_USE_Lab_ColorDiff_Weight);
+	Add_dictionary_to_sentence(log_sentence, "Lab_Weight", opt_Lab_Weight);
 	Add_dictionary_to_sentence(log_sentence, "USE_calcu_color_bi", opt_USE_calcu_color_bi);
 	Add_dictionary_to_sentence(log_sentence, "USE_gause_histogram", opt_USE_gause_histogram);
 	Add_dictionary_to_sentence(log_sentence, "optimal_improved_value_border", opt_optimal_improved_value_border);
@@ -911,6 +913,8 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "histogram_partition", histogram_partition);
 	Add_dictionary_to_sentence(log_sentence, "loop_cont", loop_cont);
 	Add_dictionary_to_sentence(log_sentence, "USE_Lab_ColorDiff", opt_USE_Lab_ColorDiff);
+	Add_dictionary_to_sentence(log_sentence, "USE_Lab_ColorDiff_Weight", opt_USE_Lab_ColorDiff_Weight);
+	Add_dictionary_to_sentence(log_sentence, "Lab_Weight", opt_Lab_Weight);
 	Add_dictionary_to_sentence(log_sentence, "USE_calcu_color_bi", opt_USE_calcu_color_bi);
 	Add_dictionary_to_sentence(log_sentence, "USE_gause_histogram", opt_USE_gause_histogram);
 	Add_dictionary_to_sentence(log_sentence, "optimal_improved_value_border", opt_optimal_improved_value_border);

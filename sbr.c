@@ -180,7 +180,7 @@ double diffsum_clr(PGM* cmpr, PGM* nimg, Point p, int t, int bright){
 //与えられた点周りで描画色を塗った際の改善値を求める（Lab空間のユークリッド距離）
 double diffsum_Lab(Lab** in_Lab, PPM* Can, Point p, int t, RGB bright, double PaintRatio){
 	int i,j, offscrn_count=0;
-	double sum=0;
+	double diff_before, diff_after, sum=0;
 	RGB tmpRGB;
 	Lab CanLab, testCanLab;
 
@@ -200,9 +200,21 @@ double diffsum_Lab(Lab** in_Lab, PPM* Can, Point p, int t, RGB bright, double Pa
 				tmpRGB.G = Can->dataG[i][j] * (1-PaintRatio) + bright.G * PaintRatio;
 				tmpRGB.B = Can->dataB[i][j] * (1-PaintRatio) + bright.B * PaintRatio;
 				testCanLab = RGB2Lab(tmpRGB);
+				
 				// 描画前後のLab空間におけるユークリッド距離誤算の変化を求める
-				double diff_before = sqrt( pow(in_Lab[i][j].L-CanLab.L, 2) + pow(in_Lab[i][j].a-CanLab.a, 2) + pow(in_Lab[i][j].b-CanLab.b, 2) );
-				double diff_after = sqrt( pow(in_Lab[i][j].L-testCanLab.L, 2) + pow(in_Lab[i][j].a-testCanLab.a, 2) + pow(in_Lab[i][j].b-testCanLab.b, 2) );
+				if(opt_USE_Lab_ColorDiff_Weight){//Lの大小によって重みづけする(暗くなる場合は（入力L）>（キャンバスL）なので誤差に重みを付けて大きくする)
+					if(in_Lab[i][j].L > CanLab.L)
+						diff_before = sqrt( pow((in_Lab[i][j].L-CanLab.L)*opt_Lab_Weight, 2) + pow(in_Lab[i][j].a-CanLab.a, 2) + pow(in_Lab[i][j].b-CanLab.b, 2) ); 
+					else
+						diff_before = sqrt( pow(in_Lab[i][j].L-CanLab.L, 2) + pow(in_Lab[i][j].a-CanLab.a, 2) + pow(in_Lab[i][j].b-CanLab.b, 2) );
+					if(in_Lab[i][j].L > testCanLab.L)
+						diff_after = sqrt( pow((in_Lab[i][j].L-testCanLab.L)*opt_Lab_Weight, 2) + pow(in_Lab[i][j].a-testCanLab.a, 2) + pow(in_Lab[i][j].b-testCanLab.b, 2) );
+					else
+						diff_after = sqrt( pow(in_Lab[i][j].L-testCanLab.L, 2) + pow(in_Lab[i][j].a-testCanLab.a, 2) + pow(in_Lab[i][j].b-testCanLab.b, 2) );
+				}else{
+					diff_before = sqrt( pow(in_Lab[i][j].L-CanLab.L, 2) + pow(in_Lab[i][j].a-CanLab.a, 2) + pow(in_Lab[i][j].b-CanLab.b, 2) );
+					diff_after = sqrt( pow(in_Lab[i][j].L-testCanLab.L, 2) + pow(in_Lab[i][j].a-testCanLab.a, 2) + pow(in_Lab[i][j].b-testCanLab.b, 2) );
+				}
 				sum += diff_before - diff_after;	// 誤差の改善値
 			}
 		}

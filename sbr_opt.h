@@ -46,6 +46,10 @@
 
 // 描画改善値の計算にLabユークリッド距離を用いるか（用いなければRGBマンハッタン距離）
 #define opt_USE_Lab_ColorDiff 1
+    // 描画改善値の計算時にLabのLに重みを付けるか
+    #define opt_USE_Lab_ColorDiff_Weight 1
+    // 描画改善値の計算時にLabのLに付ける重みの大きさ(1以上で暗い色に対して悪い評価を付ける)
+    #define opt_Lab_Weight 1
     // ストローク停止位置決定における閾値。ある色で描画した際この値以下の改善値しかなければストロークを停止
     #define opt_color_diff_border 0
 

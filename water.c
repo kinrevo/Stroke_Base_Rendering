@@ -26,6 +26,7 @@ int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, i
 {
     // static int first_flag=1;
 	int i,j,diffsum=0;
+    double diff_before, diff_after, sum=0;
 	double left_end,right_end,upper_end,lower_end;//upper,lowerは画像の見かけの上下（値の上下ではない）
     RGB tmpRGB;
     Lab CanLab, tesCanLab;
@@ -95,12 +96,25 @@ int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, i
 				tmpRGB.G = cmpr->dataG[i][j];
 				tmpRGB.B = cmpr->dataB[i][j];
 				in_Lab = RGB2Lab(tmpRGB);
+                
 				// 描画前後のLab空間におけるユークリッド距離誤算の変化を求める
-				double diff_before = sqrt( pow(in_Lab.L-CanLab.L, 2) + pow(in_Lab.a-CanLab.a, 2) + pow(in_Lab.b-CanLab.b, 2) );
-				double diff_after = sqrt( pow(in_Lab.L-tesCanLab.L, 2) + pow(in_Lab.a-tesCanLab.a, 2) + pow(in_Lab.b-tesCanLab.b, 2) );
-				diffsum += diff_before - diff_after;	// 誤差の改善値
+				if(opt_USE_Lab_ColorDiff_Weight){//Lの大小によって重みづけする(暗くなる場合は（入力L）>（キャンバスL）なので誤差に重みを付けて大きくする)
+					if(in_Lab.L > CanLab.L)
+                        diff_before = sqrt( pow((in_Lab.L-CanLab.L)*opt_Lab_Weight, 2) + pow(in_Lab.a-CanLab.a, 2) + pow(in_Lab.b-CanLab.b, 2) );
+					else
+						diff_before = sqrt( pow(in_Lab.L-CanLab.L, 2) + pow(in_Lab.a-CanLab.a, 2) + pow(in_Lab.b-CanLab.b, 2) );
+					if(in_Lab.L > tesCanLab.L)
+						diff_after = sqrt( pow((in_Lab.L-tesCanLab.L)*opt_Lab_Weight, 2) + pow(in_Lab.a-tesCanLab.a, 2) + pow(in_Lab.b-tesCanLab.b, 2) );
+					else
+						diff_after = sqrt( pow(in_Lab.L-tesCanLab.L, 2) + pow(in_Lab.a-tesCanLab.a, 2) + pow(in_Lab.b-tesCanLab.b, 2) );
+				}else{
+					diff_before = sqrt( pow(in_Lab.L-CanLab.L, 2) + pow(in_Lab.a-CanLab.a, 2) + pow(in_Lab.b-CanLab.b, 2) );
+					diff_after = sqrt( pow(in_Lab.L-tesCanLab.L, 2) + pow(in_Lab.a-tesCanLab.a, 2) + pow(in_Lab.b-tesCanLab.b, 2) );
+				}
+				sum += diff_before - diff_after;	// 誤差の改善値
             }
         }
+        diffsum = (int)sum;
     }else {
         for(i=left_end; i<=right_end; i++) {
             for(j=upper_end; j<=lower_end; j++) {
@@ -113,8 +127,6 @@ int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, i
 
 	return diffsum;
 }
-
-
 
 void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height)
 {
