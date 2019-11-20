@@ -103,7 +103,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	Point p[max_stroke];
 	int stroke_histogram[max_stroke+1];
 	for(i=0; i<max_stroke+1; i++){stroke_histogram[i]=0;}
-	double ratio=opt_ratio;		//ストロークの濃度
+	double ratio, best_ratio, roop_ratio;
 	double theta, former_theta;
 	double **gauce_filter;
 	double sigma, diff_sum, sum;
@@ -164,9 +164,13 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "min_stroke", min_stroke);
 	Add_dictionary_to_sentence(log_sentence, "window_diff_border", window_diff_border);
 	Add_dictionary_to_sentence(log_sentence, "color_diff_border", color_diff_border);
-	Add_dictionary_to_sentence_d(log_sentence, "ratio", ratio);
 	Add_dictionary_to_sentence(log_sentence, "histogram_partition", histogram_partition);
 	Add_dictionary_to_sentence(log_sentence, "loop_cont", loop_cont);
+	Add_dictionary_to_sentence_d(log_sentence, "USE_best_ratio", opt_USE_best_ratio);
+	Add_dictionary_to_sentence_d(log_sentence, "max_ratio", opt_max_ratio);
+	Add_dictionary_to_sentence_d(log_sentence, "max_ratio", opt_max_ratio);
+	Add_dictionary_to_sentence_d(log_sentence, "ratio_step", opt_ratio_step);
+	Add_dictionary_to_sentence_d(log_sentence, "ratio", opt_ratio);
 	Add_dictionary_to_sentence(log_sentence, "USE_Lab_ColorDiff", opt_USE_Lab_ColorDiff);
 	Add_dictionary_to_sentence(log_sentence, "USE_Lab_ColorDiff_Weight", opt_USE_Lab_ColorDiff_Weight);
 	Add_dictionary_to_sentence(log_sentence, "Lab_Weight", opt_Lab_Weight);
@@ -418,32 +422,63 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 					bright.B = calcu_color_bi(cmprB->data, cmprB->width, cmprB->height, x, y, t, 50, gauce_filter);
 				}else if(opt_USE_calcu_Kmean_ColorSet){
 					double max=0;
-					for (i = 0; i < opt_Kmean_ClusterNum; i++) {
-						diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], opt_ratio);
-						if(diff_sum>max){
-							max = diff_sum;
-							CentLabel = i;
+					//ベストなストロークの描画の濃さを計算
+					if(opt_USE_best_ratio){
+						for (i = 0; i < opt_Kmean_ClusterNum; i++) {
+							for(roop_ratio=opt_min_ratio; roop_ratio<=opt_max_ratio; roop_ratio+=opt_ratio_step){
+								diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], roop_ratio);
+								if(diff_sum>max){
+									max = diff_sum;
+									CentLabel = i;
+									best_ratio = roop_ratio;
+								}
+							}
 						}
+						bright = ColorSet[CentLabel];
+						ratio = best_ratio;
+					}else{
+						ratio = opt_ratio;
+						for (i = 0; i < opt_Kmean_ClusterNum; i++) {
+							diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], ratio);
+							if(diff_sum>max){
+								max = diff_sum;
+								CentLabel = i;
+							}
+						}
+						bright = ColorSet[CentLabel];
 					}
-
-					// CentLabel = x_centlabel_2D[x][y] - 1;	//Label番号をIndexに―１
-					bright = ColorSet[CentLabel];
 				}else if(opt_USE_calcu_JIS_ColorSet){
 					double max = 0;
-					for (i = 0; i < opt_JIS_ClusterNum; i++) {
-						diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], opt_ratio);
-						if(diff_sum > max){
-							max = diff_sum;
-							JISLabel = i;
+					//ベストなストロークの描画の濃さを計算
+					if(opt_USE_best_ratio){
+						for (i = 0; i < opt_JIS_ClusterNum; i++) {
+							for(roop_ratio=opt_min_ratio; roop_ratio<=opt_max_ratio; roop_ratio+=opt_ratio_step){
+								diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], roop_ratio);
+								if(diff_sum > max){
+									max = diff_sum;
+									JISLabel = i;
+									best_ratio = roop_ratio;
+								}
+							}
 						}
+						bright = ColorSet[JISLabel];
+						ratio = best_ratio;
+					}else{
+						ratio = opt_ratio;
+						for (i = 0; i < opt_JIS_ClusterNum; i++) {
+							diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], ratio);
+							if(diff_sum > max){
+								max = diff_sum;
+								JISLabel = i;
+							}
+						}
+						bright = ColorSet[JISLabel];
 					}
-					bright = ColorSet[JISLabel];
 				}else{
 					bright.R = calcu_color(cmprR->data, cmprR->width, cmprR->height, x, y, t);
 					bright.G = calcu_color(cmprG->data, cmprG->width, cmprG->height, x, y, t);
 					bright.B = calcu_color(cmprB->data, cmprB->width, cmprB->height, x, y, t);
 				}
-
 
 				theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition,
 						gauce_filter, p[0].x, p[0].y, t, &break_flag);
@@ -455,7 +490,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 
 				//二つ目の描画点周りの色が描画色と一致するか確認する
 				if(opt_USE_Lab_ColorDiff){
-					sum = diffsum_Lab(in_Lab, nimgC, p[1], t, bright, opt_ratio);
+					sum = diffsum_Lab(in_Lab, nimgC, p[1], t, bright, ratio);
 				} else{
 					sum = 0;
 					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
@@ -472,7 +507,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 
 					//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
 					if(opt_USE_Lab_ColorDiff){
-						sum = diffsum_Lab(in_Lab, nimgC, p[1], t, bright, opt_ratio);
+						sum = diffsum_Lab(in_Lab, nimgC, p[1], t, bright, ratio);
 					} else{
 						sum = 0;
 						sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
@@ -507,7 +542,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 
 					//pnum+1目の描画点周りの色が描画色と一致するか確認する
 					if(opt_USE_Lab_ColorDiff){
-						sum = diffsum_Lab(in_Lab, nimgC, p[pnum], t, bright, opt_ratio);
+						sum = diffsum_Lab(in_Lab, nimgC, p[pnum], t, bright, ratio);
 					} else{
 						sum = 0;
 						sum += diffsum_clr(cmprR, nimgR, p[pnum], t, bright.R);
@@ -525,7 +560,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 
 				if(pnum>=min_stroke) {
 					// double start_PWS = my_clock();
-                    Paint_Water_Stroke(p, pnum, t, bright, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);
+                    Paint_Water_Stroke(p, pnum, t, bright, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height, ratio);
 					// pd("PWS[s]",my_clock()-start_PWS);
 					stroke_histogram[pnum]++;
 					paint_count++;
@@ -848,7 +883,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	Point p[max_stroke];
 	int stroke_histogram[max_stroke+1];
 	for(i=0; i<max_stroke+1; i++){stroke_histogram[i]=0;}
-	double ratio=opt_ratio;		//ストロークの濃度
+	double ratio, best_ratio, roop_ratio;
 	double theta, former_theta;
 	double **gauce_filter;
 	double sigma, diff_sum, sum;
@@ -909,9 +944,13 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "min_stroke", min_stroke);
 	Add_dictionary_to_sentence(log_sentence, "window_diff_border", window_diff_border);
 	Add_dictionary_to_sentence(log_sentence, "color_diff_border", color_diff_border);
-	Add_dictionary_to_sentence_d(log_sentence, "ratio", ratio);
 	Add_dictionary_to_sentence(log_sentence, "histogram_partition", histogram_partition);
 	Add_dictionary_to_sentence(log_sentence, "loop_cont", loop_cont);
+	Add_dictionary_to_sentence_d(log_sentence, "USE_best_ratio", opt_USE_best_ratio);
+	Add_dictionary_to_sentence_d(log_sentence, "max_ratio", opt_max_ratio);
+	Add_dictionary_to_sentence_d(log_sentence, "max_ratio", opt_max_ratio);
+	Add_dictionary_to_sentence_d(log_sentence, "ratio_step", opt_ratio_step);
+	Add_dictionary_to_sentence_d(log_sentence, "ratio", opt_ratio);
 	Add_dictionary_to_sentence(log_sentence, "USE_Lab_ColorDiff", opt_USE_Lab_ColorDiff);
 	Add_dictionary_to_sentence(log_sentence, "USE_Lab_ColorDiff_Weight", opt_USE_Lab_ColorDiff_Weight);
 	Add_dictionary_to_sentence(log_sentence, "Lab_Weight", opt_Lab_Weight);
@@ -1187,7 +1226,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 				// 	test_Canvas = create_ppm(in->width, in->height, in->bright);
 				// #endif
 				for(x=0; x<in->width; x=x+x_step) {
-			//for(y=y_defo; y<in->height; y=y+t) {  //ウィンドウの大きさに合わせて
+				//for(y=y_defo; y<in->height; y=y+t) {  //ウィンドウの大きさに合わせて
 				//for(x=x_defo; x<in->width; x=x+t) {  //ウィンドウをずらす距離を変えとく
 					// 改善値が計算済みならSkip
 					if(GLOBAL_improved_value_map->data[x][y] != UNCALCULATED) continue;
@@ -1221,36 +1260,68 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 
 					//一つ目の描画領域から描画色を取得
 					if(opt_USE_calcu_color_bi){
-						best_stroke_map[x][y]->color.R = calcu_color_bi(cmprR->data, cmprR->width, cmprR->height, x, y, t, 50, gauce_filter);
-						best_stroke_map[x][y]->color.G = calcu_color_bi(cmprG->data, cmprG->width, cmprG->height, x, y, t, 50, gauce_filter);
-						best_stroke_map[x][y]->color.B = calcu_color_bi(cmprB->data, cmprB->width, cmprB->height, x, y, t, 50, gauce_filter);
+						bright.R = calcu_color_bi(cmprR->data, cmprR->width, cmprR->height, x, y, t, 50, gauce_filter);
+						bright.G = calcu_color_bi(cmprG->data, cmprG->width, cmprG->height, x, y, t, 50, gauce_filter);
+						bright.B = calcu_color_bi(cmprB->data, cmprB->width, cmprB->height, x, y, t, 50, gauce_filter);
 					}else if(opt_USE_calcu_Kmean_ColorSet){
 						double max=0;
-						for (i = 0; i < opt_Kmean_ClusterNum; i++) {
-							diff_sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[0], t, ColorSet[i], opt_ratio);
-							if(diff_sum>max){
-								max = diff_sum;
-								CentLabel = i;
+						//ベストなストロークの描画の濃さを計算
+						if(opt_USE_best_ratio){
+							for (i = 0; i < opt_Kmean_ClusterNum; i++) {
+								for(roop_ratio=opt_min_ratio; roop_ratio<=opt_max_ratio; roop_ratio+=opt_ratio_step){
+									diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], roop_ratio);
+									if(diff_sum>max){
+										max = diff_sum;
+										CentLabel = i;
+										best_ratio = roop_ratio;
+									}
+								}
 							}
+							bright = ColorSet[CentLabel];
+							ratio = best_ratio;
+						}else{
+							ratio = opt_ratio;
+							for (i = 0; i < opt_Kmean_ClusterNum; i++) {
+								diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], ratio);
+								if(diff_sum>max){
+									max = diff_sum;
+									CentLabel = i;
+								}
+							}
+							bright = ColorSet[CentLabel];
 						}
-						// CentLabel = x_centlabel_2D[x][y] - 1;	//Label番号をIndexに―１
-						best_stroke_map[x][y]->color = ColorSet[CentLabel];
 					}else if(opt_USE_calcu_JIS_ColorSet){
 						double max = 0;
-						for (i = 0; i < opt_JIS_ClusterNum; i++) {
-							diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], opt_ratio);
-							if(diff_sum > max){
-								max = diff_sum;
-								JISLabel = i;
+						//ベストなストロークの描画の濃さを計算
+						if(opt_USE_best_ratio){
+							for (i = 0; i < opt_JIS_ClusterNum; i++) {
+								for(roop_ratio=opt_min_ratio; roop_ratio<=opt_max_ratio; roop_ratio+=opt_ratio_step){
+									diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], roop_ratio);
+									if(diff_sum > max){
+										max = diff_sum;
+										JISLabel = i;
+										best_ratio = roop_ratio;
+									}
+								}
 							}
+							bright = ColorSet[JISLabel];
+							ratio = best_ratio;
+						}else{
+							ratio = opt_ratio;
+							for (i = 0; i < opt_JIS_ClusterNum; i++) {
+								diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], ratio);
+								if(diff_sum > max){
+									max = diff_sum;
+									JISLabel = i;
+								}
+							}
+							bright = ColorSet[JISLabel];
 						}
-						bright = ColorSet[JISLabel];
 					}else{
-						best_stroke_map[x][y]->color.R = calcu_color(cmprR->data, cmprR->width, cmprR->height, x, y, t);
-						best_stroke_map[x][y]->color.G = calcu_color(cmprG->data, cmprG->width, cmprG->height, x, y, t);
-						best_stroke_map[x][y]->color.B = calcu_color(cmprB->data, cmprB->width, cmprB->height, x, y, t);
+						bright.R = calcu_color(cmprR->data, cmprR->width, cmprR->height, x, y, t);
+						bright.G = calcu_color(cmprG->data, cmprG->width, cmprG->height, x, y, t);
+						bright.B = calcu_color(cmprB->data, cmprB->width, cmprB->height, x, y, t);
 					}
-
 
 					theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition,
 							gauce_filter, best_stroke_map[x][y]->p[0].x, best_stroke_map[x][y]->p[0].y, t, &break_flag);
@@ -1262,7 +1333,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 
 					//二つ目の描画点周りの色が描画色と一致するか確認する
 					if(opt_USE_Lab_ColorDiff){
-						sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color, opt_ratio);
+						sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color, ratio);
 					} else{
 						sum = 0;
 						sum += diffsum_clr(cmprR, nimgR, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color.R);
@@ -1279,7 +1350,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 
 						//反対方向の第二点の描画点周りの色が描画色と一致するか確認する//点当たりの差異平均
 						if(opt_USE_Lab_ColorDiff){
-							sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color, opt_ratio);
+							sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color, ratio);
 						} else{
 							sum = 0;
 							sum += diffsum_clr(cmprR, nimgR, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color.R);
@@ -1314,7 +1385,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 
 						//pnum+1目の描画点周りの色が描画色と一致するか確認する
 						if(opt_USE_Lab_ColorDiff){
-							sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[pnum], t, best_stroke_map[x][y]->color, opt_ratio);
+							sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[pnum], t, best_stroke_map[x][y]->color, ratio);
 						} else{
 							sum = 0;
 							sum += diffsum_clr(cmprR, nimgR, best_stroke_map[x][y]->p[pnum], t, best_stroke_map[x][y]->color.R);
@@ -1342,7 +1413,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					//　試しに描いてみて誤差を確認
 					if(pnum>=min_stroke){
 						// GLOBAL_improved_value_map->data[x][y] = diff_sum;
-						GLOBAL_improved_value_map->data[x][y] = test_water_stroke(test_Canvas, in, nimgC, best_stroke_map[x][y], t, h, grad_hx, grad_hy, gauce_filter);
+						GLOBAL_improved_value_map->data[x][y] = test_water_stroke(test_Canvas, in, nimgC, best_stroke_map[x][y], t, h, grad_hx, grad_hy, gauce_filter, ratio);
 					}else if(pnum<min_stroke){
 						GLOBAL_improved_value_map->data[x][y] = MIN_STROKE;
 					}
@@ -1414,7 +1485,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 
 
 			//算出したpnum個の制御点を用いてストロークを描画
-			Paint_Water_Stroke(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, t, best_stroke_map[best_x][best_y]->color, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height);
+			Paint_Water_Stroke(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, t, best_stroke_map[best_x][best_y]->color, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height,ratio);
 
 			// 描画したストロークの周囲のみ改善値マップをリセット
 			reset_improved_value_map(GLOBAL_improved_value_map, best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, best_stroke_map, t, max_stroke);
@@ -1456,7 +1527,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 			/// 制御点を全てとブラシサイズを拡大率に従いスケーリングし、拡大キャンバスに描画
 			if(opt_USE_Canvas_Scaling_Method){
 				scaling_p = scaling_point(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, opt_canvas_scaling_ratio);
-				SINGLE_Paint_Water_Stroke(scaling_p, best_stroke_map[best_x][best_y]->pnum, t_Scaling, best_stroke_map[best_x][best_y]->color, nimgR_Scaling->data, nimgG_Scaling->data, nimgB_Scaling->data, h_Scaling, grad_hx_Scaling, grad_hy_Scaling, gauce_filter_Scaling, nimgC_Scaling->width, nimgC_Scaling->height);
+				SINGLE_Paint_Water_Stroke(scaling_p, best_stroke_map[best_x][best_y]->pnum, t_Scaling, best_stroke_map[best_x][best_y]->color, nimgR_Scaling->data, nimgG_Scaling->data, nimgB_Scaling->data, h_Scaling, grad_hx_Scaling, grad_hy_Scaling, gauce_filter_Scaling, nimgC_Scaling->width, nimgC_Scaling->height, ratio);
 				free(scaling_p);
 
 				if(nc%100==0 || nc<=100)

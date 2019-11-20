@@ -9,7 +9,7 @@
 
 PGM* GLOBAL_improved_value_map;
 
-void SINGLE_Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height);
+void SINGLE_Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height, double ratio);
 void SINGLE_Paint_Water(int** M, double** u, double** v, double** p, double** h, double** grad_hx, double** grad_hy, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, int width, int height, Point rectangleP[]);
 double SINGLE_UpdateVelocities(int** M,  double** u, double** v, double** p, double var_t, int width, int height, Point rectangleP[]);
 void SINGLE_RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, int width, int height, Point rectangleP[]);
@@ -22,7 +22,7 @@ void SINGLE_SimulateCapillaryFlow(int** M, double** p, double** c, double** s, d
 
 
 //　試しに描いてみて誤差を確認(water)
-int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, int t, double** h, double** grad_hx, double** grad_hy, double** gauce_filter)
+int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, int t, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, double ratio)
 {
     // static int first_flag=1;
 	int i,j,diffsum=0;
@@ -78,7 +78,7 @@ int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, i
     // if(opt_USE_Best_Stroke_Method){
     //     SINGLE_Paint_Water_Stroke(stroke->p, stroke->pnum, t, stroke->color, test_Canvas->dataR, test_Canvas->dataG, test_Canvas->dataB, h, grad_hx, grad_hy, gauce_filter, nimgC->width, nimgC->height);
     // }else{
-	    Paint_Water_Stroke(stroke->p, stroke->pnum, t, stroke->color, test_Canvas->dataR, test_Canvas->dataG, test_Canvas->dataB, h, grad_hx, grad_hy, gauce_filter, nimgC->width, nimgC->height);
+	    Paint_Water_Stroke(stroke->p, stroke->pnum, t, stroke->color, test_Canvas->dataR, test_Canvas->dataG, test_Canvas->dataB, h, grad_hx, grad_hy, gauce_filter, nimgC->width, nimgC->height, ratio);
     // }
 	//試し描きによる変化を確認
 	if(opt_USE_Lab_ColorDiff){
@@ -128,7 +128,7 @@ int test_water_stroke(PPM* test_Canvas, PPM* cmpr, PPM* nimgC, Stroke* stroke, i
 	return diffsum;
 }
 
-void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height)
+void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height, double ratio)
 {
     static int first_flag=1;
     int i,j;
@@ -199,7 +199,7 @@ void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** C
                 }
             }
         }else{
-            RGB tmp_density = {255-(255-color.R)*opt_ratio, 255-(255-color.G)*opt_ratio, 255-(255-color.B)*opt_ratio};    // ＜ー用確認
+            RGB tmp_density = {255-(255-color.R)*ratio, 255-(255-color.G)*ratio, 255-(255-color.B)*ratio};    // ＜ー用確認
             set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, tmp_density, gauce_filter, width, height);   //ストロークのエリアと水量を計算
             Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
 
@@ -224,7 +224,7 @@ void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** C
         format_dally(dG, width, height, 0);
         format_dally(dB, width, height, 0);
 
-        RGB tmp_density = {255-255*opt_ratio, 255-255*opt_ratio, 255-255*opt_ratio};
+        RGB tmp_density = {255-255*ratio, 255-255*ratio, 255-255*ratio};
         set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, tmp_density, gauce_filter, width, height);   //ストロークのエリアと水量を計算
         Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
 
@@ -988,7 +988,7 @@ void trans_Vector_img(PPM* img, double** u, int width, int height)
 //////////////////////////////////////////////////////////
 
 
-void SINGLE_Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height)
+void SINGLE_Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height, double ratio)
 {
     int i,j;
     double pigment_density;
@@ -1053,7 +1053,7 @@ void SINGLE_Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, 
                 }
             }
 
-            RGB tmp_density = {255-(255-color.R)*opt_ratio, 255-(255-color.G)*opt_ratio, 255-(255-color.B)*opt_ratio};    // ＜ー用確認
+            RGB tmp_density = {255-(255-color.R)*ratio, 255-(255-color.G)*ratio, 255-(255-color.B)*ratio};    // ＜ー用確認
             set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, tmp_density, gauce_filter, width, height);   //ストロークのエリアと水量を計算
             SINGLE_Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
 
@@ -1077,7 +1077,7 @@ void SINGLE_Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, 
             format_dally(dG, width, height, 0);
             format_dally(dB, width, height, 0);
 
-            RGB tmp_density = {255-255*opt_ratio, 255-255*opt_ratio, 255-255*opt_ratio};
+            RGB tmp_density = {255-255*ratio, 255-255*ratio, 255-255*ratio};
             set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, tmp_density, gauce_filter, width, height);   //ストロークのエリアと水量を計算
             SINGLE_Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
 
