@@ -68,6 +68,7 @@ typedef struct {
 	int pnum;
 	Point* p;
 	RGB color;
+	double ratio;
 }Stroke;
 
 
@@ -190,4 +191,6 @@ PPM* Visualize_ColorSet(RGB* color_set, int cluster_num, int* num_cluster);
 int** ReshapeInt_1to2(int* x, int width, int height);
 PPM* Visualize_KmeanImg(PPM* in, RGB* color_set, int** x_centlabel);
 double diffsum_Lab(Lab** in_Lab, PPM* Can, Point p, int t, RGB bright, double PaintRatio);
+RGB* create_JIS_ColorSet(int cluster_num);
+
 #endif

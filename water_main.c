@@ -103,7 +103,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	Point p[max_stroke];
 	int stroke_histogram[max_stroke+1];
 	for(i=0; i<max_stroke+1; i++){stroke_histogram[i]=0;}
-	double ratio, best_ratio, roop_ratio;
+	double ratio=opt_ratio, best_ratio=0, roop_ratio;
 	double theta, former_theta;
 	double **gauce_filter;
 	double sigma, diff_sum, sum;
@@ -883,7 +883,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	Point p[max_stroke];
 	int stroke_histogram[max_stroke+1];
 	for(i=0; i<max_stroke+1; i++){stroke_histogram[i]=0;}
-	double ratio, best_ratio, roop_ratio;
+	double ratio=opt_ratio, best_ratio=0, roop_ratio;
 	double theta, former_theta;
 	double **gauce_filter;
 	double sigma, diff_sum, sum;
@@ -1269,7 +1269,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 						if(opt_USE_best_ratio){
 							for (i = 0; i < opt_Kmean_ClusterNum; i++) {
 								for(roop_ratio=opt_min_ratio; roop_ratio<=opt_max_ratio; roop_ratio+=opt_ratio_step){
-									diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], roop_ratio);
+									diff_sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[0], t, ColorSet[i], roop_ratio);
 									if(diff_sum>max){
 										max = diff_sum;
 										CentLabel = i;
@@ -1282,7 +1282,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 						}else{
 							ratio = opt_ratio;
 							for (i = 0; i < opt_Kmean_ClusterNum; i++) {
-								diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], ratio);
+								diff_sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[0], t, ColorSet[i], ratio);
 								if(diff_sum>max){
 									max = diff_sum;
 									CentLabel = i;
@@ -1296,7 +1296,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 						if(opt_USE_best_ratio){
 							for (i = 0; i < opt_JIS_ClusterNum; i++) {
 								for(roop_ratio=opt_min_ratio; roop_ratio<=opt_max_ratio; roop_ratio+=opt_ratio_step){
-									diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], roop_ratio);
+									diff_sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[0], t, ColorSet[i], roop_ratio);
 									if(diff_sum > max){
 										max = diff_sum;
 										JISLabel = i;
@@ -1309,7 +1309,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 						}else{
 							ratio = opt_ratio;
 							for (i = 0; i < opt_JIS_ClusterNum; i++) {
-								diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], ratio);
+								diff_sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[0], t, ColorSet[i], ratio);
 								if(diff_sum > max){
 									max = diff_sum;
 									JISLabel = i;
@@ -1322,6 +1322,9 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 						bright.G = calcu_color(cmprG->data, cmprG->width, cmprG->height, x, y, t);
 						bright.B = calcu_color(cmprB->data, cmprB->width, cmprB->height, x, y, t);
 					}
+					best_stroke_map[x][y]->color=bright;
+					best_stroke_map[x][y]->ratio=ratio;
+
 
 					theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition,
 							gauce_filter, best_stroke_map[x][y]->p[0].x, best_stroke_map[x][y]->p[0].y, t, &break_flag);
@@ -1405,9 +1408,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					}
 
 
-					//for(i=0; i<pnum; i++){
-					//	best_stroke_map[x][y]->p[i] = p[i];
-					//}
 					//best_stroke_map[x][y]->color=bright;
 					best_stroke_map[x][y]->pnum=pnum;
 					//　試しに描いてみて誤差を確認
@@ -1417,11 +1417,6 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					}else if(pnum<min_stroke){
 						GLOBAL_improved_value_map->data[x][y] = MIN_STROKE;
 					}
-
-					// if( (diff_sum>diff_stroke_max) && (pnum>=min_stroke) ){
-					// 	best_x=x; best_y=y;
-					// 	diff_stroke_max = diff_sum;
-					// }
 				}
 				// #ifdef _OPENMP
 				// 	FreePPM(test_Canvas);
@@ -1485,7 +1480,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 
 
 			//算出したpnum個の制御点を用いてストロークを描画
-			Paint_Water_Stroke(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, t, best_stroke_map[best_x][best_y]->color, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height,ratio);
+			Paint_Water_Stroke(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, t, best_stroke_map[best_x][best_y]->color, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height, best_stroke_map[best_x][best_y]->ratio);
 
 			// 描画したストロークの周囲のみ改善値マップをリセット
 			reset_improved_value_map(GLOBAL_improved_value_map, best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, best_stroke_map, t, max_stroke);
