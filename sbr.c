@@ -185,11 +185,14 @@ double diffsum_Lab(Lab** in_Lab, PPM* Can, Point p, int t, RGB bright, double Pa
 	Lab CanLab, testCanLab;
 
 	//注目している周囲tピクセルのLab誤差値を合計し平均する
-	for(i=p.x-t; i<=p.x+t; i++) {
-		for(j=p.y-t; j<=p.y+t; j++) {
+	#pragma omp parallel for private(i,j,tmpRGB,CanLab,testCanLab,diff_before,diff_after) schedule(static, 1) reduction(+:sum)
+	for(i=(int)p.x-t; i<=(int)p.x+t; i++) {
+		for(j=(int)p.y-t; j<=(int)p.y+t; j++) {
 			if(i<0 || i>Can->width-1 || j<0 || j>Can->height-1) {
+				#pragma omp atomic
 				offscrn_count++;
 			}else if( (i-p.x)*(i-p.x)+(j-p.y)*(j-p.y) > t*t ){
+				#pragma omp atomic
 				offscrn_count++;
 			}else {
 				tmpRGB.R = Can->dataR[i][j];
@@ -200,11 +203,11 @@ double diffsum_Lab(Lab** in_Lab, PPM* Can, Point p, int t, RGB bright, double Pa
 				tmpRGB.G = Can->dataG[i][j] * (1-PaintRatio) + bright.G * PaintRatio;
 				tmpRGB.B = Can->dataB[i][j] * (1-PaintRatio) + bright.B * PaintRatio;
 				testCanLab = RGB2Lab(tmpRGB);
-				
+
 				// 描画前後のLab空間におけるユークリッド距離誤算の変化を求める
 				if(opt_USE_Lab_ColorDiff_Weight){//Lの大小によって重みづけする(暗くなる場合は（入力L）>（キャンバスL）なので誤差に重みを付けて大きくする)
 					if(in_Lab[i][j].L > CanLab.L)
-						diff_before = sqrt( pow((in_Lab[i][j].L-CanLab.L)*opt_Lab_Weight, 2) + pow(in_Lab[i][j].a-CanLab.a, 2) + pow(in_Lab[i][j].b-CanLab.b, 2) ); 
+						diff_before = sqrt( pow((in_Lab[i][j].L-CanLab.L)*opt_Lab_Weight, 2) + pow(in_Lab[i][j].a-CanLab.a, 2) + pow(in_Lab[i][j].b-CanLab.b, 2) );
 					else
 						diff_before = sqrt( pow(in_Lab[i][j].L-CanLab.L, 2) + pow(in_Lab[i][j].a-CanLab.a, 2) + pow(in_Lab[i][j].b-CanLab.b, 2) );
 					if(in_Lab[i][j].L > testCanLab.L)
