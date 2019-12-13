@@ -5,6 +5,13 @@
 //	Stroke Base Renderingのパラメータ設定
 ////////////////////////////////////////
 
+// 描画手法を選択
+#define Best_StrokeOrder 987654321
+#define Raster_StrokeOrder 123456789
+#define opt_Stroke_Method Raster_StrokeOrder
+// __attribute__((weak)) extern const int opt_Stroke_Method = Best_StrokeOrder;
+
+
 ////////////////	第一段階のパラメータ	/////////////////
 
 // ストローク半径の最大小値。この大きさの範囲でストロークを行う
@@ -27,7 +34,7 @@
 #define opt_StrokeWindowStep 1//1.2*t
 
 // ストロークの描画の濃さを変えるかどうか(RemoveFloatをオンにしたときRatioを水彩に用いないためエラー動作)
-#define opt_USE_best_ratio 1
+#define opt_USE_best_ratio 0
     // ストロークの描画の最大濃さ
     #define opt_max_ratio 0.5
     // ストロークの描画の最小濃さ

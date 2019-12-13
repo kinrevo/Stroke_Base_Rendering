@@ -196,4 +196,6 @@ RGB* create_JIS_ColorSet(int cluster_num);
 double diffsum_clr_RGB(PPM* cmpr, PPM* nimg, Point p, int t, RGB bright, double PaintRatio);
 
 void calcu_color_INTEGRATED(Stroke* stroke, Lab** in_Lab, PPM* cmpr, PPM* nimgC, Point p, int t, RGB* ColorSet, double** gauce_filter);
+
+PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename);
 #endif
