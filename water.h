@@ -4,26 +4,26 @@
 #include "sbr.h"
 
 
-// UpdateVelocities：Bの係数(def:0.1)(diffuse:0.)   //ここで水速度の暴走をある程度おさえられる
-#define opt_mhu 0.01
+// UpdateVelocities：Bの係数(def:0.1)(diffuse:0.01)   //ここで水速度の暴走をある程度おさえられる
+#define opt_mhu 0.1
 // UpdateVelocities：粘性抵抗(def:0.01)
 #define opt_kappa 0.01
 // RelaxDivergence：減衰の繰り返し回数(def:50)
 #define opt_N 50
 // RelaxDivergence：減衰の閾値(def:0.01)(diffuse:0.03)
-#define opt_tau 0.03
+#define opt_tau 0.01
 // RelaxDivergence：減衰の係数(def:0.1)
 #define opt_xi 0.1
 // FlowOutward：ガウスフィルタの直径(def:10)
 #define opt_K 5
 // FlowOutward：減衰係数(def:0.01-0.05)
-#define opt_eta 0.05
+#define opt_eta 0.01
 // TransferPigment：粒状化度、これが大きいほど沈着しづらく、浮上しづらい(def:0.05)
 #define opt_gamma 0.05
 // TransferPigment：顔料の比重、これが大きいほど沈着しやすく浮上しやすい(def:0.05)
 #define opt_rho 0.05
-// TransferPigment：染色力、これが大きいほど浮上しづらい(def:1.0)
-#define opt_omega 3.0
+// TransferPigment：染色力、これが大きいほど浮上しづらい(def:1.0)(diffuse:3.0)
+#define opt_omega 1.0
 
 // SimulateCapillaryFlow：浅水層から毛細層に水の浸透する割合(def:0.5)(paper:0.5)
 #define opt_alpha 0.5
@@ -38,16 +38,16 @@
 #define opt_variance_ratio 10.0
 
 // 水と顔料を定着させる時間(diffuse:50,1.0)
-#define opt_SoakTime 50
-#define opt_SoakTimeStep 0.5
+#define opt_SoakTime 5
+#define opt_SoakTimeStep 1.0
 // perlinノイズのパラメータ(def:0.1,6)
 #define opt_perlin_freq 0.1
 #define opt_perlin_depth 6
 // Option機能
 #define opt_USE_MoveWater 0
-#define opt_USE_Backrun 1
+#define opt_USE_Backrun 0
     #define exp_DiffuseNum 1
-#define opt_USE_DETAIL_TP 1     //paperでの変数設定法 (diffuse:0.05,0.05,0.8)
+#define opt_USE_DETAIL_TP 0     //paperでの変数設定法 (diffuse:0.05,0.05,0.8)
     #define opt_deposit 0.05
     #define opt_lift 0.05
     #define opt_exposure 0.8
@@ -56,8 +56,8 @@
 //////　実験動作  /////
 #define exp_RaiseWater 0  // FlowOutward:負の水量が現れたときそれに合わせて全体を底上げする
 #define opt_StopSoakVero 2  // UpdateVelocities：水速度が暴走したときに停止する速度条件(diffuse:2.0)
-#define opt_RemovePigmentInWater 0
-#define opt_FloatPigmentOnPaper 0
+#define opt_RemovePigmentInWater 1
+#define opt_FloatPigmentOnPaper 1
 // #define _DEBUG_PaintWater
 
 

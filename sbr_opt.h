@@ -15,31 +15,31 @@
 #define opt_thick_assignment {10,7,5}
 
 // ストロークの最大小長
-#define opt_max_stroke 4
-#define opt_min_stroke 2
+#define opt_max_stroke 10
+#define opt_min_stroke 4
 
 // 最適ストローク手法を用いるかどうか
-#define opt_USE_Best_Stroke_Method 0
+#define opt_USE_Best_Stroke_Method 1
     // 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
-    #define opt_optimal_improved_value_border 100
+    #define opt_optimal_improved_value_border 10
 
 // ストローク開始位置のウィンドウステップ幅（x,y共通）(Raster:1.2*t,Best:1)
-#define opt_StrokeWindowStep 1.2*t
+#define opt_StrokeWindowStep 1//1.2*t
 
-// ストロークの描画の濃さを変えるかどうか
+// ストロークの描画の濃さを変えるかどうか(RemoveFloatをオンにしたときRatioを水彩に用いないためエラー動作)
 #define opt_USE_best_ratio 1
     // ストロークの描画の最大濃さ
-    #define opt_max_ratio 0.2
+    #define opt_max_ratio 0.5
     // ストロークの描画の最小濃さ
-    #define opt_min_ratio 0.05
+    #define opt_min_ratio 0.1
     // ストロークの描画の濃さの変化量
-    #define opt_ratio_step 0.05
+    #define opt_ratio_step 0.1
 // ストロークの描画の濃さを変えなかった時の描画の濃さ
 #define opt_ratio 0.2
 
 // キャンバスを描画途中画像から始めるかどうかとそのアドレス
 #define opt_USE_input_progress_image 0
-    #define opt_progress_image_address ".png"
+    #define opt_progress_image_address "test_img/tomato320_shitae.png"
 
 // キャンバスのスケーリングを行うか
 #define opt_USE_Canvas_Scaling_Method 0
@@ -57,9 +57,9 @@
     // 描画改善値の計算時にLabのLに重みを付けるか
     #define opt_USE_Lab_ColorDiff_Weight 0
     // 描画改善値の計算時にLabのLに付ける重みの大きさ(1以上で暗い色に対して悪い評価を付ける)
-    #define opt_Lab_Weight 1
-    // ストローク停止位置決定における閾値。ある色で描画した際この値以下の改善値しかなければストロークを停止
-    #define opt_color_diff_border 0
+    #define opt_Lab_Weight 10
+// ストローク停止位置決定における閾値。ある色で描画した際この値以下の改善値しかなければストロークを停止
+#define opt_color_diff_border 0
 
 // 描画色の計算法においてバイラテラル距離を用いるか
 #define opt_USE_calcu_color_bi 0

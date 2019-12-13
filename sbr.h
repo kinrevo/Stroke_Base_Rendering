@@ -123,7 +123,7 @@ double calcu_histogram(PGM* cmpr, double **sobel_abs, double **sobel_angle, int 
 Point calcu_point(PGM *in, Point a, int t, double theta);
 void devide_ppm(PPM *ppm, PGM* ppmR, PGM* ppmG, PGM* ppmB);
 PPM *c_Illust_brush(PPM *in, char *filename);
-double diffsum_clr(PGM* cmpr, PGM* nimg, Point p, int t, int bright);
+double diffsum_clr(PGM* cmpr, PGM* nimg, Point p, int t, int bright, double PaintRatio);
 PGM *color_gray_conversion(PPM* in);
 PPM *copy_ppm(PPM *ppm, int bright);
 int calcu_color(int** data, int width, int height, int x, int y, int t);
@@ -193,4 +193,7 @@ PPM* Visualize_KmeanImg(PPM* in, RGB* color_set, int** x_centlabel);
 double diffsum_Lab(Lab** in_Lab, PPM* Can, Point p, int t, RGB bright, double PaintRatio);
 RGB* create_JIS_ColorSet(int cluster_num);
 
+double diffsum_clr_RGB(PPM* cmpr, PPM* nimg, Point p, int t, RGB bright, double PaintRatio);
+
+void calcu_color_INTEGRATED(Stroke* stroke, Lab** in_Lab, PPM* cmpr, PPM* nimgC, Point p, int t, RGB* ColorSet, double** gauce_filter);
 #endif

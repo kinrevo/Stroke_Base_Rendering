@@ -166,9 +166,9 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "color_diff_border", color_diff_border);
 	Add_dictionary_to_sentence(log_sentence, "histogram_partition", histogram_partition);
 	Add_dictionary_to_sentence(log_sentence, "loop_cont", loop_cont);
-	Add_dictionary_to_sentence_d(log_sentence, "USE_best_ratio", opt_USE_best_ratio);
+	Add_dictionary_to_sentence(log_sentence, "USE_best_ratio", opt_USE_best_ratio);
 	Add_dictionary_to_sentence_d(log_sentence, "max_ratio", opt_max_ratio);
-	Add_dictionary_to_sentence_d(log_sentence, "max_ratio", opt_max_ratio);
+	Add_dictionary_to_sentence_d(log_sentence, "min_ratio", opt_min_ratio);
 	Add_dictionary_to_sentence_d(log_sentence, "ratio_step", opt_ratio_step);
 	Add_dictionary_to_sentence_d(log_sentence, "ratio", opt_ratio);
 	Add_dictionary_to_sentence(log_sentence, "USE_Lab_ColorDiff", opt_USE_Lab_ColorDiff);
@@ -249,6 +249,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	PGM *inB = create_pgm(gray->width, gray->height, gray->bright);
 	devide_ppm(in, inR, inG, inB);
 	//比較用のイメージ生成
+	PPM *cmprC  = in;
 	PGM *cmpr  = gray;
 	PGM *cmprR = inR;
 	PGM *cmprG = inG;
@@ -328,11 +329,10 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 	}
 
 	// Lab誤差
-	Lab** in_Lab;
+	Lab** in_Lab = (Lab**)malloc(sizeof(Lab*)*(in->width));
 	if(opt_USE_Lab_ColorDiff){
 		//　RGB入力画像をLabに変換した配列を用意
 		RGB CanRGB;
-		in_Lab = (Lab**)malloc(sizeof(Lab*)*(in->width));
 		for(i=0; i<in->width; i++){
 			in_Lab[i] = (Lab*)malloc(sizeof(Lab)*(in->height));
 		}
@@ -492,10 +492,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 				if(opt_USE_Lab_ColorDiff){
 					sum = diffsum_Lab(in_Lab, nimgC, p[1], t, bright, ratio);
 				} else{
-					sum = 0;
-					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
-					sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
-					sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
+					sum = diffsum_clr_RGB(cmprC, nimgC, p[1], t, bright, ratio);
 				}
 
 
@@ -509,10 +506,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 					if(opt_USE_Lab_ColorDiff){
 						sum = diffsum_Lab(in_Lab, nimgC, p[1], t, bright, ratio);
 					} else{
-						sum = 0;
-						sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
-						sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
-						sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
+						sum = diffsum_clr_RGB(cmprC, nimgC, p[1], t, bright, ratio);
 					}
 
 					//どちらの第二点も不適切なら描画をせず次のループへ
@@ -544,10 +538,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 					if(opt_USE_Lab_ColorDiff){
 						sum = diffsum_Lab(in_Lab, nimgC, p[pnum], t, bright, ratio);
 					} else{
-						sum = 0;
-						sum += diffsum_clr(cmprR, nimgR, p[pnum], t, bright.R);
-						sum += diffsum_clr(cmprG, nimgG, p[pnum], t, bright.G);
-						sum += diffsum_clr(cmprB, nimgB, p[pnum], t, bright.B);
+						sum = diffsum_clr_RGB(cmprC, nimgC, p[pnum], t, bright, ratio);
 					}
 
 					/*
@@ -721,12 +712,9 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 
 				//二つ目の描画点周りの色が描画色と一致するか確認する
 				if(opt_USE_Lab_ColorDiff){
-					sum = diffsum_Lab(in_Lab, nimgC, p[1], t, bright, 1.0);
+					sum = diffsum_Lab(in_Lab, nimgC, p[1], t, bright, ratio);
 				} else{
-					sum = 0;
-					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
-					sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
-					sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
+					sum = diffsum_clr_RGB(cmprC, nimgC, p[1], t, bright, ratio);
 				}
 
 				//二つ目の制御点周りの色が描画色としきい値以上の差を持つなら描画せず反対方向の制御点を見る
@@ -737,12 +725,9 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 
 					//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
 					if(opt_USE_Lab_ColorDiff){
-						sum = diffsum_Lab(in_Lab, nimgC, p[1], t, bright, 1.0);
+						sum = diffsum_Lab(in_Lab, nimgC, p[1], t, bright, ratio);
 					} else{
-						sum = 0;
-						sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
-						sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
-						sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
+						sum = diffsum_clr_RGB(cmprC, nimgC, p[1], t, bright, ratio);
 					}
 
 					//どちらの第二点も不適切なら描画をせず次のループへ
@@ -771,12 +756,9 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename)
 
 					//pnum+1目の描画点周りの色が描画色と一致するか確認する  //点当たりの差異平均
 					if(opt_USE_Lab_ColorDiff){
-						sum = diffsum_Lab(in_Lab, nimgC, p[pnum], t, bright, 1.0);
+						sum = diffsum_Lab(in_Lab, nimgC, p[pnum], t, bright, ratio);
 					} else{
-						sum = 0;
-						sum += diffsum_clr(cmprR, nimgR, p[pnum], t, bright.R);
-						sum += diffsum_clr(cmprG, nimgG, p[pnum], t, bright.G);
-						sum += diffsum_clr(cmprB, nimgB, p[pnum], t, bright.B);
+						sum = diffsum_clr_RGB(cmprC, nimgC, p[pnum], t, bright, ratio);
 					}
 
 					/*
@@ -946,9 +928,9 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "color_diff_border", color_diff_border);
 	Add_dictionary_to_sentence(log_sentence, "histogram_partition", histogram_partition);
 	Add_dictionary_to_sentence(log_sentence, "loop_cont", loop_cont);
-	Add_dictionary_to_sentence_d(log_sentence, "USE_best_ratio", opt_USE_best_ratio);
+	Add_dictionary_to_sentence(log_sentence, "USE_best_ratio", opt_USE_best_ratio);
 	Add_dictionary_to_sentence_d(log_sentence, "max_ratio", opt_max_ratio);
-	Add_dictionary_to_sentence_d(log_sentence, "max_ratio", opt_max_ratio);
+	Add_dictionary_to_sentence_d(log_sentence, "min_ratio", opt_min_ratio);
 	Add_dictionary_to_sentence_d(log_sentence, "ratio_step", opt_ratio_step);
 	Add_dictionary_to_sentence_d(log_sentence, "ratio", opt_ratio);
 	Add_dictionary_to_sentence(log_sentence, "USE_Lab_ColorDiff", opt_USE_Lab_ColorDiff);
@@ -1017,6 +999,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	PGM *inB = create_pgm(gray->width, gray->height, gray->bright);
 	devide_ppm(in, inR, inG, inB);
 	//比較用のイメージ生成
+	PPM *cmprC  = in;
 	PGM *cmpr  = gray;
 	PGM *cmprR = inR;
 	PGM *cmprG = inG;
@@ -1132,11 +1115,10 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 	}
 
 	// Lab誤差
-	Lab** in_Lab;
+	Lab** in_Lab = (Lab**)malloc(sizeof(Lab*)*(in->width));
 	if(opt_USE_Lab_ColorDiff){
 		//　RGB入力画像をLabに変換した配列を用意
 		RGB CanRGB;
-		in_Lab = (Lab**)malloc(sizeof(Lab*)*(in->width));
 		for(i=0; i<in->width; i++){
 			in_Lab[i] = (Lab*)malloc(sizeof(Lab)*(in->height));
 		}
@@ -1324,6 +1306,9 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					}
 					best_stroke_map[x][y]->color=bright;
 					best_stroke_map[x][y]->ratio=ratio;
+					// calcu_color_INTEGRATED(best_stroke_map[x][y], in_Lab, cmprC, nimgC, best_stroke_map[x][y]->p[0], t, ColorSet, gauce_filter);
+					// if(best_stroke_map[x][y]->color.R!=bright.R) printf("[%d][%d]bright_seq:%d bright_func:%d \n", x,y,bright.R,best_stroke_map[x][y]->color.R);
+					// if(best_stroke_map[x][y]->ratio!=ratio) printf("[%d][%d]ratio_seq:%f ratio_func:%f\n", x,y,ratio, best_stroke_map[x][y]->ratio);
 
 
 					theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition,
@@ -1338,10 +1323,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 					if(opt_USE_Lab_ColorDiff){
 						sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color, ratio);
 					} else{
-						sum = 0;
-						sum += diffsum_clr(cmprR, nimgR, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color.R);
-						sum += diffsum_clr(cmprG, nimgG, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color.G);
-						sum += diffsum_clr(cmprB, nimgB, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color.B);
+						sum = diffsum_clr_RGB(cmprC, nimgC, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color, ratio);
 					}
 
 
@@ -1355,10 +1337,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 						if(opt_USE_Lab_ColorDiff){
 							sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color, ratio);
 						} else{
-							sum = 0;
-							sum += diffsum_clr(cmprR, nimgR, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color.R);
-							sum += diffsum_clr(cmprG, nimgG, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color.G);
-							sum += diffsum_clr(cmprB, nimgB, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color.B);
+							sum = diffsum_clr_RGB(cmprC, nimgC, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color, ratio);
 						}
 
 						//どちらの第二点も不適切なら描画をせず次のループへ
@@ -1390,10 +1369,7 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 						if(opt_USE_Lab_ColorDiff){
 							sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[pnum], t, best_stroke_map[x][y]->color, ratio);
 						} else{
-							sum = 0;
-							sum += diffsum_clr(cmprR, nimgR, best_stroke_map[x][y]->p[pnum], t, best_stroke_map[x][y]->color.R);
-							sum += diffsum_clr(cmprG, nimgG, best_stroke_map[x][y]->p[pnum], t, best_stroke_map[x][y]->color.G);
-							sum += diffsum_clr(cmprB, nimgB, best_stroke_map[x][y]->p[pnum], t, best_stroke_map[x][y]->color.B);
+							sum = diffsum_clr_RGB(cmprC, nimgC, best_stroke_map[x][y]->p[pnum], t, best_stroke_map[x][y]->color, ratio);
 						}
 
 						/*
@@ -1694,12 +1670,9 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 
 				//二つ目の描画点周りの色が描画色と一致するか確認する
 				if(opt_USE_Lab_ColorDiff){
-					sum = diffsum_Lab(in_Lab, nimgC, p[1], t, bright, 1.0);
+					sum = diffsum_Lab(in_Lab, nimgC, p[1], t, bright, ratio);
 				} else{
-					sum = 0;
-					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
-					sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
-					sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
+					sum = diffsum_clr_RGB(cmprC, nimgC, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color, ratio);
 				}
 
 				//二つ目の制御点周りの色が描画色としきい値以上の差を持つなら描画せず反対方向の制御点を見る
@@ -1710,12 +1683,9 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 
 					//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
 					if(opt_USE_Lab_ColorDiff){
-						sum = diffsum_Lab(in_Lab, nimgC, p[1], t, bright, 1.0);
+						sum = diffsum_Lab(in_Lab, nimgC, p[1], t, bright, ratio);
 					} else{
-						sum = 0;
-						sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
-						sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
-						sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
+						sum = diffsum_clr_RGB(cmprC, nimgC, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color, ratio);
 					}
 
 					//どちらの第二点も不適切なら描画をせず次のループへ
@@ -1744,12 +1714,9 @@ PPM *c_Illust_brush_Water_best(PPM *in, char *filename)
 
 					//pnum+1目の描画点周りの色が描画色と一致するか確認する  //点当たりの差異平均
 					if(opt_USE_Lab_ColorDiff){
-						sum = diffsum_Lab(in_Lab, nimgC, p[pnum], t, bright, 1.0);
+						sum = diffsum_Lab(in_Lab, nimgC, p[pnum], t, bright, ratio);
 					} else{
-						sum = 0;
-						sum += diffsum_clr(cmprR, nimgR, p[pnum], t, bright.R);
-						sum += diffsum_clr(cmprG, nimgG, p[pnum], t, bright.G);
-						sum += diffsum_clr(cmprB, nimgB, p[pnum], t, bright.B);
+						sum = diffsum_clr_RGB(cmprC, nimgC, best_stroke_map[x][y]->p[pnum], t, best_stroke_map[x][y]->color, ratio);
 					}
 
 					/*

@@ -157,18 +157,59 @@ Point calcu_point(PGM *in, Point a, int t, double theta){
 }
 
 
-//与えられた点周りで描画色を塗った際の改善値を求める（マンハッタン距離）
-double diffsum_clr(PGM* cmpr, PGM* nimg, Point p, int t, int bright){
-	int i,j, offscrn_count=0;
+//[PPM]与えられた点周りで描画色を塗った際の改善値を求める（RGBマンハッタン距離）
+double diffsum_clr_RGB(PPM* cmprC, PPM* nimg, Point p, int t, RGB bright, double PaintRatio)
+{
+	static int first_flag=1;
 	double sum=0;
-	for(i=p.x-t; i<=p.x+t; i++) {
-		for(j=p.y-t; j<=p.y+t; j++) {
+	PGM *cmprG;
+	PGM *cmprB;
+	PGM *cmprR;
+	PGM *nimgR;
+	PGM *nimgG;
+	PGM *nimgB;
+	if(first_flag){
+		cmprG = (PGM *)malloc(sizeof(PGM));
+		cmprB = (PGM *)malloc(sizeof(PGM));
+		cmprR = (PGM *)malloc(sizeof(PGM));
+		nimgR = (PGM *)malloc(sizeof(PGM));
+		nimgG = (PGM *)malloc(sizeof(PGM));
+		nimgB = (PGM *)malloc(sizeof(PGM));
+	}
+
+	cmprR->data = cmprC->dataR;
+	cmprG->data = cmprC->dataG;
+	cmprB->data = cmprC->dataB;
+	nimgR->data = nimg->dataR;
+	nimgG->data = nimg->dataG;
+	nimgB->data = nimg->dataB;
+	cmprR->height = cmprG->height = cmprB->height = nimgR->height = nimgG->height = nimgB->height = cmprC->height;
+	cmprR->width = cmprG->width = cmprB->width = nimgR->width = nimgG->width = nimgB->width = cmprC->width;
+	
+	sum += diffsum_clr(cmprR, nimgR, p, t, bright.R, PaintRatio);
+	sum += diffsum_clr(cmprG, nimgG, p, t, bright.G, PaintRatio);
+	sum += diffsum_clr(cmprB, nimgB, p, t, bright.B, PaintRatio);
+
+	return sum;
+}
+
+
+//[PGM]与えられた点周りで描画色を塗った際の改善値を求める（マンハッタン距離）
+double diffsum_clr(PGM* cmpr, PGM* nimg, Point p, int t, int bright, double PaintRatio){
+	int i,j, ncolor, offscrn_count=0;
+	double sum=0;
+	
+	// #pragma omp parallel for private(i,j,ncolor) schedule(static, 1) reduction(+:sum)
+	for(i=(int)p.x-t; i<=(int)p.x+t; i++) {
+		for(j=(int)p.y-t; j<=(int)p.y+t; j++) {
 			if(i<0 || i>cmpr->width-1 || j<0 || j>cmpr->height-1) {
+				// #pragma omp atomic
 				offscrn_count++;
 			}else {
 				//注目している周囲tピクセルの値を合計し平均する
-				sum += abs(cmpr->data[i][j]-nimg->data[i][j]) - abs(cmpr->data[i][j]-bright);
-				//sum += abs(cmpr->data[i][j]-bright) -30
+				ncolor = bright;
+				// ncolor = nimg->data[i][j] * (1-PaintRatio) + bright * PaintRatio;
+				sum += abs(cmpr->data[i][j]-nimg->data[i][j]) - abs(cmpr->data[i][j]-ncolor);
 			}
 		}
 	}
@@ -261,10 +302,88 @@ int calcu_color_bi(int** data, int width, int height, int x, int y, int t, doubl
 			co_sum += coefficient;
 		}
 	}
-	//pd("co",co_sum);
 	bright = sum/co_sum + 0.5;
 	return bright;
 }
+
+
+
+// 色計算のバージョン統合版
+void calcu_color_INTEGRATED(Stroke* stroke, Lab** in_Lab, PPM* cmpr, PPM* nimgC, Point p, int t, RGB* ColorSet, double** gauce_filter)
+{
+	int i,CentLabel=0, JISLabel=0;
+	double ratio = opt_ratio, roop_ratio, diff_sum, best_ratio = 0;
+	double x=p.x, y=p.y, max=0;
+	RGB bright;
+
+	if(opt_USE_calcu_color_bi){
+		bright.R = calcu_color_bi(cmpr->dataR, cmpr->width, cmpr->height, x, y, t, 50, gauce_filter);
+		bright.G = calcu_color_bi(cmpr->dataG, cmpr->width, cmpr->height, x, y, t, 50, gauce_filter);
+		bright.B = calcu_color_bi(cmpr->dataB, cmpr->width, cmpr->height, x, y, t, 50, gauce_filter);
+	}else if(opt_USE_calcu_Kmean_ColorSet){
+		//ベストなストロークの描画の濃さを計算
+		if(opt_USE_best_ratio){
+			for (i = 0; i < opt_Kmean_ClusterNum; i++) {
+				for(roop_ratio=opt_min_ratio; roop_ratio<=opt_max_ratio; roop_ratio+=opt_ratio_step){
+					diff_sum = diffsum_Lab(in_Lab, nimgC, p, t, ColorSet[i], roop_ratio);
+					if(diff_sum>max){
+						max = diff_sum;
+						CentLabel = i;
+						best_ratio = roop_ratio;
+					}
+				}
+			}
+			bright = ColorSet[CentLabel];
+			ratio = best_ratio;
+		}else{
+			ratio = opt_ratio;
+			for (i = 0; i < opt_Kmean_ClusterNum; i++) {
+				diff_sum = diffsum_Lab(in_Lab, nimgC, p, t, ColorSet[i], ratio);
+				if(diff_sum>max){
+					max = diff_sum;
+					CentLabel = i;
+				}
+			}
+			bright = ColorSet[CentLabel];
+		}
+	}else if(opt_USE_calcu_JIS_ColorSet){
+		max=-99999999;
+		//ベストなストロークの描画の濃さを計算
+		if(opt_USE_best_ratio){
+			for (i = 0; i < opt_JIS_ClusterNum; i++) {
+				for(roop_ratio=opt_min_ratio; roop_ratio<=opt_max_ratio; roop_ratio+=opt_ratio_step){
+					diff_sum = diffsum_Lab(in_Lab, nimgC, p, t, ColorSet[i], roop_ratio);
+					if(diff_sum > max){
+						max = diff_sum;
+						JISLabel = i;
+						best_ratio = roop_ratio;
+					}
+				}
+			}
+			bright = ColorSet[JISLabel];
+			ratio = best_ratio;
+		}else{
+			ratio = opt_ratio;
+			for (i = 0; i < opt_JIS_ClusterNum; i++) {
+				diff_sum = diffsum_Lab(in_Lab, nimgC, p, t, ColorSet[i], ratio);
+				if(diff_sum > max){
+					max = diff_sum;
+					JISLabel = i;
+				}
+			}
+			bright = ColorSet[JISLabel];
+		}
+	}else{
+		bright.R = calcu_color(cmpr->dataR, cmpr->width, cmpr->height, x, y, t);
+		bright.G = calcu_color(cmpr->dataG, cmpr->width, cmpr->height, x, y, t);
+		bright.B = calcu_color(cmpr->dataB, cmpr->width, cmpr->height, x, y, t);
+	}
+
+
+	stroke->color = bright;
+	stroke->ratio = ratio;
+}
+
 
 
 //　与えられた範囲における勾配のヒストグラムをとる
@@ -543,9 +662,9 @@ int calcu_Stroke_Point(PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimg
 
 	//二つ目の描画点周りの色が描画色と一致するか確認する
 	sum = 0;
-	sum += diffsum_clr(cmprR, nimgR, Stroke_P[1], t, brightR);
-	sum += diffsum_clr(cmprG, nimgG, Stroke_P[1], t, brightG);
-	sum += diffsum_clr(cmprB, nimgB, Stroke_P[1], t, brightB);
+	sum += diffsum_clr(cmprR, nimgR, Stroke_P[1], t, brightR, opt_ratio);
+	sum += diffsum_clr(cmprG, nimgG, Stroke_P[1], t, brightG, opt_ratio);
+	sum += diffsum_clr(cmprB, nimgB, Stroke_P[1], t, brightB, opt_ratio);
 
 
 	//二つ目の制御点周りの色が描画色としきい値以上の差を持つなら描画せず反対方向の制御点を見る
@@ -557,9 +676,9 @@ int calcu_Stroke_Point(PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimg
 		//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
 		//sum = diffsum_clr(cmpr, nimgV, p[1], t, bright);  //点当たりの差異平均
 		sum = 0;
-		sum += diffsum_clr(cmprR, nimgR, Stroke_P[1], t, brightR);
-		sum += diffsum_clr(cmprG, nimgG, Stroke_P[1], t, brightG);
-		sum += diffsum_clr(cmprB, nimgB, Stroke_P[1], t, brightB);
+		sum += diffsum_clr(cmprR, nimgR, Stroke_P[1], t, brightR, opt_ratio);
+		sum += diffsum_clr(cmprG, nimgG, Stroke_P[1], t, brightG, opt_ratio);
+		sum += diffsum_clr(cmprB, nimgB, Stroke_P[1], t, brightB, opt_ratio);
 
 		//どちらの第二点も不適切なら描画をせず次のループへ
 		if( sum < opt_color_diff_border) {
@@ -586,9 +705,9 @@ int calcu_Stroke_Point(PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR, PGM* nimg
 
 		//pnum+1目の描画点周りの色が描画色と一致するか確認する
 		sum = 0;
-		sum += diffsum_clr(cmprR, nimgR, Stroke_P[pnum], t, brightR);
-		sum += diffsum_clr(cmprG, nimgG, Stroke_P[pnum], t, brightG);
-		sum += diffsum_clr(cmprB, nimgB, Stroke_P[pnum], t, brightB);
+		sum += diffsum_clr(cmprR, nimgR, Stroke_P[pnum], t, brightR, opt_ratio);
+		sum += diffsum_clr(cmprG, nimgG, Stroke_P[pnum], t, brightG, opt_ratio);
+		sum += diffsum_clr(cmprB, nimgB, Stroke_P[pnum], t, brightB, opt_ratio);
 
 		/*
 			pnum+1目の(次の)制御点周りの色が描画色としきい値以上の差を持つなら
@@ -913,9 +1032,9 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 
 				//二つ目の描画点周りの色が描画色と一致するか確認する
 				sum = 0;
-				sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
-				sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
-				sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
+				sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R, opt_ratio);
+				sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G, opt_ratio);
+				sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B, opt_ratio);
 
 
 				//二つ目の制御点周りの色が描画色としきい値以上の差を持つなら描画せず反対方向の制御点を見る
@@ -927,9 +1046,9 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
 					//sum = diffsum_clr(cmpr, nimgV, p[1], t, bright);  //点当たりの差異平均
 					sum = 0;
-					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
-					sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
-					sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
+					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R, opt_ratio);
+					sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G, opt_ratio);
+					sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B, opt_ratio);
 
 					//どちらの第二点も不適切なら描画をせず次のループへ
 					if( sum < color_diff_border) {
@@ -962,9 +1081,9 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 
 					//pnum+1目の描画点周りの色が描画色と一致するか確認する
 					sum = 0;
-					sum += diffsum_clr(cmprR, nimgR, p[pnum], t, bright.R);
-					sum += diffsum_clr(cmprG, nimgG, p[pnum], t, bright.G);
-					sum += diffsum_clr(cmprB, nimgB, p[pnum], t, bright.B);
+					sum += diffsum_clr(cmprR, nimgR, p[pnum], t, bright.R, opt_ratio);
+					sum += diffsum_clr(cmprG, nimgG, p[pnum], t, bright.G, opt_ratio);
+					sum += diffsum_clr(cmprB, nimgB, p[pnum], t, bright.B, opt_ratio);
 
 					/*
 						pnum+1目の(次の)制御点周りの色が描画色としきい値以上の差を持つなら
@@ -1216,9 +1335,9 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 
 				//二つ目の描画点周りの色が描画色と一致するか確認する
 				sum = 0;
-				sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
-				sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
-				sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
+				sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R, opt_ratio);
+				sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G, opt_ratio);
+				sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B, opt_ratio);
 
 				//二つ目の制御点周りの色が描画色としきい値以上の差を持つなら描画せず反対方向の制御点を見る
 				if( sum < color_diff_border){
@@ -1229,9 +1348,9 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 					//反対方向の第二点の描画点周りの色が描画色と一致するか確認する
 					//sum = diffsum_clr(cmpr, nimgV, p[1], t, bright);  //点当たりの差異平均
 					sum = 0;
-					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R);
-					sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G);
-					sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B);
+					sum += diffsum_clr(cmprR, nimgR, p[1], t, bright.R, opt_ratio);
+					sum += diffsum_clr(cmprG, nimgG, p[1], t, bright.G, opt_ratio);
+					sum += diffsum_clr(cmprB, nimgB, p[1], t, bright.B, opt_ratio);
 
 					//どちらの第二点も不適切なら描画をせず次のループへ
 					if( sum < color_diff_border) {
@@ -1263,9 +1382,9 @@ PPM *c_Illust_brush(PPM *in, char *filename) {
 
 					//pnum+1目の描画点周りの色が描画色と一致するか確認する  //点当たりの差異平均
 					sum = 0;
-					sum += diffsum_clr(cmprR, nimgR, p[pnum], t, bright.R);
-					sum += diffsum_clr(cmprG, nimgG, p[pnum], t, bright.G);
-					sum += diffsum_clr(cmprB, nimgB, p[pnum], t, bright.B);
+					sum += diffsum_clr(cmprR, nimgR, p[pnum], t, bright.R, opt_ratio);
+					sum += diffsum_clr(cmprG, nimgG, p[pnum], t, bright.G, opt_ratio);
+					sum += diffsum_clr(cmprB, nimgB, p[pnum], t, bright.B, opt_ratio);
 
 					/*
 						pnum+1目の(次の)制御点周りの色が描画色としきい値以上の差を持つなら
