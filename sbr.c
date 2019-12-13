@@ -160,35 +160,34 @@ Point calcu_point(PGM *in, Point a, int t, double theta){
 //[PPM]与えられた点周りで描画色を塗った際の改善値を求める（RGBマンハッタン距離）
 double diffsum_clr_RGB(PPM* cmprC, PPM* nimg, Point p, int t, RGB bright, double PaintRatio)
 {
-	static int first_flag=1;
+	int i,j, offscrn_count=0;
+	RGB ncolor;
 	double sum=0;
-	PGM *cmprG;
-	PGM *cmprB;
-	PGM *cmprR;
-	PGM *nimgR;
-	PGM *nimgG;
-	PGM *nimgB;
-	if(first_flag){
-		cmprG = (PGM *)malloc(sizeof(PGM));
-		cmprB = (PGM *)malloc(sizeof(PGM));
-		cmprR = (PGM *)malloc(sizeof(PGM));
-		nimgR = (PGM *)malloc(sizeof(PGM));
-		nimgG = (PGM *)malloc(sizeof(PGM));
-		nimgB = (PGM *)malloc(sizeof(PGM));
-	}
 
-	cmprR->data = cmprC->dataR;
-	cmprG->data = cmprC->dataG;
-	cmprB->data = cmprC->dataB;
-	nimgR->data = nimg->dataR;
-	nimgG->data = nimg->dataG;
-	nimgB->data = nimg->dataB;
-	cmprR->height = cmprG->height = cmprB->height = nimgR->height = nimgG->height = nimgB->height = cmprC->height;
-	cmprR->width = cmprG->width = cmprB->width = nimgR->width = nimgG->width = nimgB->width = cmprC->width;
-	
-	sum += diffsum_clr(cmprR, nimgR, p, t, bright.R, PaintRatio);
-	sum += diffsum_clr(cmprG, nimgG, p, t, bright.G, PaintRatio);
-	sum += diffsum_clr(cmprB, nimgB, p, t, bright.B, PaintRatio);
+	int x=p.x,y=p.y;
+	// 並列化しない方が速い
+	// #pragma omp parallel for private(i,j,ncolor) schedule(static, 1) reduction(+:sum)
+	for(i=x-t; i<=x+t; i++) {
+		for(j=y-t; j<=y+t; j++) {
+			if(i<0 || i>cmprC->width-1 || j<0 || j>cmprC->height-1) {
+				// #pragma omp atomic
+				offscrn_count++;
+			}else if( (i-x)*(i-x)+(j-y)*(j-y) > t*t ){
+				// #pragma omp atomic
+				offscrn_count++;
+			}else {
+				//注目している周囲tピクセルの値を合計し平均する
+				// ncolor = bright;
+				ncolor.R = nimg->dataR[i][j] * (1-PaintRatio) + bright.R * PaintRatio;
+				ncolor.G = nimg->dataG[i][j] * (1-PaintRatio) + bright.G * PaintRatio;
+				ncolor.B = nimg->dataB[i][j] * (1-PaintRatio) + bright.B * PaintRatio;
+				sum += abs(cmprC->dataR[i][j]-nimg->dataR[i][j]) - abs(cmprC->dataR[i][j]-ncolor.R);
+				sum += abs(cmprC->dataG[i][j]-nimg->dataG[i][j]) - abs(cmprC->dataG[i][j]-ncolor.G);
+				sum += abs(cmprC->dataB[i][j]-nimg->dataB[i][j]) - abs(cmprC->dataB[i][j]-ncolor.B);
+			}
+		}
+	}
+	sum = sum / ((2*t+1)*(2*t+1)-offscrn_count);  //点当たりの差異平均
 
 	return sum;
 }
@@ -199,6 +198,7 @@ double diffsum_clr(PGM* cmpr, PGM* nimg, Point p, int t, int bright, double Pain
 	int i,j, ncolor, offscrn_count=0;
 	double sum=0;
 	
+	// 並列化しない方が速い
 	// #pragma omp parallel for private(i,j,ncolor) schedule(static, 1) reduction(+:sum)
 	for(i=(int)p.x-t; i<=(int)p.x+t; i++) {
 		for(j=(int)p.y-t; j<=(int)p.y+t; j++) {
@@ -226,13 +226,14 @@ double diffsum_Lab(Lab** in_Lab, PPM* Can, Point p, int t, RGB bright, double Pa
 	Lab CanLab, testCanLab;
 
 	//注目している周囲tピクセルのLab誤差値を合計し平均する
+	int x=p.x,y=p.y;
 	#pragma omp parallel for private(i,j,tmpRGB,CanLab,testCanLab,diff_before,diff_after) schedule(static, 1) reduction(+:sum)
-	for(i=(int)p.x-t; i<=(int)p.x+t; i++) {
-		for(j=(int)p.y-t; j<=(int)p.y+t; j++) {
+	for(i=x-t; i<=x+t; i++) {
+		for(j=y-t; j<=y+t; j++) {
 			if(i<0 || i>Can->width-1 || j<0 || j>Can->height-1) {
 				#pragma omp atomic
 				offscrn_count++;
-			}else if( (i-p.x)*(i-p.x)+(j-p.y)*(j-p.y) > t*t ){
+			}else if( (i-x)*(i-x)+(j-y)*(j-y) > t*t ){
 				#pragma omp atomic
 				offscrn_count++;
 			}else {
@@ -256,8 +257,8 @@ double diffsum_Lab(Lab** in_Lab, PPM* Can, Point p, int t, RGB bright, double Pa
 					else
 						diff_after = sqrt( pow(in_Lab[i][j].L-testCanLab.L, 2) + pow(in_Lab[i][j].a-testCanLab.a, 2) + pow(in_Lab[i][j].b-testCanLab.b, 2) );
 				}else{
-					diff_before = sqrt( pow(in_Lab[i][j].L-CanLab.L, 2) + pow(in_Lab[i][j].a-CanLab.a, 2) + pow(in_Lab[i][j].b-CanLab.b, 2) );
-					diff_after = sqrt( pow(in_Lab[i][j].L-testCanLab.L, 2) + pow(in_Lab[i][j].a-testCanLab.a, 2) + pow(in_Lab[i][j].b-testCanLab.b, 2) );
+					diff_before = sqrt( ((in_Lab[i][j].L-CanLab.L)*(in_Lab[i][j].L-CanLab.L)) + ((in_Lab[i][j].a-CanLab.a)*(in_Lab[i][j].a-CanLab.a)) + ((in_Lab[i][j].b-CanLab.b)*(in_Lab[i][j].b-CanLab.b)) );
+					diff_after = sqrt( ((in_Lab[i][j].L-testCanLab.L)*(in_Lab[i][j].L-testCanLab.L)) + ((in_Lab[i][j].a-testCanLab.a)*(in_Lab[i][j].a-testCanLab.a)) + ((in_Lab[i][j].b-testCanLab.b)*(in_Lab[i][j].b-testCanLab.b)) );
 				}
 				sum += diff_before - diff_after;	// 誤差の改善値
 			}
@@ -313,7 +314,7 @@ void calcu_color_INTEGRATED(Stroke* stroke, Lab** in_Lab, PPM* cmpr, PPM* nimgC,
 {
 	int i,CentLabel=0, JISLabel=0;
 	double ratio = opt_ratio, roop_ratio, diff_sum, best_ratio = 0;
-	double x=p.x, y=p.y, max=0;
+	double x=p.x, y=p.y, max=-99999999;
 	RGB bright;
 
 	if(opt_USE_calcu_color_bi){
@@ -325,7 +326,11 @@ void calcu_color_INTEGRATED(Stroke* stroke, Lab** in_Lab, PPM* cmpr, PPM* nimgC,
 		if(opt_USE_best_ratio){
 			for (i = 0; i < opt_Kmean_ClusterNum; i++) {
 				for(roop_ratio=opt_min_ratio; roop_ratio<=opt_max_ratio; roop_ratio+=opt_ratio_step){
-					diff_sum = diffsum_Lab(in_Lab, nimgC, p, t, ColorSet[i], roop_ratio);
+					if(opt_USE_Lab_PaintColorDiff){
+						diff_sum = diffsum_Lab(in_Lab, nimgC, p, t, ColorSet[i], roop_ratio);
+					}else{
+						diff_sum = diffsum_clr_RGB(cmpr, nimgC, p, t, ColorSet[i], roop_ratio);
+					}
 					if(diff_sum>max){
 						max = diff_sum;
 						CentLabel = i;
@@ -338,7 +343,11 @@ void calcu_color_INTEGRATED(Stroke* stroke, Lab** in_Lab, PPM* cmpr, PPM* nimgC,
 		}else{
 			ratio = opt_ratio;
 			for (i = 0; i < opt_Kmean_ClusterNum; i++) {
-				diff_sum = diffsum_Lab(in_Lab, nimgC, p, t, ColorSet[i], ratio);
+				if(opt_USE_Lab_PaintColorDiff){
+					diff_sum = diffsum_Lab(in_Lab, nimgC, p, t, ColorSet[i], ratio);
+				}else{
+					diff_sum = diffsum_clr_RGB(cmpr, nimgC, p, t, ColorSet[i], ratio);
+				}
 				if(diff_sum>max){
 					max = diff_sum;
 					CentLabel = i;
@@ -347,12 +356,15 @@ void calcu_color_INTEGRATED(Stroke* stroke, Lab** in_Lab, PPM* cmpr, PPM* nimgC,
 			bright = ColorSet[CentLabel];
 		}
 	}else if(opt_USE_calcu_JIS_ColorSet){
-		max=-99999999;
 		//ベストなストロークの描画の濃さを計算
 		if(opt_USE_best_ratio){
 			for (i = 0; i < opt_JIS_ClusterNum; i++) {
 				for(roop_ratio=opt_min_ratio; roop_ratio<=opt_max_ratio; roop_ratio+=opt_ratio_step){
-					diff_sum = diffsum_Lab(in_Lab, nimgC, p, t, ColorSet[i], roop_ratio);
+					if(opt_USE_Lab_PaintColorDiff){
+						diff_sum = diffsum_Lab(in_Lab, nimgC, p, t, ColorSet[i], roop_ratio);
+					}else{
+						diff_sum = diffsum_clr_RGB(cmpr, nimgC, p, t, ColorSet[i], roop_ratio);
+					}
 					if(diff_sum > max){
 						max = diff_sum;
 						JISLabel = i;
@@ -365,7 +377,11 @@ void calcu_color_INTEGRATED(Stroke* stroke, Lab** in_Lab, PPM* cmpr, PPM* nimgC,
 		}else{
 			ratio = opt_ratio;
 			for (i = 0; i < opt_JIS_ClusterNum; i++) {
-				diff_sum = diffsum_Lab(in_Lab, nimgC, p, t, ColorSet[i], ratio);
+				if(opt_USE_Lab_PaintColorDiff){
+					diff_sum = diffsum_Lab(in_Lab, nimgC, p, t, ColorSet[i], ratio);
+				}else{
+					diff_sum = diffsum_clr_RGB(cmpr, nimgC, p, t, ColorSet[i], ratio);
+				}
 				if(diff_sum > max){
 					max = diff_sum;
 					JISLabel = i;

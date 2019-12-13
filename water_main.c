@@ -64,13 +64,6 @@ int main(int argc, char *argv[])
 
 	//入力画像の絵画化
 	trans_ppm = c_Illust_brush_Water_INTEGRATED(in_ppm, argv[2]);
-	// if(opt_USE_Best_Stroke_Method){
-	// 	printf("Stroke_Method:Best \n");
-	// 	trans_ppm = c_Illust_brush_Water_best(in_ppm, argv[2]);
-	// }else{
-	// 	printf("Stroke_Method:Raster \n");
-	// 	trans_ppm = c_Illust_brush_Water(in_ppm, argv[2]);
-	// }
 
 	//出力ファイル名に従って画像を出力
 	ext = get_extension(argv[2]);
@@ -101,9 +94,9 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 	int max_stroke = opt_max_stroke;
 	int min_stroke = opt_min_stroke;
 	Point p[max_stroke];
-	int stroke_histogram[max_stroke+1];
-	for(i=0; i<max_stroke+1; i++){stroke_histogram[i]=0;}
-	double ratio=opt_ratio, best_ratio=0, roop_ratio;
+	// int stroke_histogram[max_stroke+1];
+	// for(i=0; i<max_stroke+1; i++){stroke_histogram[i]=0;}
+	double ratio=opt_ratio;
 	double theta, former_theta;
 	double **gauce_filter;
 	double sigma, diff_sum, sum;
@@ -112,7 +105,6 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 	int loop_cont=opt_loop_cont, x_defo=0, y_defo=0;
 	int lc=0;
 	RGB bright;
-
 
 	//最大小ストローク半径（自動化：画面の1/10,最大の1/10）
 	int thick_max = opt_thick_max;//(in->height < in->width ? in->height : in->width)/10;
@@ -155,8 +147,8 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 	strcat(log_sentence, "<");
 	strcat(log_sentence, in_filename);
 	strcat(log_sentence, ">\r\n");
-	if(opt_Stroke_Method==Best_StrokeOrder)	strcat(log_sentence, "Stroke_Method:BestStroke\r\n");
-	if(opt_Stroke_Method==Raster_StrokeOrder)
+	if(opt_Stroke_Method==Best_StrokeOrder)	strcat(log_sentence, "Stroke_Method:Best_StrokeOrder\r\n");
+	if(opt_Stroke_Method==Raster_StrokeOrder) strcat(log_sentence, "Stroke_Method:Raster_StrokeOrder\r\n");
 	Add_dictionary_to_sentence(log_sentence, "width", in->width);
 	Add_dictionary_to_sentence(log_sentence, "height", in->height);
 	Add_dictionary_to_sentence(log_sentence, "thick_max", thick_max);
@@ -167,23 +159,39 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 	Add_dictionary_to_sentence(log_sentence, "color_diff_border", color_diff_border);
 	Add_dictionary_to_sentence(log_sentence, "histogram_partition", histogram_partition);
 	Add_dictionary_to_sentence(log_sentence, "loop_cont", loop_cont);
-	Add_dictionary_to_sentence(log_sentence, "USE_best_ratio", opt_USE_best_ratio);
-	Add_dictionary_to_sentence_d(log_sentence, "max_ratio", opt_max_ratio);
-	Add_dictionary_to_sentence_d(log_sentence, "min_ratio", opt_min_ratio);
-	Add_dictionary_to_sentence_d(log_sentence, "ratio_step", opt_ratio_step);
-	Add_dictionary_to_sentence_d(log_sentence, "ratio", opt_ratio);
-	Add_dictionary_to_sentence(log_sentence, "USE_Lab_ColorDiff", opt_USE_Lab_ColorDiff);
-	Add_dictionary_to_sentence(log_sentence, "USE_Lab_ColorDiff_Weight", opt_USE_Lab_ColorDiff_Weight);
-	Add_dictionary_to_sentence(log_sentence, "Lab_Weight", opt_Lab_Weight);
-	Add_dictionary_to_sentence(log_sentence, "USE_calcu_color_bi", opt_USE_calcu_color_bi);
-	Add_dictionary_to_sentence(log_sentence, "USE_gause_histogram", opt_USE_gause_histogram);
-	Add_dictionary_to_sentence(log_sentence, "optimal_improved_value_border", opt_optimal_improved_value_border);
-	Add_dictionary_to_sentence_d(log_sentence, "StrokeWindowStep", opt_StrokeWindowStep/t);
-	if(opt_USE_calcu_Kmean_ColorSet){
-		Add_dictionary_to_sentence(log_sentence, "Kmean_ClusterNum", opt_Kmean_ClusterNum);
-	}else if(opt_USE_calcu_JIS_ColorSet){
-		Add_dictionary_to_sentence(log_sentence, "JIS_ClusterNum", opt_JIS_ClusterNum);
+	if(opt_USE_best_ratio){
+		strcat(log_sentence, "# USE_best_ratio\r\n");
+		Add_dictionary_to_sentence_d(log_sentence, "max_ratio", opt_max_ratio);
+		Add_dictionary_to_sentence_d(log_sentence, "min_ratio", opt_min_ratio);
+		Add_dictionary_to_sentence_d(log_sentence, "ratio_step", opt_ratio_step);
+	}else{
+		Add_dictionary_to_sentence_d(log_sentence, "ratio", opt_ratio);
 	}
+	if(opt_USE_Lab_ColorDiff){
+		strcat(log_sentence, "# USE_Lab_ColorDiff\r\n");
+		if(opt_USE_best_ratio){
+			strcat(log_sentence, "  # USE_Lab_ColorDiff_Weight\r\n");
+			Add_dictionary_to_sentence(log_sentence, "    Lab_Weight", opt_Lab_Weight);
+		}
+	}else strcat(log_sentence, "# USE_RGB_ColorDiff\r\n");
+	if(opt_USE_Lab_PaintColorDiff){
+		strcat(log_sentence, "# USE_Lab_PaintColorDiff\r\n");
+		if(opt_USE_best_ratio){
+			strcat(log_sentence, "  # USE_Lab_ColorDiff_Weight\r\n");
+			Add_dictionary_to_sentence(log_sentence, "    Lab_Weight", opt_Lab_Weight);
+		}
+	}else strcat(log_sentence, "# USE_RGB_PaintColorDiff\r\n");
+	if(opt_USE_calcu_color_bi) strcat(log_sentence, "# USE_calcu_color_bi\r\n");
+	else if(opt_USE_calcu_Kmean_ColorSet){
+		strcat(log_sentence, "# USE_calcu_Kmean_ColorSet\r\n");
+		Add_dictionary_to_sentence(log_sentence, "  Kmean_ClusterNum", opt_Kmean_ClusterNum);
+	}else if(opt_USE_calcu_JIS_ColorSet){
+		strcat(log_sentence, "# USE_calcu_JIS_ColorSet\r\n");
+		Add_dictionary_to_sentence(log_sentence, "  JIS_ClusterNum", opt_JIS_ClusterNum);
+	}else strcat(log_sentence, "# USE_average_PaintColor\r\n");
+	if(opt_USE_gause_histogram) strcat(log_sentence, "  # USE_gause_histogram\r\n");
+	if(opt_Stroke_Method==Best_StrokeOrder) Add_dictionary_to_sentence(log_sentence, "optimal_improved_value_border", opt_optimal_improved_value_border);
+	Add_dictionary_to_sentence_d(log_sentence, "StrokeWindowStep", opt_StrokeWindowStep/t);
 	if(opt2_thick_max){
 		Add_dictionary_to_sentence(log_sentence, "thick_max[2]", opt2_thick_max);
 		Add_dictionary_to_sentence(log_sentence, "thick_min[2]", opt2_thick_min);
@@ -334,7 +342,6 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
     calcu_grad_h(h, grad_hx, grad_hy, in->width, in->height);
 
 	// KmeanカラーセットまたはJISカラーセット
-	int CentLabel = 0, JISLabel = 0;
 	int *num_cluster, *x_centlabel;
 	int** x_centlabel_2D;
 	RGB* ColorSet;
@@ -361,22 +368,20 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 		ColorSet = create_JIS_ColorSet(opt_JIS_ClusterNum);
 	}
 
-	// Lab誤差
+	// Lab誤差計算用の領域
 	Lab** in_Lab = (Lab**)malloc(sizeof(Lab*)*(in->width));
-	if(opt_USE_Lab_ColorDiff){
-		//　RGB入力画像をLabに変換した配列を用意
-		RGB CanRGB;
-		for(i=0; i<in->width; i++){
-			in_Lab[i] = (Lab*)malloc(sizeof(Lab)*(in->height));
-		}
+	//　RGB入力画像をLabに変換した配列を用意
+	RGB CanRGB;
+	for(i=0; i<in->width; i++){
+		in_Lab[i] = (Lab*)malloc(sizeof(Lab)*(in->height));
+	}
 
-		for(i=0; i<in->width; i++){
-			for(j=0; j<in->height; j++){
-				CanRGB.R = in->dataR[i][j];
-				CanRGB.G = in->dataG[i][j];
-				CanRGB.B = in->dataB[i][j];
-				in_Lab[i][j] = RGB2Lab(CanRGB);
-			}
+	for(i=0; i<in->width; i++){
+		for(j=0; j<in->height; j++){
+			CanRGB.R = in->dataR[i][j];
+			CanRGB.G = in->dataG[i][j];
+			CanRGB.B = in->dataB[i][j];
+			in_Lab[i][j] = RGB2Lab(CanRGB);
 		}
 	}
 
@@ -485,7 +490,6 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 
 						//差分の合計平均(画素当たりの差分)が一定以上ならストローク開始位置とする
 						if(diff_sum < window_diff_border) {
-							// stroke_histogram[pnum]++;
 							GLOBAL_improved_value_map->data[x][y] = SMALL_DIFF;
 							continue;
 						}
@@ -493,74 +497,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 						best_stroke_map[x][y]->p[0].x=x+0.5; best_stroke_map[x][y]->p[0].y=y+0.5;
 
 						//一つ目の描画領域から描画色を取得
-						if(opt_USE_calcu_color_bi){
-							bright.R = calcu_color_bi(cmprR->data, cmprR->width, cmprR->height, x, y, t, 50, gauce_filter);
-							bright.G = calcu_color_bi(cmprG->data, cmprG->width, cmprG->height, x, y, t, 50, gauce_filter);
-							bright.B = calcu_color_bi(cmprB->data, cmprB->width, cmprB->height, x, y, t, 50, gauce_filter);
-						}else if(opt_USE_calcu_Kmean_ColorSet){
-							double max=0;
-							//ベストなストロークの描画の濃さを計算
-							if(opt_USE_best_ratio){
-								for (i = 0; i < opt_Kmean_ClusterNum; i++) {
-									for(roop_ratio=opt_min_ratio; roop_ratio<=opt_max_ratio; roop_ratio+=opt_ratio_step){
-										diff_sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[0], t, ColorSet[i], roop_ratio);
-										if(diff_sum>max){
-											max = diff_sum;
-											CentLabel = i;
-											best_ratio = roop_ratio;
-										}
-									}
-								}
-								bright = ColorSet[CentLabel];
-								ratio = best_ratio;
-							}else{
-								ratio = opt_ratio;
-								for (i = 0; i < opt_Kmean_ClusterNum; i++) {
-									diff_sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[0], t, ColorSet[i], ratio);
-									if(diff_sum>max){
-										max = diff_sum;
-										CentLabel = i;
-									}
-								}
-								bright = ColorSet[CentLabel];
-							}
-						}else if(opt_USE_calcu_JIS_ColorSet){
-							double max = 0;
-							//ベストなストロークの描画の濃さを計算
-							if(opt_USE_best_ratio){
-								for (i = 0; i < opt_JIS_ClusterNum; i++) {
-									for(roop_ratio=opt_min_ratio; roop_ratio<=opt_max_ratio; roop_ratio+=opt_ratio_step){
-										diff_sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[0], t, ColorSet[i], roop_ratio);
-										if(diff_sum > max){
-											max = diff_sum;
-											JISLabel = i;
-											best_ratio = roop_ratio;
-										}
-									}
-								}
-								bright = ColorSet[JISLabel];
-								ratio = best_ratio;
-							}else{
-								ratio = opt_ratio;
-								for (i = 0; i < opt_JIS_ClusterNum; i++) {
-									diff_sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[0], t, ColorSet[i], ratio);
-									if(diff_sum > max){
-										max = diff_sum;
-										JISLabel = i;
-									}
-								}
-								bright = ColorSet[JISLabel];
-							}
-						}else{
-							bright.R = calcu_color(cmprR->data, cmprR->width, cmprR->height, x, y, t);
-							bright.G = calcu_color(cmprG->data, cmprG->width, cmprG->height, x, y, t);
-							bright.B = calcu_color(cmprB->data, cmprB->width, cmprB->height, x, y, t);
-						}
-						best_stroke_map[x][y]->color=bright;
-						best_stroke_map[x][y]->ratio=ratio;
-						// calcu_color_INTEGRATED(best_stroke_map[x][y], in_Lab, cmprC, nimgC, best_stroke_map[x][y]->p[0], t, ColorSet, gauce_filter);
-						// if(best_stroke_map[x][y]->color.R!=bright.R) printf("[%d][%d]bright_seq:%d bright_func:%d \n", x,y,bright.R,best_stroke_map[x][y]->color.R);
-						// if(best_stroke_map[x][y]->ratio!=ratio) printf("[%d][%d]ratio_seq:%f ratio_func:%f\n", x,y,ratio, best_stroke_map[x][y]->ratio);
+						calcu_color_INTEGRATED(best_stroke_map[x][y], in_Lab, cmprC, nimgC, best_stroke_map[x][y]->p[0], t, ColorSet, gauce_filter);
 
 
 						theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition,
@@ -822,6 +759,8 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 	if(opt_Stroke_Method==Raster_StrokeOrder)
 	{
 		printf("Raster_Stroke \n");
+		Stroke* tmp_S = create_Stroke(max_stroke);
+
 		//太いストロークから順番にストロークを小さくしておおまかに絵の形を取っていく
 		for(t=thick_max; t>=thick_min; t--){
 			if(opt_num_thick){
@@ -887,69 +826,9 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 					p[0].x=x+0.5; p[0].y=y+0.5;
 
 					//一つ目の描画領域から描画色を取得
-					if(opt_USE_calcu_color_bi){
-						bright.R = calcu_color_bi(cmprR->data, cmprR->width, cmprR->height, x, y, t, 50, gauce_filter);
-						bright.G = calcu_color_bi(cmprG->data, cmprG->width, cmprG->height, x, y, t, 50, gauce_filter);
-						bright.B = calcu_color_bi(cmprB->data, cmprB->width, cmprB->height, x, y, t, 50, gauce_filter);
-					}else if(opt_USE_calcu_Kmean_ColorSet){
-						double max=0;
-						//ベストなストロークの描画の濃さを計算
-						if(opt_USE_best_ratio){
-							for (i = 0; i < opt_Kmean_ClusterNum; i++) {
-								for(roop_ratio=opt_min_ratio; roop_ratio<=opt_max_ratio; roop_ratio+=opt_ratio_step){
-									diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], roop_ratio);
-									if(diff_sum>max){
-										max = diff_sum;
-										CentLabel = i;
-										best_ratio = roop_ratio;
-									}
-								}
-							}
-							bright = ColorSet[CentLabel];
-							ratio = best_ratio;
-						}else{
-							ratio = opt_ratio;
-							for (i = 0; i < opt_Kmean_ClusterNum; i++) {
-								diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], ratio);
-								if(diff_sum>max){
-									max = diff_sum;
-									CentLabel = i;
-								}
-							}
-							bright = ColorSet[CentLabel];
-						}
-					}else if(opt_USE_calcu_JIS_ColorSet){
-						double max = 0;
-						//ベストなストロークの描画の濃さを計算
-						if(opt_USE_best_ratio){
-							for (i = 0; i < opt_JIS_ClusterNum; i++) {
-								for(roop_ratio=opt_min_ratio; roop_ratio<=opt_max_ratio; roop_ratio+=opt_ratio_step){
-									diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], roop_ratio);
-									if(diff_sum > max){
-										max = diff_sum;
-										JISLabel = i;
-										best_ratio = roop_ratio;
-									}
-								}
-							}
-							bright = ColorSet[JISLabel];
-							ratio = best_ratio;
-						}else{
-							ratio = opt_ratio;
-							for (i = 0; i < opt_JIS_ClusterNum; i++) {
-								diff_sum = diffsum_Lab(in_Lab, nimgC, p[0], t, ColorSet[i], ratio);
-								if(diff_sum > max){
-									max = diff_sum;
-									JISLabel = i;
-								}
-							}
-							bright = ColorSet[JISLabel];
-						}
-					}else{
-						bright.R = calcu_color(cmprR->data, cmprR->width, cmprR->height, x, y, t);
-						bright.G = calcu_color(cmprG->data, cmprG->width, cmprG->height, x, y, t);
-						bright.B = calcu_color(cmprB->data, cmprB->width, cmprB->height, x, y, t);
-					}
+					calcu_color_INTEGRATED(tmp_S, in_Lab, cmprC, nimgC, p[0], t, ColorSet, gauce_filter);
+					bright = tmp_S->color;
+					ratio = tmp_S->ratio;
 
 					theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition,
 							gauce_filter, p[0].x, p[0].y, t, &break_flag);
@@ -982,7 +861,6 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 
 						//どちらの第二点も不適切なら描画をせず次のループへ
 						if( sum < color_diff_border) {
-							stroke_histogram[pnum]++;
 							continue;
 						}
 					}
@@ -1024,27 +902,26 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 						// double start_PWS = my_clock();
 						Paint_Water_Stroke(p, pnum, t, bright, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height, ratio);
 						// pd("PWS[s]",my_clock()-start_PWS);
-						stroke_histogram[pnum]++;
 						paint_count++;
-					}
 
-					if(paint_count%500==0 || paint_count<100)
-					{
-						strcpy(out_filename, dir_path);
-						strcat(out_filename, in_filename);
-						snprintf(count_name, 16, "%02d", t);
-						strcat(out_filename, "_t");
-						strcat(out_filename, count_name);
-						snprintf(count_name, 16, "%d", paint_count);
-						strcat(out_filename, "_s");
-						strcat(out_filename, count_name);
-						strcat(out_filename, ".png");
-						out_png = PPM_to_image(nimgC);
-						if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
-						free_image(out_png);
-						printf("%s\n",out_filename);
-						printf("%d:",t);
-						pd("TIME[s]",my_clock());
+						if(paint_count%500==0 || paint_count<100)
+						{
+							strcpy(out_filename, dir_path);
+							strcat(out_filename, in_filename);
+							snprintf(count_name, 16, "%02d", t);
+							strcat(out_filename, "_t");
+							strcat(out_filename, count_name);
+							snprintf(count_name, 16, "%d", paint_count);
+							strcat(out_filename, "_s");
+							strcat(out_filename, count_name);
+							strcat(out_filename, ".png");
+							out_png = PPM_to_image(nimgC);
+							if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+							free_image(out_png);
+							printf("%s\n",out_filename);
+							printf("%d:",t);
+							pd("TIME[s]",my_clock());
+						}
 					}
 				}
 				x_defo =  (int)(h[0][y]*10000) % t; //適当な乱数らしい値を持ってきて初期位置を散らす
@@ -1153,7 +1030,6 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 
 				//差分の合計平均(画素当たりの差分)が一定以上ならストローク開始位置とする
 				if(diff_sum < window_diff_border) {
-					stroke_histogram[pnum]++;
 					continue;
 				}
 				pnum=1;		//第一点確定
