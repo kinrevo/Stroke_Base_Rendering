@@ -6,9 +6,10 @@
 ////////////////////////////////////////
 
 // 描画手法を選択
-#define opt_Stroke_Method Raster_StrokeOrder
-    #define Best_StrokeOrder 987654321
+#define opt_Stroke_Method EveryColor_StrokeOrder
+    #define Best_StrokeOrder 97431
     #define Raster_StrokeOrder 123456789
+    #define EveryColor_StrokeOrder 789456123
 
 // キャンバスを描画途中画像から始めるかどうかとそのアドレス
 #define opt_USE_input_progress_image 0
@@ -21,8 +22,8 @@
 #define opt_thick_max 10
 #define opt_thick_min 5
 // ストローク半径の種類の数（指定しないとき０）と指定の半径
-#define opt_num_thick 3
-#define opt_thick_assignment {10,7,5}
+#define opt_num_thick 2
+#define opt_thick_assignment {10,5}
 
 // ストロークの最大小長
 #define opt_max_stroke 10
@@ -30,10 +31,10 @@
 
 
 // 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
-#define opt_optimal_improved_value_border 10
+#define opt_optimal_improved_value_border 100
 
 // ストローク開始位置のウィンドウステップ幅（x,y共通）(Raster:1.2*t,Best:1)
-#define opt_StrokeWindowStep 1//1.2*t
+#define opt_StrokeWindowStep 2//1.2*t
 
 // ストロークの描画の濃さを変えるかどうか(RemoveFloatをオンにしたときRatioを水彩に用いないためエラー動作)
 #define opt_USE_best_ratio 0
@@ -42,12 +43,12 @@
     // ストロークの描画の最小濃さ
     #define opt_min_ratio 0.1
     // ストロークの描画の濃さの変化量
-    #define opt_ratio_step 0.1
+    #define opt_ratio_step 0.2
 // ストロークの描画の濃さを変えなかった時の描画の濃さ
 #define opt_ratio 0.2
 
 // 描画改善値の計算にLabユークリッド距離を用いるか（用いなければRGBマンハッタン距離）
-#define opt_USE_Lab_ColorDiff 0
+#define opt_USE_Lab_ColorDiff 1
     // 描画改善値の計算時にLabのLに重みを付けるか
     #define opt_USE_Lab_ColorDiff_Weight 0
     // 描画改善値の計算時にLabのLに付ける重みの大きさ(1以上で暗い色に対して悪い評価を付ける)
@@ -56,14 +57,14 @@
 #define opt_color_diff_border 0
 
 // 描画色の計算にLabユークリッド距離を用いるか（用いなければRGBマンハッタン距離）
-#define opt_USE_Lab_PaintColorDiff 1
+#define opt_USE_Lab_PaintColorDiff 0
 // 描画色の計算法においてバイラテラル距離を用いるか
 #define opt_USE_calcu_color_bi 0
 // 描画色の計算法においてKmeanによるカラーセットを用いるか
-#define opt_USE_calcu_Kmean_ColorSet 0
-    #define opt_Kmean_ClusterNum 12
+#define opt_USE_calcu_Kmean_ColorSet 1
+    #define opt_Kmean_ClusterNum 6
 // 描画色の計算法においてJIS規格のカラーセットを用いるか
-#define opt_USE_calcu_JIS_ColorSet 1
+#define opt_USE_calcu_JIS_ColorSet 0
     #define opt_JIS_ClusterNum 36
 
 

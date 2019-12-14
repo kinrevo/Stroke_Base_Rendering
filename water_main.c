@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 {
 	my_clock();
 
-	if(argc<2){
+	if(argc<=2){
 		fprintf(stderr, "Usage: program <inputfile> <outputfile>\n");
 		exit(1);
 	}
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 {
 	my_clock();
-	int i,j,x,y,xc,yc,t=1000,break_flag,pnum, offscrn_count;
+	int i,j,x,y,xc,yc,t=100,break_flag,pnum, offscrn_count;
 	int window_diff_border = opt_window_diff_border; 	//ストローク位置探索のしきい値
 	int color_diff_border = opt_color_diff_border;  	//描画色の差異のしきい値
 	int max_stroke = opt_max_stroke;
@@ -135,105 +135,108 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 	ps("in_filename",in_filename);
 
 	//出力するフォルダを生成しフォルダへのパスを格納、ログファイルを作成
-	strcpy(tmp, filename);
-	strcpy(dir_path, strtok(tmp, "."));
-	if(mkdir(tmp, 0775)){ printf("FAIL TO CREATE DIRECTRY\n"); }
-	strcat(dir_path, "/");
-	strcpy(log_filename, dir_path);
-	strcat(log_filename, in_filename);
-	strcat(log_filename, ".log");
+	{
+		strcpy(tmp, filename);
+		strcpy(dir_path, strtok(tmp, "."));
+		if(mkdir(tmp, 0775)){ printf("FAIL TO CREATE DIRECTRY\n"); }
+		strcat(dir_path, "/");
+		strcpy(log_filename, dir_path);
+		strcat(log_filename, in_filename);
+		strcat(log_filename, ".log");
 
-	//logデータ格納
-	strcat(log_sentence, "<");
-	strcat(log_sentence, in_filename);
-	strcat(log_sentence, ">\r\n");
-	if(opt_Stroke_Method==Best_StrokeOrder)	strcat(log_sentence, "Stroke_Method:Best_StrokeOrder\r\n");
-	if(opt_Stroke_Method==Raster_StrokeOrder) strcat(log_sentence, "Stroke_Method:Raster_StrokeOrder\r\n");
-	Add_dictionary_to_sentence(log_sentence, "width", in->width);
-	Add_dictionary_to_sentence(log_sentence, "height", in->height);
-	Add_dictionary_to_sentence(log_sentence, "thick_max", thick_max);
-	Add_dictionary_to_sentence(log_sentence, "thick_min", thick_min);
-	Add_dictionary_to_sentence(log_sentence, "max_stroke", max_stroke);
-	Add_dictionary_to_sentence(log_sentence, "min_stroke", min_stroke);
-	Add_dictionary_to_sentence(log_sentence, "window_diff_border", window_diff_border);
-	Add_dictionary_to_sentence(log_sentence, "color_diff_border", color_diff_border);
-	Add_dictionary_to_sentence(log_sentence, "histogram_partition", histogram_partition);
-	Add_dictionary_to_sentence(log_sentence, "loop_cont", loop_cont);
-	if(opt_USE_best_ratio){
-		strcat(log_sentence, "# USE_best_ratio\r\n");
-		Add_dictionary_to_sentence_d(log_sentence, "max_ratio", opt_max_ratio);
-		Add_dictionary_to_sentence_d(log_sentence, "min_ratio", opt_min_ratio);
-		Add_dictionary_to_sentence_d(log_sentence, "ratio_step", opt_ratio_step);
-	}else{
-		Add_dictionary_to_sentence_d(log_sentence, "ratio", opt_ratio);
-	}
-	if(opt_USE_Lab_ColorDiff){
-		strcat(log_sentence, "# USE_Lab_ColorDiff\r\n");
+		//logデータ格納
+		strcat(log_sentence, "<");
+		strcat(log_sentence, in_filename);
+		strcat(log_sentence, ">\r\n");
+		if(opt_Stroke_Method==Best_StrokeOrder)	strcat(log_sentence, "Stroke_Method:Best_StrokeOrder\r\n");
+		if(opt_Stroke_Method==Raster_StrokeOrder) strcat(log_sentence, "Stroke_Method:Raster_StrokeOrder\r\n");
+		if(opt_Stroke_Method==EveryColor_StrokeOrder) strcat(log_sentence, "Stroke_Method:EveryColor_StrokeOrder\r\n");
+		Add_dictionary_to_sentence(log_sentence, "width", in->width);
+		Add_dictionary_to_sentence(log_sentence, "height", in->height);
+		Add_dictionary_to_sentence(log_sentence, "thick_max", thick_max);
+		Add_dictionary_to_sentence(log_sentence, "thick_min", thick_min);
+		Add_dictionary_to_sentence(log_sentence, "max_stroke", max_stroke);
+		Add_dictionary_to_sentence(log_sentence, "min_stroke", min_stroke);
+		Add_dictionary_to_sentence(log_sentence, "window_diff_border", window_diff_border);
+		Add_dictionary_to_sentence(log_sentence, "color_diff_border", color_diff_border);
+		Add_dictionary_to_sentence(log_sentence, "histogram_partition", histogram_partition);
+		Add_dictionary_to_sentence(log_sentence, "loop_cont", loop_cont);
 		if(opt_USE_best_ratio){
-			strcat(log_sentence, "  # USE_Lab_ColorDiff_Weight\r\n");
-			Add_dictionary_to_sentence(log_sentence, "    Lab_Weight", opt_Lab_Weight);
+			strcat(log_sentence, "# USE_best_ratio\r\n");
+			Add_dictionary_to_sentence_d(log_sentence, "max_ratio", opt_max_ratio);
+			Add_dictionary_to_sentence_d(log_sentence, "min_ratio", opt_min_ratio);
+			Add_dictionary_to_sentence_d(log_sentence, "ratio_step", opt_ratio_step);
+		}else{
+			Add_dictionary_to_sentence_d(log_sentence, "ratio", opt_ratio);
 		}
-	}else strcat(log_sentence, "# USE_RGB_ColorDiff\r\n");
-	if(opt_USE_Lab_PaintColorDiff){
-		strcat(log_sentence, "# USE_Lab_PaintColorDiff\r\n");
-		if(opt_USE_best_ratio){
-			strcat(log_sentence, "  # USE_Lab_ColorDiff_Weight\r\n");
-			Add_dictionary_to_sentence(log_sentence, "    Lab_Weight", opt_Lab_Weight);
+		if(opt_USE_Lab_ColorDiff){
+			strcat(log_sentence, "# USE_Lab_ColorDiff\r\n");
+			if(opt_USE_best_ratio){
+				strcat(log_sentence, "  # USE_Lab_ColorDiff_Weight\r\n");
+				Add_dictionary_to_sentence(log_sentence, "    Lab_Weight", opt_Lab_Weight);
+			}
+		}else strcat(log_sentence, "# USE_RGB_ColorDiff\r\n");
+		if(opt_USE_Lab_PaintColorDiff){
+			strcat(log_sentence, "# USE_Lab_PaintColorDiff\r\n");
+			if(opt_USE_best_ratio){
+				strcat(log_sentence, "  # USE_Lab_ColorDiff_Weight\r\n");
+				Add_dictionary_to_sentence(log_sentence, "    Lab_Weight", opt_Lab_Weight);
+			}
+		}else strcat(log_sentence, "# USE_RGB_PaintColorDiff\r\n");
+		if(opt_USE_calcu_color_bi) strcat(log_sentence, "# USE_calcu_color_bi\r\n");
+		else if(opt_USE_calcu_Kmean_ColorSet){
+			strcat(log_sentence, "# USE_calcu_Kmean_ColorSet\r\n");
+			Add_dictionary_to_sentence(log_sentence, "  Kmean_ClusterNum", opt_Kmean_ClusterNum);
+		}else if(opt_USE_calcu_JIS_ColorSet){
+			strcat(log_sentence, "# USE_calcu_JIS_ColorSet\r\n");
+			Add_dictionary_to_sentence(log_sentence, "  JIS_ClusterNum", opt_JIS_ClusterNum);
+		}else strcat(log_sentence, "# USE_average_PaintColor\r\n");
+		if(opt_USE_gause_histogram) strcat(log_sentence, "  # USE_gause_histogram\r\n");
+		if(opt_Stroke_Method==Best_StrokeOrder) Add_dictionary_to_sentence(log_sentence, "optimal_improved_value_border", opt_optimal_improved_value_border);
+		Add_dictionary_to_sentence_d(log_sentence, "StrokeWindowStep", opt_StrokeWindowStep/t);
+		if(opt2_thick_max){
+			Add_dictionary_to_sentence(log_sentence, "thick_max[2]", opt2_thick_max);
+			Add_dictionary_to_sentence(log_sentence, "thick_min[2]", opt2_thick_min);
+			Add_dictionary_to_sentence(log_sentence, "min_stroke[2]", opt2_min_stroke);
+			Add_dictionary_to_sentence_d(log_sentence, "ratio[2]", opt2_ratio);
+			Add_dictionary_to_sentence(log_sentence, "loop_cont[2]", opt2_loop_cont);
 		}
-	}else strcat(log_sentence, "# USE_RGB_PaintColorDiff\r\n");
-	if(opt_USE_calcu_color_bi) strcat(log_sentence, "# USE_calcu_color_bi\r\n");
-	else if(opt_USE_calcu_Kmean_ColorSet){
-		strcat(log_sentence, "# USE_calcu_Kmean_ColorSet\r\n");
-		Add_dictionary_to_sentence(log_sentence, "  Kmean_ClusterNum", opt_Kmean_ClusterNum);
-	}else if(opt_USE_calcu_JIS_ColorSet){
-		strcat(log_sentence, "# USE_calcu_JIS_ColorSet\r\n");
-		Add_dictionary_to_sentence(log_sentence, "  JIS_ClusterNum", opt_JIS_ClusterNum);
-	}else strcat(log_sentence, "# USE_average_PaintColor\r\n");
-	if(opt_USE_gause_histogram) strcat(log_sentence, "  # USE_gause_histogram\r\n");
-	if(opt_Stroke_Method==Best_StrokeOrder) Add_dictionary_to_sentence(log_sentence, "optimal_improved_value_border", opt_optimal_improved_value_border);
-	Add_dictionary_to_sentence_d(log_sentence, "StrokeWindowStep", opt_StrokeWindowStep/t);
-	if(opt2_thick_max){
-		Add_dictionary_to_sentence(log_sentence, "thick_max[2]", opt2_thick_max);
-		Add_dictionary_to_sentence(log_sentence, "thick_min[2]", opt2_thick_min);
-		Add_dictionary_to_sentence(log_sentence, "min_stroke[2]", opt2_min_stroke);
-		Add_dictionary_to_sentence_d(log_sentence, "ratio[2]", opt2_ratio);
-		Add_dictionary_to_sentence(log_sentence, "loop_cont[2]", opt2_loop_cont);
+		strcat(log_sentence, "\r\n[Water Option]\r\n");
+		Add_dictionary_to_sentence_d(log_sentence, "mhu", opt_mhu);
+		Add_dictionary_to_sentence_d(log_sentence, "kappa", opt_kappa);
+		Add_dictionary_to_sentence(log_sentence, "N", opt_N);
+		Add_dictionary_to_sentence_d(log_sentence, "tau", opt_tau);
+		Add_dictionary_to_sentence_d(log_sentence, "xi", opt_xi);
+		Add_dictionary_to_sentence(log_sentence, "K", opt_K);
+		Add_dictionary_to_sentence_d(log_sentence, "eta", opt_eta);
+		if(opt_USE_DETAIL_TP){
+			Add_dictionary_to_sentence_d(log_sentence, "deposit", opt_deposit);
+			Add_dictionary_to_sentence_d(log_sentence, "lift", opt_lift);
+			Add_dictionary_to_sentence_d(log_sentence, "exposure", opt_exposure);
+		}else{
+			Add_dictionary_to_sentence_d(log_sentence, "gamma", opt_gamma);
+			Add_dictionary_to_sentence_d(log_sentence, "rho", opt_rho);
+			Add_dictionary_to_sentence_d(log_sentence, "omega", opt_omega);
+		}
+		Add_dictionary_to_sentence(log_sentence, "SoakTme", opt_SoakTime);
+		Add_dictionary_to_sentence_d(log_sentence, "SoakTimeStep", opt_SoakTimeStep);
+		Add_dictionary_to_sentence_d(log_sentence, "perlin_freq", opt_perlin_freq);
+		Add_dictionary_to_sentence(log_sentence, "perlin_depth", opt_perlin_depth);
+		Add_dictionary_to_sentence_d(log_sentence, "variance_ratio", opt_variance_ratio);
+		if(opt_USE_Backrun){
+			Add_dictionary_to_sentence_d(log_sentence, "alpha", opt_alpha);
+			Add_dictionary_to_sentence_d(log_sentence, "epsilon", opt_epsilon);
+			Add_dictionary_to_sentence_d(log_sentence, "delta", opt_delta);
+			Add_dictionary_to_sentence_d(log_sentence, "sigma", opt_sigma);
+		}
+		Add_dictionary_to_sentence(log_sentence, "RemovePigmentInWater", opt_RemovePigmentInWater);
+		Add_dictionary_to_sentence(log_sentence, "FloatPigmentOnPaper", opt_FloatPigmentOnPaper);
+		#ifdef _OPENMP
+			Add_dictionary_to_sentence(log_sentence, "OMP_NUM_THREADS", omp_get_max_threads());
+			printf("OMP_NUM_T:%d \n",(int)omp_get_max_threads());
+		#endif
+		pn;
 	}
-	strcat(log_sentence, "\r\n[Water Option]\r\n");
-	Add_dictionary_to_sentence_d(log_sentence, "mhu", opt_mhu);
-	Add_dictionary_to_sentence_d(log_sentence, "kappa", opt_kappa);
-	Add_dictionary_to_sentence(log_sentence, "N", opt_N);
-	Add_dictionary_to_sentence_d(log_sentence, "tau", opt_tau);
-	Add_dictionary_to_sentence_d(log_sentence, "xi", opt_xi);
-	Add_dictionary_to_sentence(log_sentence, "K", opt_K);
-	Add_dictionary_to_sentence_d(log_sentence, "eta", opt_eta);
-	if(opt_USE_DETAIL_TP){
-		Add_dictionary_to_sentence_d(log_sentence, "deposit", opt_deposit);
-		Add_dictionary_to_sentence_d(log_sentence, "lift", opt_lift);
-		Add_dictionary_to_sentence_d(log_sentence, "exposure", opt_exposure);
-	}else{
-		Add_dictionary_to_sentence_d(log_sentence, "gamma", opt_gamma);
-		Add_dictionary_to_sentence_d(log_sentence, "rho", opt_rho);
-		Add_dictionary_to_sentence_d(log_sentence, "omega", opt_omega);
-	}
-	Add_dictionary_to_sentence(log_sentence, "SoakTme", opt_SoakTime);
-	Add_dictionary_to_sentence_d(log_sentence, "SoakTimeStep", opt_SoakTimeStep);
-	Add_dictionary_to_sentence_d(log_sentence, "perlin_freq", opt_perlin_freq);
-	Add_dictionary_to_sentence(log_sentence, "perlin_depth", opt_perlin_depth);
-	Add_dictionary_to_sentence_d(log_sentence, "variance_ratio", opt_variance_ratio);
-	if(opt_USE_Backrun){
-		Add_dictionary_to_sentence_d(log_sentence, "alpha", opt_alpha);
-		Add_dictionary_to_sentence_d(log_sentence, "epsilon", opt_epsilon);
-		Add_dictionary_to_sentence_d(log_sentence, "delta", opt_delta);
-		Add_dictionary_to_sentence_d(log_sentence, "sigma", opt_sigma);
-	}
-	Add_dictionary_to_sentence(log_sentence, "RemovePigmentInWater", opt_RemovePigmentInWater);
-	Add_dictionary_to_sentence(log_sentence, "FloatPigmentOnPaper", opt_FloatPigmentOnPaper);
-	#ifdef _OPENMP
-		Add_dictionary_to_sentence(log_sentence, "OMP_NUM_THREADS", omp_get_max_threads());
-		printf("OMP_NUM_T:%d \n",(int)omp_get_max_threads());
-	#endif
-	pn;
 
 	//vectorデータのヘッダを格納
 	// snprintf(tmp_sentence, 32, "%d", in->width);
@@ -345,7 +348,9 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 	int *num_cluster, *x_centlabel;
 	int** x_centlabel_2D;
 	RGB* ColorSet;
+	int ColorNum;
 	if(opt_USE_calcu_Kmean_ColorSet){
+		ColorNum = opt_Kmean_ClusterNum;
 		x_centlabel = (int*)malloc(sizeof(int) * in->width*in->height);
 		num_cluster = (int*)malloc(sizeof(int) * opt_Kmean_ClusterNum);
 		ColorSet = Kmeans_ImageLab3D(in, opt_Kmean_ClusterNum, 50, x_centlabel, num_cluster);
@@ -365,17 +370,16 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 		if(write_png_file(out_filename, PPM_to_image(ColorSet_Img))){ printf("WRITE PNG ERROR.");}
 	}
 	else if(opt_USE_calcu_JIS_ColorSet){
+		ColorNum = opt_JIS_ClusterNum;
 		ColorSet = create_JIS_ColorSet(opt_JIS_ClusterNum);
 	}
 
-	// Lab誤差計算用の領域
-	Lab** in_Lab = (Lab**)malloc(sizeof(Lab*)*(in->width));
 	//　RGB入力画像をLabに変換した配列を用意
 	RGB CanRGB;
+	Lab** in_Lab = (Lab**)malloc(sizeof(Lab*)*(in->width));
 	for(i=0; i<in->width; i++){
 		in_Lab[i] = (Lab*)malloc(sizeof(Lab)*(in->height));
 	}
-
 	for(i=0; i<in->width; i++){
 		for(j=0; j<in->height; j++){
 			CanRGB.R = in->dataR[i][j];
@@ -388,6 +392,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 	///////////////////preprocess終了/////////////////
 	Add_dictionary_to_sentence_d(log_sentence, "\r\nPreProsessTIME[s]", my_clock());
 	pd("PreProsessTIME[s]",my_clock());
+
 
 
 	// 最も誤差の減らせるストロークから順に配置して行く
@@ -444,12 +449,6 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 
 			// 最適なストロークに関するデータを初期化
 			format_ally(GLOBAL_improved_value_map->data, GLOBAL_improved_value_map->width, GLOBAL_improved_value_map->height, UNCALCULATED);
-			// for(i=0; i<in->width; i++){
-			// 	for(j=0; j<in->height; j++){
-			// 		best_stroke_map[i][j]->pnum = 1; // 開始点は常に正しいため1
-			// 	}
-			// }
-			// format_ally(reversal_map, GLOBAL_improved_value_map->width, GLOBAL_improved_value_map->height, Reversal_OFF);
 
 			// #ifdef _OPENMP
 			// 	Format_SINGLE_Paint_Water();
@@ -956,6 +955,332 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 		}
 
 	}
+
+
+	// 最も誤差の減らせるストロークから順に配置して行く
+	if(opt_Stroke_Method==EveryColor_StrokeOrder)
+	{
+		printf("Every_Color \n");
+
+		for (int c = 0; c < ColorNum; c++){
+			RGB PaintColor = ColorSet[c];
+		
+			//太いストロークから順番にストロークを小さくしておおまかに絵の形を取っていく
+			for(t=thick_max; t>=thick_min; t--){
+				if(opt_num_thick){
+					int thick_arr[opt_num_thick] = opt_thick_assignment;
+					int thick_flag=1;
+					for (i = 0; i < opt_num_thick; i++){
+						if(t==thick_arr[i]) thick_flag=0;
+					}
+					if(thick_flag) continue;
+				}
+
+
+				//ストロークサイズのガウスフィルタを生成
+				gauce_filter = create_dally(2*t+1, 2*t+1);
+				sigma = t/3.0*opt_variance_ratio;
+				sum = 0;
+				for(i=0; i<2*t+1; i++){
+					for(j=0; j<2*t+1; j++){
+						gauce_filter[i][j] = gause_func(i-t, j-t, sigma);
+						sum += gauce_filter[i][j];
+					}
+				}
+				for(i=0; i<2*t+1; i++){
+					for(j=0; j<2*t+1; j++){
+						gauce_filter[i][j] = gauce_filter[i][j] / sum;
+					}
+				}
+
+				//ストロークサイズのガウスフィルタを生成(スケーリングキャンバス))
+				int t_Scaling = t*opt_canvas_scaling_ratio;
+				gauce_filter_Scaling = create_dally(2*t_Scaling+1, 2*t_Scaling+1);
+				sigma = t_Scaling/3.0*opt_variance_ratio;
+				sum = 0;
+				for(i=0; i<2*t_Scaling+1; i++){
+					for(j=0; j<2*t_Scaling+1; j++){
+						gauce_filter_Scaling[i][j] = gause_func(i-t_Scaling, j-t_Scaling, sigma);
+						sum += gauce_filter_Scaling[i][j];
+					}
+				}
+				for(i=0; i<2*t+1; i++){
+					for(j=0; j<2*t+1; j++){
+						gauce_filter_Scaling[i][j] = gauce_filter_Scaling[i][j] / sum;
+					}
+				}
+
+
+				stroke_num=99999;
+
+				// 最適なストロークに関するデータを初期化
+				format_ally(GLOBAL_improved_value_map->data, GLOBAL_improved_value_map->width, GLOBAL_improved_value_map->height, UNCALCULATED);
+
+				// #ifdef _OPENMP
+				// 	Format_SINGLE_Paint_Water();
+				// #endif
+				for(s_count=0; s_count<stroke_num; s_count++) {  //ある半径におけるストローク回数
+					// 誤差探索の変数を初期化
+					diff_stroke_max = UNCALCULATED;
+
+					int x_step=opt_StrokeWindowStep, y_step=opt_StrokeWindowStep;
+					// #pragma omp parallel for private(x,xc,yc,test_Canvas,diff_sum,break_flag,pnum,offscrn_count,theta,sum,former_theta) schedule(static, 1)
+					for(y=0; y<in->height; y=y+y_step) {
+						// #ifdef _OPENMP
+						// 	test_Canvas = create_ppm(in->width, in->height, in->bright);
+						// #endif
+						for(x=0; x<in->width; x=x+x_step) {
+							// 改善値が計算済みならSkip
+							if(GLOBAL_improved_value_map->data[x][y] != UNCALCULATED) continue;
+
+							diff_sum = break_flag = pnum = 0;
+
+							//ウィンドウの中の差分の合計を取る
+							offscrn_count = 0;
+							for(xc=-t; xc<=t; xc++) {
+								if((x+xc)<0 || (x+xc)>in->width-1) {offscrn_count += 2*t+1;		continue;	}
+								for(yc=-t; yc<=t; yc++) {
+									if((y+yc)<0 || (y+yc)>in->height-1) {	offscrn_count++;
+									}else{
+										//diff_sum += abs(nimgV->data[x+xc][y+yc] - cmpr->data[x+xc][y+yc]);
+										diff_sum += abs(nimgR->data[x+xc][y+yc] - cmprR->data[x+xc][y+yc]);
+										diff_sum += abs(nimgG->data[x+xc][y+yc] - cmprG->data[x+xc][y+yc]);
+										diff_sum += abs(nimgB->data[x+xc][y+yc] - cmprB->data[x+xc][y+yc]);
+									}
+								}
+							}
+							diff_sum = diff_sum/((2*t+1)*(2*t+1)-offscrn_count)/3;
+
+							//差分の合計平均(画素当たりの差分)が一定以上ならストローク開始位置とする
+							if(diff_sum < window_diff_border) {
+								GLOBAL_improved_value_map->data[x][y] = SMALL_DIFF;
+								continue;
+							}
+							pnum=1;		//第一点確定
+							best_stroke_map[x][y]->p[0].x=x+0.5; best_stroke_map[x][y]->p[0].y=y+0.5;
+
+							// 現在の描画色の最も適切な濃度を計算
+							ratio = opt_ratio;
+							if(opt_USE_best_ratio){
+								double max = -9999999;
+								for(double roop_ratio=opt_min_ratio; roop_ratio<=opt_max_ratio; roop_ratio+=opt_ratio_step){
+									if(opt_USE_Lab_PaintColorDiff){
+										diff_sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[0], t, PaintColor, roop_ratio);
+									}else{
+										diff_sum = diffsum_clr_RGB(cmprC, nimgC, best_stroke_map[x][y]->p[0], t, PaintColor, roop_ratio);
+									}
+									if(diff_sum>max){
+										max = diff_sum;
+										ratio = roop_ratio;
+									}
+								}
+							}
+							// 描画色と描画濃度を取得
+							best_stroke_map[x][y]->color = PaintColor;
+							best_stroke_map[x][y]->ratio = ratio;
+
+
+							theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition,
+									gauce_filter, best_stroke_map[x][y]->p[0].x, best_stroke_map[x][y]->p[0].y, t, &break_flag);
+
+
+							//制御点を方向から計算し代入
+							best_stroke_map[x][y]->p[1] = calcu_point(cmpr, best_stroke_map[x][y]->p[0], t, theta);
+
+
+							//二つ目の描画点周りの色が描画色と一致するか確認する
+							if(opt_USE_Lab_ColorDiff){
+								sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color, ratio);
+							} else{
+								sum = diffsum_clr_RGB(cmprC, nimgC, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color, ratio);
+							}
+
+
+							//二つ目の制御点周りの色が描画色としきい値以上の差を持つなら描画せず反対方向の制御点を見る
+							if(sum < color_diff_border){
+								//もう一つの勾配垂直の点を代入
+								theta += PI;
+								best_stroke_map[x][y]->p[1] = calcu_point(cmpr, best_stroke_map[x][y]->p[0], t, theta);
+
+								//反対方向の第二点の描画点周りの色が描画色と一致するか確認する//点当たりの差異平均
+								if(opt_USE_Lab_ColorDiff){
+									sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color, ratio);
+								} else{
+									sum = diffsum_clr_RGB(cmprC, nimgC, best_stroke_map[x][y]->p[1], t, best_stroke_map[x][y]->color, ratio);
+								}
+
+								//どちらの第二点も不適切なら描画をせず次のループへ
+								if( sum < color_diff_border) {
+									GLOBAL_improved_value_map->data[x][y] = MIN_STROKE;
+									continue;
+								}
+							}
+
+							pnum=2;		//第二点確定
+
+
+							/*
+								POINT2から勾配により次の制御点を探していく
+							*/
+
+							while(pnum<max_stroke){
+								former_theta=theta;
+
+								//第pnum点周りにおいて、sobelからヒストグラムを作成し最大のものを勾配とする
+								theta =  calcu_histogram(cmpr, sobel_abs, sobel_angle, histogram_partition,
+														gauce_filter, best_stroke_map[x][y]->p[pnum-1].x, best_stroke_map[x][y]->p[pnum-1].y, t, &break_flag);
+
+								//制御点の為す角が急峻になるようなら逆方向に角度を取る
+								if( (theta < former_theta-PI/2) || (theta > former_theta+PI/2) ) {theta += PI;}
+								best_stroke_map[x][y]->p[pnum] = calcu_point(cmpr, best_stroke_map[x][y]->p[pnum-1], t, theta);
+
+								//pnum+1目の描画点周りの色が描画色と一致するか確認する
+								if(opt_USE_Lab_ColorDiff){
+									sum = diffsum_Lab(in_Lab, nimgC, best_stroke_map[x][y]->p[pnum], t, best_stroke_map[x][y]->color, ratio);
+								} else{
+									sum = diffsum_clr_RGB(cmprC, nimgC, best_stroke_map[x][y]->p[pnum], t, best_stroke_map[x][y]->color, ratio);
+								}
+
+								/*
+									pnum+1目の(次の)制御点周りの色が描画色としきい値以上の差を持つなら
+									それまでの制御点を用いて線を描画
+								*/
+								if( sum < color_diff_border) {break_flag=1; break;}
+								else {
+									diff_sum += sum;
+									pnum++;
+								}
+							}
+
+
+							//best_stroke_map[x][y]->color=bright;
+							best_stroke_map[x][y]->pnum=pnum;
+							//　試しに描いてみて誤差を確認
+							if(pnum>=min_stroke){
+								// GLOBAL_improved_value_map->data[x][y] = diff_sum;
+								GLOBAL_improved_value_map->data[x][y] = test_water_stroke(test_Canvas, in, nimgC, best_stroke_map[x][y], t, h, grad_hx, grad_hy, gauce_filter, ratio);
+							}else if(pnum<min_stroke){
+								GLOBAL_improved_value_map->data[x][y] = MIN_STROKE;
+							}
+						}
+						// #ifdef _OPENMP
+						// 	FreePPM(test_Canvas);
+						// #endif
+					}
+
+					// 改善値マップ中の最大値を探索
+					best_P = search_max_Point(GLOBAL_improved_value_map->data, GLOBAL_improved_value_map->width, GLOBAL_improved_value_map->height);
+					best_x=best_P.x;  best_y=best_P.y;
+					diff_stroke_max = GLOBAL_improved_value_map->data[best_x][best_y];
+
+					// 直近の50のストロークでの変化を表示
+					diff_stroke_max_ave[s_count%50] = diff_stroke_max;
+					if(s_count%50 == 49)
+					{
+						tmp_num=0;
+						for(i=0; i<50; i++) tmp_num+=diff_stroke_max_ave[i];
+						p("Stroke_MAX_AVE", tmp_num);
+						tmp_num=0;
+					}
+					if(diff_stroke_max < optimal_improved_value_border) {
+						strcat(log_sentence, "\r\n");
+						Add_dictionary_to_sentence(log_sentence, "t", t);
+						Add_dictionary_to_sentence(log_sentence, "s_count", s_count);
+						Add_dictionary_to_sentence_d(log_sentence, "TIME[s]", my_clock());
+						{
+							strcpy(out_filename, dir_path);
+							strcat(out_filename, in_filename);
+							snprintf(count_name, 16, "%02d", t);
+							strcat(out_filename, "_t");
+							strcat(out_filename, count_name);
+							strcat(out_filename, "_BSM.pgm");
+							if(write_pgm(out_filename, GLOBAL_improved_value_map)){ printf("WRITE PGM ERROR.");}
+							printf("%s\n",out_filename);
+						}
+						break;
+					}
+
+
+					//算出したpnum個の制御点を用いてストロークを描画
+					Paint_Water_Stroke(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, t, best_stroke_map[best_x][best_y]->color, nimgR->data, nimgG->data, nimgB->data, h, grad_hx, grad_hy, gauce_filter, in->width, in->height, best_stroke_map[best_x][best_y]->ratio);
+
+					// 描画したストロークの周囲のみ改善値マップをリセット
+					reset_improved_value_map(GLOBAL_improved_value_map, best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, best_stroke_map, t, max_stroke);
+
+
+					//一定ストロークごとに途中経過画像を書き出す
+					paint_count++;
+					nc++;
+					// if(nc%1==0)
+					if(nc%100==0 || nc<=100)
+					{
+							strcpy(out_filename, dir_path);
+							strcat(out_filename, in_filename);
+							// snprintf(count_name, 16, "%02d", t);
+							// strcat(out_filename, "_t");
+							// strcat(out_filename, count_name);
+							snprintf(count_name, 16, "%d", nc);
+							strcat(out_filename, "_s");
+							strcat(out_filename, count_name);
+							strcat(out_filename, ".png");
+							out_png = PPM_to_image(nimgC);
+							if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+							free_image(out_png);
+							printf("%s\n",out_filename);
+							printf("%d:",t);
+							pd("TIME[s]",my_clock());
+					}
+
+
+					// Greedyアプローチ：最適ストロークを探索するごとに探索位置をずらす
+					x_defo += 1;
+					if(x_defo>t) {
+						x_defo -= t;
+						y_defo += 1;
+						if(y_defo>t) y_defo -= t;
+					}
+				}
+
+				{
+					strcpy(out_filename, dir_path);
+					strcat(out_filename, in_filename);
+					snprintf(count_name, 16, "%02d", c);
+					strcat(out_filename, "__c");
+					strcat(out_filename, count_name);
+					snprintf(count_name, 16, "%02d", t);
+					strcat(out_filename, "_t");
+					strcat(out_filename, count_name);
+					strcat(out_filename, ".png");
+					out_png = PPM_to_image(nimgC);
+					if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+					free_image(out_png);
+					printf("%s\n",out_filename);
+					printf("%d:",t);
+					pd("TIME[s]",my_clock());
+				}
+
+				printf("\n////////////////////\nt%d done.\n////////////////////\n\n\n",t);
+				p("Paint_num",paint_count); paint_count=0;
+				Free_dally(gauce_filter, 2*t+1);
+				x_defo=y_defo=paint_count=0;
+			}
+		
+
+			strcat(log_sentence, "\r\n///////////\r\nc[");
+			Add_NUM_to_sentence(log_sentence, 1, "%d", c);
+			strcat(log_sentence, "]:");
+			Add_NUM_to_sentence(log_sentence, 3, "%d", PaintColor.R);
+			strcat(log_sentence, ",");
+			Add_NUM_to_sentence(log_sentence, 3, "%d", PaintColor.G);
+			strcat(log_sentence, ",");
+			Add_NUM_to_sentence(log_sentence, 3, "%d", PaintColor.B);
+			strcat(log_sentence, "///////////\r\n");
+
+			printf("\n////////////////////\nColorNUM:%d done.\n////////////////////\n\n\n",c);
+		}
+
+	}
+
 
 
 	//第一段階描画後の中間画像を出力

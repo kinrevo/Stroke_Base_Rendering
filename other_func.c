@@ -1260,150 +1260,226 @@ RGB* create_JIS_ColorSet(int cluster_num)
 {
     RGB* color_set = (RGB *)malloc(sizeof(RGB) * cluster_num);
 
-	//rose madder
-	color_set[0].R = 241;
-	color_set[0].G = 91;
-	color_set[0].B = 134;
-	//red
-	color_set[1].R = 206;
-	color_set[1].G = 34;
-	color_set[1].B = 60;
-	//vermilion
-	color_set[2].R = 222;
-	color_set[2].G = 56;
-	color_set[2].B = 56;
-	//brown
-	color_set[3].R = 148;
-	color_set[3].G = 73;
-	color_set[3].B = 61;
-	//vandyke brown
-	color_set[4].R = 91;
-	color_set[4].G = 68;
-	color_set[4].B = 49;
-	//raw sienna
-	color_set[5].R = 177;
-	color_set[5].G = 99;
-	color_set[5].B = 42;
-	//orange
-	color_set[6].R = 255;
-	color_set[6].G = 113;
-	color_set[6].B = 68;
-	//burnt umber
-	color_set[7].R = 94;
-	color_set[7].G = 66;
-	color_set[7].B = 52;
-	//yellow ochre
-	color_set[8].R = 192;
-	color_set[8].G = 132;
-	color_set[8].B = 42;
-	//chrome yellow
-	color_set[9].R = 250;
-	color_set[9].G = 190;
-	color_set[9].B = 0;
-	//naples yellow
-	color_set[10].R = 254;
-	color_set[10].G = 205;
-	color_set[10].B = 121;
-	//yellow
-	color_set[11].R = 244;
-	color_set[11].G = 213;
-	color_set[11].B = 0;
-	//olive
-	color_set[12].R = 129;
-	color_set[12].G = 121;
-	color_set[12].B = 35;
-	//lemon yellow
-	color_set[13].R = 238;
-	color_set[13].G = 234;
-	color_set[13].B = 0;
-	//olive green
-	color_set[14].R = 85;
-	color_set[14].G = 101;
-	color_set[14].B = 45;
-	//yellow green
-	color_set[15].R = 101;
-	color_set[15].G = 192;
-	color_set[15].B = 66;
-	//grass green
-	color_set[16].R = 96;
-	color_set[16].G = 145;
-	color_set[16].B = 54;
-	//green
-	color_set[17].R = 0;
-	color_set[17].G = 140;
-	color_set[17].B = 75;
-	//emerald green
-	color_set[18].R = 0;
-	color_set[18].G = 168;
-	color_set[18].B = 105;
-	//cobalt green
-	color_set[19].R = 0;
-	color_set[19].G = 164;
-	color_set[19].B = 129;
-	//deep green
-	color_set[20].R = 27;
-	color_set[20].G = 81;
-	color_set[20].B = 63;
-	//viridian
-	color_set[21].R = 0;
-	color_set[21].G = 73;
-	color_set[21].B = 73;
-	//blue green
-	color_set[22].R = 0;
-	color_set[22].G = 123;
-	color_set[22].B = 122;
-	//sky blue
-	color_set[23].R = 46;
-	color_set[23].G = 152;
-	color_set[23].B = 204;
-	//cerulean blue
-	color_set[24].R = 0;
-	color_set[24].G = 130;
-	color_set[24].B = 181;
-	//cobalt blue
-	color_set[25].R = 0;
-	color_set[25].G = 96;
-	color_set[25].B = 175;
-	//prussian blue
-	color_set[26].R = 42;
-	color_set[26].G = 61;
-	color_set[26].B = 97;
-	//ultramarine light
-	color_set[27].R = 82;
-	color_set[27].G = 112;
-	color_set[27].B = 201;
-	//ultramarine
-	color_set[28].R = 14;
-	color_set[28].G = 63;
-	color_set[28].B = 158;
-	//violet
-	color_set[29].R = 71;
-	color_set[29].G = 59;
-	color_set[29].B = 135;
-	//light purple
-	color_set[30].R = 159;
-	color_set[30].G = 90;
-	color_set[30].B = 174;
-	//purple
-	color_set[31].R = 97;
-	color_set[31].G = 52;
-	color_set[31].B = 116;
-	//red purple
-	color_set[32].R = 194;
-	color_set[32].G = 42;
-	color_set[32].B = 119;
-	//white
-	color_set[33].R = 234;
-	color_set[33].G = 234;
-	color_set[33].B = 234;
-	//gray
-	color_set[34].R = 156;
-	color_set[34].G = 156;
-	color_set[34].B = 156;
-	//black
-	color_set[35].R = 52;
-	color_set[35].G = 52;
-	color_set[35].B = 52;
+	for (int i = 0; i < cluster_num; i++){
+		switch (i)
+		{
+			//rose madder
+			case 0:
+				color_set[0].R = 241;
+				color_set[0].G = 91;
+				color_set[0].B = 134;
+				break;
+			//red
+			case 1:
+				color_set[1].R = 206;
+				color_set[1].G = 34;
+				color_set[1].B = 60;
+				break;
+			//vermilion
+			case 2:
+				color_set[2].R = 222;
+				color_set[2].G = 56;
+				color_set[2].B = 56;
+			//brown
+			case 3:
+				color_set[3].R = 148;
+				color_set[3].G = 73;
+				color_set[3].B = 61;
+				break;
+			//vandyke brown
+			case 4:
+				color_set[4].R = 91;
+				color_set[4].G = 68;
+				color_set[4].B = 49;
+				break;
+			//raw sienna
+			case 5:
+				color_set[5].R = 177;
+				color_set[5].G = 99;
+				color_set[5].B = 42;
+				break;
+			//orange
+			case 6:
+				color_set[6].R = 255;
+				color_set[6].G = 113;
+				color_set[6].B = 68;
+				break;
+			//burnt umber
+			case 7:
+				color_set[7].R = 94;
+				color_set[7].G = 66;
+				color_set[7].B = 52;
+				break;
+			//yellow ochre
+			case 8:
+				color_set[8].R = 192;
+				color_set[8].G = 132;
+				color_set[8].B = 42;
+				break;
+			//chrome yellow
+			case 9:
+				color_set[9].R = 250;
+				color_set[9].G = 190;
+				color_set[9].B = 0;
+				break;
+			//naples yellow
+			case 10:
+				color_set[10].R = 254;
+				color_set[10].G = 205;
+				color_set[10].B = 121;
+				break;
+			//yellow
+			case 11:
+				color_set[11].R = 244;
+				color_set[11].G = 213;
+				color_set[11].B = 0;
+				break;
+			//olive
+			case 12:
+				color_set[12].R = 129;
+				color_set[12].G = 121;
+				color_set[12].B = 35;
+				break;
+			//lemon yellow
+			case 13:
+				color_set[13].R = 238;
+				color_set[13].G = 234;
+				color_set[13].B = 0;
+				break;
+			//olive green
+			case 14:
+				color_set[14].R = 85;
+				color_set[14].G = 101;
+				color_set[14].B = 45;
+				break;
+			//yellow green
+			case 15:
+				color_set[15].R = 101;
+				color_set[15].G = 192;
+				color_set[15].B = 66;
+				break;
+			//grass green
+			case 16:
+				color_set[16].R = 96;
+				color_set[16].G = 145;
+				color_set[16].B = 54;
+				break;
+			//green
+			case 17:
+				color_set[17].R = 0;
+				color_set[17].G = 140;
+				color_set[17].B = 75;
+				break;
+			//emerald green
+			case 18:
+				color_set[18].R = 0;
+				color_set[18].G = 168;
+				color_set[18].B = 105;
+				break;
+			//cobalt green
+			case 19:
+				color_set[19].R = 0;
+				color_set[19].G = 164;
+				color_set[19].B = 129;
+				break;
+			//deep green
+			case 20:
+				color_set[20].R = 27;
+				color_set[20].G = 81;
+				color_set[20].B = 63;
+				break;
+			//viridian
+			case 21:
+				color_set[21].R = 0;
+				color_set[21].G = 73;
+				color_set[21].B = 73;
+				break;
+			//blue green
+			case 22:
+				color_set[22].R = 0;
+				color_set[22].G = 123;
+				color_set[22].B = 122;
+				break;
+			//sky blue
+			case 23:
+				color_set[23].R = 46;
+				color_set[23].G = 152;
+				color_set[23].B = 204;
+				break;
+			//cerulean blue
+			case 24:
+				color_set[24].R = 0;
+				color_set[24].G = 130;
+				color_set[24].B = 181;
+				break;
+			//cobalt blue
+			case 25:
+				color_set[25].R = 0;
+				color_set[25].G = 96;
+				color_set[25].B = 175;
+				break;
+			//prussian blue
+			case 26:
+				color_set[26].R = 42;
+				color_set[26].G = 61;
+				color_set[26].B = 97;
+				break;
+			//ultramarine light
+			case 27:
+				color_set[27].R = 82;
+				color_set[27].G = 112;
+				color_set[27].B = 201;
+				break;
+			//ultramarine
+			case 28:
+				color_set[28].R = 14;
+				color_set[28].G = 63;
+				color_set[28].B = 158;
+				break;
+			//violet
+			case 29:
+				color_set[29].R = 71;
+				color_set[29].G = 59;
+				color_set[29].B = 135;
+				break;
+			//light purple
+			case 30:
+				color_set[30].R = 159;
+				color_set[30].G = 90;
+				color_set[30].B = 174;
+				break;
+			//purple
+			case 31:
+				color_set[31].R = 97;
+				color_set[31].G = 52;
+				color_set[31].B = 116;
+				break;
+			//red purple
+			case 32:
+				color_set[32].R = 194;
+				color_set[32].G = 42;
+				color_set[32].B = 119;
+				break;
+			//white
+			case 33:
+				color_set[33].R = 234;
+				color_set[33].G = 234;
+				color_set[33].B = 234;
+				break;
+			//gray
+			case 34:
+				color_set[34].R = 156;
+				color_set[34].G = 156;
+				color_set[34].B = 156;
+				break;
+			//black
+			case 35:
+				color_set[35].R = 52;
+				color_set[35].G = 52;
+				color_set[35].B = 52;
+				break;
+		}
+	}
 
     return color_set;
 }
@@ -1414,6 +1490,15 @@ RGB* create_JIS_ColorSet(int cluster_num)
 /////////////////////////////////////////////
 //			その他の関数群
 /////////////////////////////////////////////
+
+//[value] -> "~~value"
+void Add_NUM_to_sentence(char* sentence, int letterNum, const char * NumFormat,int value){
+	char value_word[16];
+
+	snprintf(value_word, letterNum, NumFormat, value);
+	strcat(sentence, value_word);
+}
+
 
 //[name, value] -> "name : value\n"
 void Add_dictionary_to_sentence(char* sentence, char *name, int value){
