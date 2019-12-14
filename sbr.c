@@ -592,11 +592,6 @@ int test_stroke(PGM* test_Canvas, PGM* cmprR, PGM* cmprG, PGM* cmprB, PGM* nimgR
 	if(upper_end<0)upper_end=0;
 	if(cmprR->height <= lower_end)lower_end=cmprR->height-1;
 
-	// printf("Test: (%3.0f:%3.0f)", p[0].x, p[0].y);
-	// for(i=1; i<pnum; i++){
-		// printf("->(%3.0f:%3.0f)", p[i].x, p[i].y);
-	// }
-	// printf("l:%3.0f,r:%3.0f,u:%3.0f,l:%3.0f\n", left_end,right_end,upper_end,lower_end);
 
 	//テストキャンバスにおけるストロークによる影響箇所をコピー
 	for(i=left_end; i<=right_end; i++) {
@@ -811,6 +806,57 @@ void set_Stroke_rectangle(Point* smaller_edge, Point* lager_edge, Point StrokeP[
 	lager_edge->x=right_end; lager_edge->y=lower_end;
 }
 
+
+
+// 塗りイラストに線画を重ねる
+void combine_LineDrawing2PaintIllust(PPM* Painting, PPM* Drawing)
+{
+	int i,j,Draw_max=0,Paint_max=0;
+
+	//　RGB入力画像をLabに変換した配列を用意
+	Lab Paint_Lab, Draw_Lab;
+	RGB CanRGB;
+	#pragma omp parallel for private(i,j,CanRGB)
+	for(i=0; i<Painting->width; i++){
+		for(j=0; j<Painting->height; j++){
+			CanRGB.R = Painting->dataR[i][j];
+			CanRGB.G = Painting->dataG[i][j];
+			CanRGB.B = Painting->dataB[i][j];
+			Paint_Lab = RGB2Lab(CanRGB);
+			CanRGB.R = Drawing->dataR[i][j];
+			CanRGB.G = Drawing->dataG[i][j];
+			CanRGB.B = Drawing->dataB[i][j];
+			Draw_Lab = RGB2Lab(CanRGB);
+
+			// 塗りが線画より明るければ、線と同じ暗さに
+			// if(Draw_Lab.L < Paint_Lab.L) {
+				// Draw_max=0;
+				// Paint_max=0;
+				// if(Drawing->dataR[i][j]>Draw_max) Draw_max = Drawing->dataR[i][j];
+				// if(Drawing->dataG[i][j]>Draw_max) Draw_max = Drawing->dataG[i][j];
+				// if(Drawing->dataB[i][j]>Draw_max) Draw_max = Drawing->dataB[i][j];
+				// if(Painting->dataR[i][j]>Paint_max) Paint_max = Painting->dataR[i][j];
+				// if(Painting->dataG[i][j]>Paint_max) Paint_max = Painting->dataG[i][j];
+				// if(Painting->dataB[i][j]>Paint_max) Paint_max = Painting->dataB[i][j];
+
+			// }
+
+			// 線画の色だけ塗りを暗くする
+			// Painting->dataR[i][j] -= 100 - Draw_Lab.L;
+			// Painting->dataG[i][j] -= 100 - Draw_Lab.L;
+			// Painting->dataB[i][j] -= 100 - Draw_Lab.L;
+			Paint_Lab.L = 100 - ((100-Paint_Lab.L) + (100-Draw_Lab.L));
+			if(Paint_Lab.L<20) Paint_Lab.L = 20;	// 適当に暗くなりすぎないようにする
+			CanRGB = Lab2RGB(Paint_Lab);
+			Painting->dataR[i][j] = CanRGB.R;
+			Painting->dataG[i][j] = CanRGB.G;
+			Painting->dataB[i][j] = CanRGB.B;
+			LIMIT_RANGE(Painting->dataR[i][j], 0, 255);
+			LIMIT_RANGE(Painting->dataG[i][j], 0, 255);
+			LIMIT_RANGE(Painting->dataB[i][j], 0, 255);
+		}
+	}
+}
 
 
 

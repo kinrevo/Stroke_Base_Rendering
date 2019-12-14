@@ -140,6 +140,7 @@ void normalize_pgm(PGM* in);
 PPM *image_to_PPM(image_t *img);
 image_t *PPM_to_image(PPM *ppm);
 int log_print(char* filename, char *sentence, char *mode);
+void Add_NUM_to_sentence(char* sentence, int letterNum, const char * NumFormat,int value);
 void Add_dictionary_to_sentence(char* sentence, char *name, int value);
 void Add_dictionary_to_sentence_d(char* sentence, char *name, double value);
 
@@ -198,4 +199,7 @@ double diffsum_clr_RGB(PPM* cmpr, PPM* nimg, Point p, int t, RGB bright, double 
 void calcu_color_INTEGRATED(Stroke* stroke, Lab** in_Lab, PPM* cmpr, PPM* nimgC, Point p, int t, RGB* ColorSet, double** gauce_filter);
 
 PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename);
+
+void combine_LineDrawing2PaintIllust(PPM* Painting, PPM* Drawing);
+
 #endif
