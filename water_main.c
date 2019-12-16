@@ -368,6 +368,8 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 		strcat(out_filename, "__ColorSet");
 		strcat(out_filename, ".png");
 		if(write_png_file(out_filename, PPM_to_image(ColorSet_Img))){ printf("WRITE PNG ERROR.");}
+		FreePPM(Kmean_Img);
+		FreePPM(ColorSet_Img);
 	}
 	else if(opt_USE_calcu_JIS_ColorSet){
 		ColorNum = opt_JIS_ClusterNum;
@@ -993,23 +995,6 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 					}
 				}
 
-				//ストロークサイズのガウスフィルタを生成(スケーリングキャンバス))
-				int t_Scaling = t*opt_canvas_scaling_ratio;
-				gauce_filter_Scaling = create_dally(2*t_Scaling+1, 2*t_Scaling+1);
-				sigma = t_Scaling/3.0*opt_variance_ratio;
-				sum = 0;
-				for(i=0; i<2*t_Scaling+1; i++){
-					for(j=0; j<2*t_Scaling+1; j++){
-						gauce_filter_Scaling[i][j] = gause_func(i-t_Scaling, j-t_Scaling, sigma);
-						sum += gauce_filter_Scaling[i][j];
-					}
-				}
-				for(i=0; i<2*t+1; i++){
-					for(j=0; j<2*t+1; j++){
-						gauce_filter_Scaling[i][j] = gauce_filter_Scaling[i][j] / sum;
-					}
-				}
-
 
 				stroke_num=99999;
 
@@ -1267,14 +1252,14 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 		
 
 			strcat(log_sentence, "\r\n///////////\r\nc[");
-			Add_NUM_to_sentence(log_sentence, 1, "%d", c);
+			Add_NUM_to_sentence(log_sentence, 2, "%d", c);
 			strcat(log_sentence, "]:");
-			Add_NUM_to_sentence(log_sentence, 3, "%d", PaintColor.R);
+			Add_NUM_to_sentence(log_sentence, 4, "%d", PaintColor.R);
 			strcat(log_sentence, ",");
-			Add_NUM_to_sentence(log_sentence, 3, "%d", PaintColor.G);
+			Add_NUM_to_sentence(log_sentence, 4, "%d", PaintColor.G);
 			strcat(log_sentence, ",");
-			Add_NUM_to_sentence(log_sentence, 3, "%d", PaintColor.B);
-			strcat(log_sentence, "///////////\r\n");
+			Add_NUM_to_sentence(log_sentence, 4, "%d", PaintColor.B);
+			strcat(log_sentence, "\r\n///////////\r\n");
 
 			printf("\n////////////////////\nColorNUM:%d done.\n////////////////////\n\n\n",c);
 		}
@@ -1560,18 +1545,29 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 	Free_dally(h, in->width);
 	Free_dally(grad_hx, in->width+1);
 	Free_dally(grad_hy, in->width);
+	Free_dally(h_Scaling, nimgC_Scaling->width);
+	Free_dally(grad_hx_Scaling, nimgC_Scaling->width+1);
+	Free_dally(grad_hy_Scaling, nimgC_Scaling->width);
 	FreePGM(gray);
 	FreePGM(inR);
 	FreePGM(inG);
 	FreePGM(inB);
 	FreePGM(nimgV);
+	FreePGM(nimgR_Scaling);
+	FreePGM(nimgG_Scaling);
+	FreePGM(nimgB_Scaling);
+	free(nimgC_Scaling);
 	free(nimgR);
 	free(nimgG);
 	free(nimgB);
+	FreePPM(test_Canvas);
 	if(thick_max){
 		FreePGM(canny);
 		FreePGM(EdgeMap);
 	}
+	Free_ally(x_centlabel_2D,in->width);
+	Free_ally(in_Lab,in->width);
+	free(ColorSet);
 
     return nimgC;
 }

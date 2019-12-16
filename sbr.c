@@ -811,7 +811,7 @@ void set_Stroke_rectangle(Point* smaller_edge, Point* lager_edge, Point StrokeP[
 // 塗りイラストに線画を重ねる
 void combine_LineDrawing2PaintIllust(PPM* Painting, PPM* Drawing)
 {
-	int i,j,Draw_max=0,Paint_max=0;
+	int i,j;
 
 	//　RGB入力画像をLabに変換した配列を用意
 	Lab Paint_Lab, Draw_Lab;
@@ -830,8 +830,8 @@ void combine_LineDrawing2PaintIllust(PPM* Painting, PPM* Drawing)
 
 			// 塗りが線画より明るければ、線と同じ暗さに
 			// if(Draw_Lab.L < Paint_Lab.L) {
-				// Draw_max=0;
-				// Paint_max=0;
+				// int Draw_max=0;
+				// int Paint_max=0;
 				// if(Drawing->dataR[i][j]>Draw_max) Draw_max = Drawing->dataR[i][j];
 				// if(Drawing->dataG[i][j]>Draw_max) Draw_max = Drawing->dataG[i][j];
 				// if(Drawing->dataB[i][j]>Draw_max) Draw_max = Drawing->dataB[i][j];
