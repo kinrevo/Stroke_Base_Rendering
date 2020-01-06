@@ -48,7 +48,7 @@
 #define opt_ratio 0.2
 
 // 描画改善値の計算にLabユークリッド距離を用いるか（用いなければRGBマンハッタン距離）
-#define opt_USE_Lab_ColorDiff 1
+#define opt_USE_Lab_ColorDiff 0
     // 描画改善値の計算時にLabのLに重みを付けるか
     #define opt_USE_Lab_ColorDiff_Weight 0
     // 描画改善値の計算時にLabのLに付ける重みの大きさ(1以上で暗い色に対して悪い評価を付ける)
@@ -61,11 +61,13 @@
 // 描画色の計算法においてバイラテラル距離を用いるか
 #define opt_USE_calcu_color_bi 0
 // 描画色の計算法においてKmeanによるカラーセットを用いるか
-#define opt_USE_calcu_Kmean_ColorSet 1
+#define opt_USE_calcu_Kmean_ColorSet 0
     #define opt_Kmean_ClusterNum 6
 // 描画色の計算法においてJIS規格のカラーセットを用いるか
 #define opt_USE_calcu_JIS_ColorSet 0
     #define opt_JIS_ClusterNum 36
+// 描画色の計算法においてJIS規格のCMYB４色を用いるか
+#define opt_USE_JIS_CMYB_ColorSet 1
 
 
 // ストロークの半径ごとの繰り返し数。多いと丁寧に塗りつぶす

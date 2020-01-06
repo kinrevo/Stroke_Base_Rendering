@@ -202,4 +202,6 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename);
 
 void combine_LineDrawing2PaintIllust(PPM* Painting, PPM* Drawing);
 
+void arrange_ColorSet_inLight(RGB* ColorSet, int cluster_num);
+
 #endif

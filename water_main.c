@@ -370,10 +370,52 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 		if(write_png_file(out_filename, PPM_to_image(ColorSet_Img))){ printf("WRITE PNG ERROR.");}
 		FreePPM(Kmean_Img);
 		FreePPM(ColorSet_Img);
+		Free_ally(x_centlabel_2D,in->width);
 	}
 	else if(opt_USE_calcu_JIS_ColorSet){
 		ColorNum = opt_JIS_ClusterNum;
 		ColorSet = create_JIS_ColorSet(opt_JIS_ClusterNum);
+	}
+	else if(opt_USE_JIS_CMYB_ColorSet){
+		ColorNum = 4;
+		ColorSet = (RGB *)malloc(sizeof(RGB) * ColorNum);;
+		int diff_tmp, diff_JIS;
+		RGB* JISColorSet = create_JIS_ColorSet(36);
+		RGB JISCian={100,100,100}, JISMagenta={100,100,100}, JISYellow={100,100,100}, JISBlack;// 適当な初期値
+		RGB TRUECian={0,255,255}, TRUEMagenta={255,0,255}, TRUEYellow={255,255,0}; //理想のCMY
+
+		// 理想のCMYに近い値を持つ顔料を探す
+		diff_JIS = abs(TRUECian.R - JISCian.R) + abs(TRUECian.G - JISCian.G) + abs(TRUECian.B - JISCian.B);// C初期誤差
+		for (i = 0; i < 36; i++){
+			diff_tmp = abs(TRUECian.R - JISColorSet[i].R) + abs(TRUECian.G - JISColorSet[i].G) + abs(TRUECian.B - JISColorSet[i].B);
+			if(diff_tmp < diff_JIS){
+				JISCian = JISColorSet[i];
+				diff_JIS = diff_tmp;
+			}
+		}
+		diff_JIS = abs(TRUEMagenta.R - JISMagenta.R) + abs(TRUEMagenta.G - JISMagenta.G) + abs(TRUEMagenta.B - JISMagenta.B);// M初期誤差
+		for (i = 0; i < 36; i++){
+			diff_tmp = abs(TRUEMagenta.R - JISColorSet[i].R) + abs(TRUEMagenta.G - JISColorSet[i].G) + abs(TRUEMagenta.B - JISColorSet[i].B);
+			if(diff_tmp < diff_JIS){
+				JISMagenta = JISColorSet[i];
+				diff_JIS = diff_tmp;
+			}
+		}
+		diff_JIS = abs(TRUEYellow.R - JISYellow.R) + abs(TRUEYellow.G - JISCian.G) + abs(TRUEYellow.B - JISCian.B);// Y初期誤差
+		for (i = 0; i < 36; i++){
+			diff_tmp = abs(TRUEYellow.R - JISColorSet[i].R) + abs(TRUEYellow.G - JISColorSet[i].G) + abs(TRUEYellow.B - JISColorSet[i].B);
+			if(diff_tmp < diff_JIS){
+				JISYellow = JISColorSet[i];
+				diff_JIS = diff_tmp;
+			}
+		}
+		JISBlack = JISColorSet[35];
+
+		// CMYBを代入しLabの明るい順に並び替え
+		ColorSet[0]=JISCian; ColorSet[1]=JISMagenta; ColorSet[2]=JISYellow; ColorSet[3]=JISBlack;
+		arrange_ColorSet_inLight(ColorSet, 4);
+
+		for (i=0; i<4; i++) printf("ColorSet[%d]:%d,%d,%d \n", i, ColorSet[i].R,ColorSet[i].G,ColorSet[i].B);
 	}
 
 	//　RGB入力画像をLabに変換した配列を用意
@@ -1565,7 +1607,6 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 		FreePGM(canny);
 		FreePGM(EdgeMap);
 	}
-	Free_ally(x_centlabel_2D,in->width);
 	Free_ally(in_Lab,in->width);
 	free(ColorSet);
 

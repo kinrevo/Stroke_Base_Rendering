@@ -1485,6 +1485,31 @@ RGB* create_JIS_ColorSet(int cluster_num)
 }
 
 
+// RGBカラーセットをLabの明るい順に整列
+void arrange_ColorSet_inLight(RGB* ColorSet, int cluster_num)
+{
+	// 比較のため入力カラーセットをLabに変換
+	Lab* Lab_ColorSet= (Lab*)malloc(sizeof(Lab)*cluster_num);
+	for (int i = 0; i < cluster_num; i++) {
+		Lab_ColorSet[i] = RGB2Lab(ColorSet[i]);
+	}
+
+	// 入力カラーセットをLab明度に従い整列
+	for (int i = 0; i < cluster_num; i++) {
+		for (int j = 0; j < cluster_num; j++) {
+			if(Lab_ColorSet[i].L > Lab_ColorSet[j].L){
+				RGB tmpRGB = ColorSet[i];
+				ColorSet[i] = ColorSet[j];
+				ColorSet[j] = tmpRGB;
+				Lab tmpLab = Lab_ColorSet[i];
+				Lab_ColorSet[i] = Lab_ColorSet[j];
+				Lab_ColorSet[j] = tmpLab;
+			}
+		}
+	}
+}
+
+
 
 
 /////////////////////////////////////////////
