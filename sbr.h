@@ -204,4 +204,6 @@ void combine_LineDrawing2PaintIllust(PPM* Painting, PPM* Drawing);
 
 void arrange_ColorSet_inLight(RGB* ColorSet, int cluster_num);
 
+void MY__write_img(PPM* out_ppm, char dir_path[], char in_filename[], char last_chara[], char ext[]);
+void Add_num(char sentence[], int num);
 #endif

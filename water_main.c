@@ -117,6 +117,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 	char in_filename[namesize-16];
 	char count_name[16];
 	char log_sentence[2028] = "";
+	char last_chara[32];
 	// char vec_sentence[128] = "", tmp_sentence[32] = "", vec_filename[namesize];
 	image_t *out_png;
 	//パスから入力ファイル名（拡張子含まない）を取得
@@ -362,16 +363,8 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 		free(x_centlabel);
 		PPM* Kmean_Img = Visualize_KmeanImg(in, ColorSet, x_centlabel_2D);
 		PPM* ColorSet_Img = Visualize_ColorSet(ColorSet, opt_Kmean_ClusterNum, num_cluster);
-		strcpy(out_filename, dir_path);
-		strcat(out_filename, in_filename);
-		strcat(out_filename, "__Kmean");
-		strcat(out_filename, ".png");
-		if(write_png_file(out_filename, PPM_to_image(Kmean_Img))){ printf("WRITE PNG ERROR.");}
-		strcpy(out_filename, dir_path);
-		strcat(out_filename, in_filename);
-		strcat(out_filename, "__ColorSet");
-		strcat(out_filename, ".png");
-		if(write_png_file(out_filename, PPM_to_image(ColorSet_Img))){ printf("WRITE PNG ERROR.");}
+		MY__write_img(Kmean_Img, dir_path, in_filename, "__Kmean", "png");
+		MY__write_img(ColorSet_Img, dir_path, in_filename, "__ColorSet", "png");
 		FreePPM(Kmean_Img);
 		FreePPM(ColorSet_Img);
 		Free_ally(x_centlabel_2D,in->width);
@@ -434,16 +427,8 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 		free(x_centlabel);
 		PPM* Kmean_Img = Visualize_KmeanImg(in, KMColorSet, x_centlabel_2D);
 		PPM* KMColorSet_Img = Visualize_ColorSet(KMColorSet, opt_JIS_Kmean_ClusterNum, num_cluster);
-		strcpy(out_filename, dir_path);
-		strcat(out_filename, in_filename);
-		strcat(out_filename, "__KmeanImg");
-		strcat(out_filename, ".png");
-		if(write_png_file(out_filename, PPM_to_image(Kmean_Img))){ printf("WRITE PNG ERROR.");}
-		strcpy(out_filename, dir_path);
-		strcat(out_filename, in_filename);
-		strcat(out_filename, "__KmeanColorSet");
-		strcat(out_filename, ".png");
-		if(write_png_file(out_filename, PPM_to_image(KMColorSet_Img))){ printf("WRITE PNG ERROR.");}
+		MY__write_img(Kmean_Img, dir_path, in_filename, "__KmeanImg", "png");
+		MY__write_img(KMColorSet_Img, dir_path, in_filename, "__KmeanColorSet", "png");
 		FreePPM(Kmean_Img);
 		FreePPM(KMColorSet_Img);
 
@@ -484,19 +469,12 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 		// JIS色に代替後のkmeans結果を見る
 		Kmean_Img = Visualize_KmeanImg(in, ColorSet, x_centlabel_2D);
 		KMColorSet_Img = Visualize_ColorSet(ColorSet, opt_JIS_Kmean_ClusterNum, num_cluster);
-		strcpy(out_filename, dir_path);
-		strcat(out_filename, in_filename);
-		strcat(out_filename, "__JISKmeanImg");
-		strcat(out_filename, ".png");
-		if(write_png_file(out_filename, PPM_to_image(Kmean_Img))){ printf("WRITE PNG ERROR.");}
-		strcpy(out_filename, dir_path);
-		strcat(out_filename, in_filename);
-		strcat(out_filename, "__JISKmeanColorSet");
-		strcat(out_filename, ".png");
-		if(write_png_file(out_filename, PPM_to_image(KMColorSet_Img))){ printf("WRITE PNG ERROR.");}
+		MY__write_img(Kmean_Img, dir_path, in_filename, "__JISKmeanImg", "png");
+		MY__write_img(KMColorSet_Img, dir_path, in_filename, "__JISKmeanColorSet", "png");
 
 		arrange_ColorSet_inLight(ColorSet, opt_JIS_Kmean_ClusterNum);
 		for (i=0; i<opt_JIS_Kmean_ClusterNum; i++) printf("ColorSet[%d]:%d,%d,%d \n", i, ColorSet[i].R,ColorSet[i].G,ColorSet[i].B);
+		pn;
 		FreePPM(Kmean_Img);
 		FreePPM(KMColorSet_Img);
 		Free_ally(x_centlabel_2D,in->width);
@@ -784,21 +762,10 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 				// if(nc%1==0)
 				if(nc%100==0 || nc<=100)
 				{
-						strcpy(out_filename, dir_path);
-						strcat(out_filename, in_filename);
-						// snprintf(count_name, 16, "%02d", t);
-						// strcat(out_filename, "_t");
-						// strcat(out_filename, count_name);
-						snprintf(count_name, 16, "%d", nc);
-						strcat(out_filename, "_s");
-						strcat(out_filename, count_name);
-						strcat(out_filename, ".png");
-						out_png = PPM_to_image(nimgC);
-						if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
-						free_image(out_png);
-						printf("%s\n",out_filename);
-						printf("%d:",t);
-						pd("TIME[s]",my_clock());
+					strcpy(last_chara, "_s");
+					Add_num(last_chara, nc);
+					MY__write_img(nimgC, dir_path, in_filename, last_chara, "png");
+					pd("TIME[s]",my_clock());
 				}
 
 
@@ -819,18 +786,10 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 
 					if(nc%100==0 || nc<=100)
 					{
-						strcpy(out_filename, dir_path);
-						strcat(out_filename, in_filename);
-						strcat(out_filename, "_SC");
-						snprintf(count_name, 16, "%d", nc);
-						strcat(out_filename, "_s");
-						strcat(out_filename, count_name);
-						strcat(out_filename, ".png");
-						out_png = PPM_to_image(nimgC_Scaling);
-						if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
-						free_image(out_png);
-						printf("%s\n",out_filename);
-						printf("%d:",t);
+						strcpy(last_chara, "_SC");
+						strcat(last_chara, "_s");
+						Add_num(last_chara, nc);
+						MY__write_img(nimgC_Scaling, dir_path, in_filename, last_chara, "png");
 						pd("TIME[s]",my_clock());
 					}
 				}
@@ -858,17 +817,11 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 			}
 
 			if(opt_USE_Canvas_Scaling_Method){
-				strcpy(out_filename, dir_path);
-				strcat(out_filename, in_filename);
-				strcat(out_filename, "_SC");
+				strcpy(last_chara, "_SC");
+				strcat(last_chara, "__t");
 				snprintf(count_name, 16, "%02d", t);
-				strcat(out_filename, "__t");
-				strcat(out_filename, count_name);
-				strcat(out_filename, ".png");
-				out_png = PPM_to_image(nimgC_Scaling);
-				if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
-				free_image(out_png);
-				printf("%s\n",out_filename);
+				strcat(last_chara, count_name);
+				MY__write_img(nimgC_Scaling, dir_path, in_filename, last_chara, "png");
 				printf("%d:",t);
 				pd("TIME[s]",my_clock());
 			}
@@ -1033,20 +986,11 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 
 						if(paint_count%500==0 || paint_count<100)
 						{
-							strcpy(out_filename, dir_path);
-							strcat(out_filename, in_filename);
-							snprintf(count_name, 16, "%02d", t);
-							strcat(out_filename, "_t");
-							strcat(out_filename, count_name);
-							snprintf(count_name, 16, "%d", paint_count);
-							strcat(out_filename, "_s");
-							strcat(out_filename, count_name);
-							strcat(out_filename, ".png");
-							out_png = PPM_to_image(nimgC);
-							if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
-							free_image(out_png);
-							printf("%s\n",out_filename);
-							printf("%d:",t);
+							strcpy(last_chara, "_t");
+							Add_num(last_chara, t);
+							strcat(last_chara, "_s");
+							Add_num(last_chara, paint_count);
+							MY__write_img(nimgC, dir_path, in_filename, last_chara, "png");
 							pd("TIME[s]",my_clock());
 						}
 					}
@@ -1058,21 +1002,14 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 
 
 			{
-				strcpy(out_filename, dir_path);
-				strcat(out_filename, in_filename);
-				snprintf(count_name, 16, "%02d", t);
-				strcat(out_filename, "__t");
-				strcat(out_filename, count_name);
-				strcat(out_filename, ".png");
-				out_png = PPM_to_image(nimgC);
-				if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
-				free_image(out_png);
-				printf("%s\n",out_filename);
-				printf("%d:",t);
 				strcat(log_sentence, "\r\n");
 				Add_dictionary_to_sentence(log_sentence, "t", t);
 				Add_dictionary_to_sentence(log_sentence, "s_count", paint_count);
 				Add_dictionary_to_sentence_d(log_sentence, "TIME[s]", my_clock());
+				strcpy(last_chara, "__t");
+				Add_num(last_chara, t);
+				MY__write_img(nimgC, dir_path, in_filename, last_chara, "png");
+				printf("%d:",t);
 				pd("TIME[s]",my_clock());
 			}
 
@@ -1300,9 +1237,8 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 						{
 							strcpy(out_filename, dir_path);
 							strcat(out_filename, in_filename);
-							snprintf(count_name, 16, "%02d", t);
 							strcat(out_filename, "_t");
-							strcat(out_filename, count_name);
+							Add_num(out_filename, t);
 							strcat(out_filename, "_BSM.pgm");
 							if(write_pgm(out_filename, GLOBAL_improved_value_map)){ printf("WRITE PGM ERROR.");}
 							printf("%s\n",out_filename);
@@ -1324,20 +1260,9 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 					// if(nc%1==0)
 					if(nc%100==0 || nc<=100)
 					{
-						strcpy(out_filename, dir_path);
-						strcat(out_filename, in_filename);
-						// snprintf(count_name, 16, "%02d", t);
-						// strcat(out_filename, "_t");
-						// strcat(out_filename, count_name);
-						snprintf(count_name, 16, "%d", nc);
-						strcat(out_filename, "_s");
-						strcat(out_filename, count_name);
-						strcat(out_filename, ".png");
-						out_png = PPM_to_image(nimgC);
-						if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
-						free_image(out_png);
-						printf("%s\n",out_filename);
-						printf("%d:",t);
+						strcpy(last_chara, "_s");
+						Add_num(last_chara, nc);
+						MY__write_img(nimgC, dir_path, in_filename, last_chara, "png");
 						pd("TIME[s]",my_clock());
 					}
 
@@ -1352,20 +1277,11 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 				}
 
 				{
-					strcpy(out_filename, dir_path);
-					strcat(out_filename, in_filename);
-					snprintf(count_name, 16, "%02d", c);
-					strcat(out_filename, "__c");
-					strcat(out_filename, count_name);
-					snprintf(count_name, 16, "%02d", t);
-					strcat(out_filename, "_t");
-					strcat(out_filename, count_name);
-					strcat(out_filename, ".png");
-					out_png = PPM_to_image(nimgC);
-					if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
-					free_image(out_png);
-					printf("%s\n",out_filename);
-					printf("%d:",t);
+					strcpy(last_chara, "__c");
+					Add_num(last_chara, c);
+					strcat(last_chara, "_t");
+					Add_num(last_chara, t);
+					MY__write_img(nimgC, dir_path, in_filename, last_chara, "png");
 					pd("TIME[s]",my_clock());
 				}
 
@@ -1394,14 +1310,8 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 
 
 	//第一段階描画後の中間画像を出力
-	strcpy(out_filename, dir_path);
-	strcat(out_filename, in_filename);
-	strcat(out_filename, "__STEP1");
-	strcat(out_filename, ".png");
-	out_png = PPM_to_image(nimgC);
-	if(write_png_file(out_filename, out_png)){ printf("WRITE JPG ERROR.");}
-	free_image(out_png);
-	printf("%s\n",out_filename);
+	strcpy(last_chara, "__STEP1");
+	MY__write_img(nimgC, dir_path, in_filename, last_chara, "png");
 	printf("%d",t);
 	pd("TIME[s]",my_clock());
 
@@ -1567,24 +1477,6 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 
 				paint_count++;
 				nc++;
-				// if(nc%100==0 || nc<=100)
-				// {
-				// 		strcpy(out_filename, dir_path);
-				// 		strcat(out_filename, in_filename);
-				// 		// snprintf(count_name, 16, "%02d", t);
-				// 		// strcat(out_filename, "_t");
-				// 		// strcat(out_filename, count_name);
-				// 		snprintf(count_name, 16, "%d", nc);
-				// 		strcat(out_filename, "_s");
-				// 		strcat(out_filename, count_name);
-				// 		strcat(out_filename, ".png");
-				// 		out_png = PPM_to_image(nimgC);
-				// 		if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
-				// 		free_image(out_png);
-				// 		printf("%s\n",out_filename);
-				// 		printf("%d:",t);
-				// 		pd("TIME[s]",my_clock());
-				// }
 			}
 		}
 
@@ -1593,47 +1485,31 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 		Free_dally(gauce_filter, 2*t+1);
 
 		{
-			strcpy(out_filename, dir_path);
-			strcat(out_filename, in_filename);
-			snprintf(count_name, 16, "%02d", t);
-			strcat(out_filename, "__st");
-			strcat(out_filename, count_name);
-			snprintf(count_name, 16, "%02d", lc);
-			strcat(out_filename, "_lc");
-			strcat(out_filename, count_name);
-			strcat(out_filename, ".png");
-			out_png = PPM_to_image(nimgC);
-			if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
-			free_image(out_png);
-			printf("%s\n",out_filename);
-			printf("%d:",t);
 			strcat(log_sentence, "\r\n");
 			Add_dictionary_to_sentence(log_sentence, "t", t);
 			Add_dictionary_to_sentence(log_sentence, "s_count", paint_count);
 			Add_dictionary_to_sentence_d(log_sentence, "TIME[s]", my_clock());
+			strcpy(last_chara, "__st");
+			Add_num(last_chara, t);
+			strcat(last_chara, "_lc");
+			Add_num(last_chara, lc);
+			MY__write_img(nimgC, dir_path, in_filename, last_chara, "png");
+			printf("%d:",t);
 			pd("TIME[s]",my_clock());
 		}
 
 		if(opt_USE_Canvas_Scaling_Method){
-			strcpy(out_filename, dir_path);
-			strcat(out_filename, in_filename);
-			strcat(out_filename, "_SC");
-			snprintf(count_name, 16, "%02d", t);
-			strcat(out_filename, "__st");
-			strcat(out_filename, count_name);
-			snprintf(count_name, 16, "%02d", lc);
-			strcat(out_filename, "_lc");
-			strcat(out_filename, count_name);
-			strcat(out_filename, ".png");
-			out_png = PPM_to_image(nimgC);
-			if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
-			free_image(out_png);
-			printf("%s\n",out_filename);
-			printf("%d:",t);
 			strcat(log_sentence, "\r\n");
 			Add_dictionary_to_sentence(log_sentence, "t", t);
 			Add_dictionary_to_sentence(log_sentence, "s_count", paint_count);
 			Add_dictionary_to_sentence_d(log_sentence, "TIME[s]", my_clock());
+			strcpy(last_chara, "_SC");
+			strcat(last_chara, "__st");
+			Add_num(last_chara, t);
+			strcat(last_chara, "_lc");
+			Add_num(last_chara, lc);
+			MY__write_img(nimgC, dir_path, in_filename, last_chara, "png");
+			printf("%d:",t);
 			pd("TIME[s]",my_clock());
 		}
 

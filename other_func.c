@@ -143,7 +143,6 @@ int** ReshapeInt_1to2(int* x, int width, int height)
 }
 
 
-
 // 配列中の最大値を探索しPointを返す
 Point search_max_Point(int **ally, int w, int h) {
 	int y, x, max_value=-99999999;
@@ -163,6 +162,32 @@ Point search_max_Point(int **ally, int w, int h) {
 }
 
 
+//　ストローク構造体メモリを確保
+Stroke *create_Stroke(int pnum){
+	Stroke* sp = (Stroke *)malloc(sizeof(Stroke));
+	sp->pnum = pnum;
+	sp->p = (Point*)malloc(sizeof(Point)*(sp->pnum));
+
+	return sp;
+}
+
+
+// Stroke構造体のアドレス変数の二重配列を生成
+Stroke ***create_Stroke_ally(int width, int height, int max_stroke) {
+	int i,j;
+
+	Stroke*** stroke_map = (Stroke***)malloc(sizeof(Stroke**)*(width));
+	for(i=0; i<width; i++){
+		stroke_map[i] = (Stroke**)malloc(sizeof(Stroke*)*(height));
+	}
+	for(i=0; i<width; i++){
+		for(j=0; j<height; j++){
+			stroke_map[i][j]=create_Stroke(max_stroke);
+		}
+	}
+
+	return stroke_map;
+}
 
 
 /////////////////////////////////////////////
@@ -525,32 +550,40 @@ PPM *create_ppm(int width, int height, int bright){
 }
 
 
-//　ストローク構造体メモリを確保
-Stroke *create_Stroke(int pnum){
-	Stroke* sp = (Stroke *)malloc(sizeof(Stroke));
-	sp->pnum = pnum;
-	sp->p = (Point*)malloc(sizeof(Point)*(sp->pnum));
+// PPMデータを任意の画像形式でファイルに書き込む
+void MY__write_img(PPM* out_ppm, char dir_path[], char in_filename[], char last_chara[], char ext[])
+{
+	char out_filename[128];
+	strcpy(out_filename, dir_path);
+	strcat(out_filename, in_filename);
+	strcat(out_filename, last_chara);
 
-	return sp;
+	image_t *out_img;
+	out_img = PPM_to_image(out_ppm);
+
+	if(strncmp(ext, "png", 3) == 0){
+		strcat(out_filename, ".png");
+		if(write_png_file(out_filename, out_img)) { printf("WRITE PNG ERROR."); }
+		free_image(out_img);
+	}else if(strncmp(ext, "jpg", 3) == 0){
+		strcat(out_filename, ".jpg");
+		if(write_jpeg_file(out_filename, out_img)) { printf("WRITE JPG ERROR."); }
+		free_image(out_img);
+	}else if(strncmp(ext, "ppm", 3) == 0){
+		strcat(out_filename, ".ppm");
+		if(write_ppm(out_filename, out_ppm)) { printf("WRITE PPM ERROR."); }
+	}else {
+		printf("ERROR: please enter default extension !\n");
+	}
+
+	strcpy(out_filename, in_filename);
+	strcat(out_filename, last_chara);
+	strcat(out_filename, ".");
+	strcat(out_filename, ext);
+	printf("WRITE: %s\n",out_filename);
 }
 
 
-// Stroke構造体のアドレス変数の二重配列を生成
-Stroke ***create_Stroke_ally(int width, int height, int max_stroke) {
-	int i,j;
-
-	Stroke*** stroke_map = (Stroke***)malloc(sizeof(Stroke**)*(width));
-	for(i=0; i<width; i++){
-		stroke_map[i] = (Stroke**)malloc(sizeof(Stroke*)*(height));
-	}
-	for(i=0; i<width; i++){
-		for(j=0; j<height; j++){
-			stroke_map[i][j]=create_Stroke(max_stroke);
-		}
-	}
-
-	return stroke_map;
-}
 
 
 /////////////////////////////////////////////
@@ -1604,6 +1637,16 @@ char *get_extension(char *name) {
     }
   }
   return NULL;
+}
+
+
+// 整数をchar文字列の最後尾に文字として付ける
+void Add_num(char sentence[], int num)
+{
+	char num_chara[32];
+
+	snprintf(num_chara, 32, "%d", num);
+	strcat(sentence, num_chara);
 }
 
 
