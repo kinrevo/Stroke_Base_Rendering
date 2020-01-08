@@ -190,6 +190,10 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 		}else if(opt_USE_calcu_JIS_ColorSet){
 			strcat(log_sentence, "# USE_calcu_JIS_ColorSet\r\n");
 			Add_dictionary_to_sentence(log_sentence, "  JIS_ClusterNum", opt_JIS_ClusterNum);
+		}else if(opt_USE_JIS_KmeansSelect_ColorSet){
+			strcat(log_sentence, "# USE_JIS_KmeansSelect_ColorSet\r\n");
+			Add_dictionary_to_sentence(log_sentence, "  JIS_Kmean_ClusterNum", opt_JIS_Kmean_ClusterNum);
+			Add_dictionary_to_sentence_d(log_sentence, "  JIS_Kmean_LabWeight", opt_JIS_Kmean_LabWeight);
 		}else strcat(log_sentence, "# USE_average_PaintColor\r\n");
 		if(opt_USE_gause_histogram) strcat(log_sentence, "  # USE_gause_histogram\r\n");
 		if(opt_Stroke_Method==Best_StrokeOrder) Add_dictionary_to_sentence(log_sentence, "optimal_improved_value_border", opt_optimal_improved_value_border);
@@ -371,6 +375,8 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 		FreePPM(Kmean_Img);
 		FreePPM(ColorSet_Img);
 		Free_ally(x_centlabel_2D,in->width);
+
+		arrange_ColorSet_inLight(ColorSet, opt_Kmean_ClusterNum);
 	}
 	else if(opt_USE_calcu_JIS_ColorSet){
 		ColorNum = opt_JIS_ClusterNum;
@@ -378,7 +384,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 	}
 	else if(opt_USE_JIS_CMYB_ColorSet){
 		ColorNum = 4;
-		ColorSet = (RGB *)malloc(sizeof(RGB) * ColorNum);;
+		ColorSet = (RGB *)malloc(sizeof(RGB) * ColorNum);
 		int diff_tmp, diff_JIS;
 		RGB* JISColorSet = create_JIS_ColorSet(36);
 		RGB JISCian={100,100,100}, JISMagenta={100,100,100}, JISYellow={100,100,100}, JISBlack;// 適当な初期値
@@ -417,6 +423,84 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 
 		for (i=0; i<4; i++) printf("ColorSet[%d]:%d,%d,%d \n", i, ColorSet[i].R,ColorSet[i].G,ColorSet[i].B);
 	}
+	else if(opt_USE_JIS_KmeansSelect_ColorSet){
+		ColorNum = opt_JIS_Kmean_ClusterNum;
+		ColorSet = (RGB *)malloc(sizeof(RGB) * ColorNum);
+		RGB* JISColorSet = create_JIS_ColorSet(36);
+		x_centlabel = (int*)malloc(sizeof(int) * in->width*in->height);
+		num_cluster = (int*)malloc(sizeof(int) * opt_JIS_Kmean_ClusterNum);
+		RGB* KMColorSet = Kmeans_ImageLab3D(in, opt_JIS_Kmean_ClusterNum, 50, x_centlabel, num_cluster);
+		x_centlabel_2D = ReshapeInt_1to2(x_centlabel, in->width, in->height);	//クラスタ番号は１から数えている
+		free(x_centlabel);
+		PPM* Kmean_Img = Visualize_KmeanImg(in, KMColorSet, x_centlabel_2D);
+		PPM* KMColorSet_Img = Visualize_ColorSet(KMColorSet, opt_JIS_Kmean_ClusterNum, num_cluster);
+		strcpy(out_filename, dir_path);
+		strcat(out_filename, in_filename);
+		strcat(out_filename, "__KmeanImg");
+		strcat(out_filename, ".png");
+		if(write_png_file(out_filename, PPM_to_image(Kmean_Img))){ printf("WRITE PNG ERROR.");}
+		strcpy(out_filename, dir_path);
+		strcat(out_filename, in_filename);
+		strcat(out_filename, "__KmeanColorSet");
+		strcat(out_filename, ".png");
+		if(write_png_file(out_filename, PPM_to_image(KMColorSet_Img))){ printf("WRITE PNG ERROR.");}
+		FreePPM(Kmean_Img);
+		FreePPM(KMColorSet_Img);
+
+
+		int diff_tmp, diff_MIN;
+		double weight =0;
+		Lab JISLab, KMLab;
+		// Kmeanの各色をJISに存在する色に置き換えていく
+		for (i = 0; i < opt_JIS_Kmean_ClusterNum; i++)
+		{
+			diff_MIN = 999999;
+			KMLab = RGB2Lab(KMColorSet[i]);
+			// 注目しているKmeans色に最も近いJIS色を探す
+			for (j = 0; j < 36; j++)
+			{
+				JISLab = RGB2Lab(JISColorSet[j]);
+				// 目標KM色より明るかったら良くないのでウェイトかける
+				if(JISLab.L > KMLab.L) weight = opt_JIS_Kmean_LabWeight;
+				else weight = 1.0;
+				diff_tmp = sqrt( pow((KMLab.L-JISLab.L)*weight, 2) + pow(KMLab.a-JISLab.a, 2) + pow(KMLab.b-JISLab.b, 2) );
+
+				// もし確認したJIS色が目標Kmeans色により近いなら更新
+				if(diff_tmp < diff_MIN){
+					int tmp_flag=1;
+					//　既に使っている色ならだめ
+					for (int k = 0; k < j; k++)	{
+						if( (ColorSet[k].R==JISColorSet[j].R) && (ColorSet[k].G==JISColorSet[j].G) && (ColorSet[k].B==JISColorSet[j].B) ) tmp_flag=0;
+					}
+
+					if(tmp_flag){
+						ColorSet[i] = JISColorSet[j];	// Kmeans色を最も近いJIS色に置換
+						diff_MIN = diff_tmp;
+					}
+				}
+			}
+		}
+
+		// JIS色に代替後のkmeans結果を見る
+		Kmean_Img = Visualize_KmeanImg(in, ColorSet, x_centlabel_2D);
+		KMColorSet_Img = Visualize_ColorSet(ColorSet, opt_JIS_Kmean_ClusterNum, num_cluster);
+		strcpy(out_filename, dir_path);
+		strcat(out_filename, in_filename);
+		strcat(out_filename, "__JISKmeanImg");
+		strcat(out_filename, ".png");
+		if(write_png_file(out_filename, PPM_to_image(Kmean_Img))){ printf("WRITE PNG ERROR.");}
+		strcpy(out_filename, dir_path);
+		strcat(out_filename, in_filename);
+		strcat(out_filename, "__JISKmeanColorSet");
+		strcat(out_filename, ".png");
+		if(write_png_file(out_filename, PPM_to_image(KMColorSet_Img))){ printf("WRITE PNG ERROR.");}
+
+		arrange_ColorSet_inLight(ColorSet, opt_JIS_Kmean_ClusterNum);
+		for (i=0; i<opt_JIS_Kmean_ClusterNum; i++) printf("ColorSet[%d]:%d,%d,%d \n", i, ColorSet[i].R,ColorSet[i].G,ColorSet[i].B);
+		FreePPM(Kmean_Img);
+		FreePPM(KMColorSet_Img);
+		Free_ally(x_centlabel_2D,in->width);
+	}
 
 	//　RGB入力画像をLabに変換した配列を用意
 	RGB CanRGB;
@@ -436,6 +520,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 	///////////////////preprocess終了/////////////////
 	Add_dictionary_to_sentence_d(log_sentence, "\r\nPreProsessTIME[s]", my_clock());
 	pd("PreProsessTIME[s]",my_clock());
+	pn;
 
 
 
@@ -654,8 +739,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 				{
 					tmp_num=0;
 					for(i=0; i<50; i++) tmp_num+=diff_stroke_max_ave[i];
-					p("Stroke_MAX_AVE", tmp_num);
-					tmp_num=0;
+					p("Stroke_MAX_AVE", tmp_num/50);
 					// for(i=0; i<50; i++) tmp_num+=diff_test_stroke_ave[i];
 					// p("test_STROKE_AVE", tmp_num);
 					// if(tmp_num/50 < optimal_improved_value_border) {
@@ -1008,7 +1092,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 
 		for (int c = 0; c < ColorNum; c++){
 			RGB PaintColor = ColorSet[c];
-		
+
 			//太いストロークから順番にストロークを小さくしておおまかに絵の形を取っていく
 			for(t=thick_max; t>=thick_min; t--){
 				if(opt_num_thick){
@@ -1206,8 +1290,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 					{
 						tmp_num=0;
 						for(i=0; i<50; i++) tmp_num+=diff_stroke_max_ave[i];
-						p("Stroke_MAX_AVE", tmp_num);
-						tmp_num=0;
+						p("Stroke_MAX_AVE", tmp_num/50);
 					}
 					if(diff_stroke_max < optimal_improved_value_border) {
 						strcat(log_sentence, "\r\n");
@@ -1241,21 +1324,21 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 					// if(nc%1==0)
 					if(nc%100==0 || nc<=100)
 					{
-							strcpy(out_filename, dir_path);
-							strcat(out_filename, in_filename);
-							// snprintf(count_name, 16, "%02d", t);
-							// strcat(out_filename, "_t");
-							// strcat(out_filename, count_name);
-							snprintf(count_name, 16, "%d", nc);
-							strcat(out_filename, "_s");
-							strcat(out_filename, count_name);
-							strcat(out_filename, ".png");
-							out_png = PPM_to_image(nimgC);
-							if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
-							free_image(out_png);
-							printf("%s\n",out_filename);
-							printf("%d:",t);
-							pd("TIME[s]",my_clock());
+						strcpy(out_filename, dir_path);
+						strcat(out_filename, in_filename);
+						// snprintf(count_name, 16, "%02d", t);
+						// strcat(out_filename, "_t");
+						// strcat(out_filename, count_name);
+						snprintf(count_name, 16, "%d", nc);
+						strcat(out_filename, "_s");
+						strcat(out_filename, count_name);
+						strcat(out_filename, ".png");
+						out_png = PPM_to_image(nimgC);
+						if(write_png_file(out_filename, out_png)){ printf("WRITE PNG ERROR.");}
+						free_image(out_png);
+						printf("%s\n",out_filename);
+						printf("%d:",t);
+						pd("TIME[s]",my_clock());
 					}
 
 
@@ -1291,7 +1374,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 				Free_dally(gauce_filter, 2*t+1);
 				x_defo=y_defo=paint_count=0;
 			}
-		
+
 
 			strcat(log_sentence, "\r\n///////////\r\nc[");
 			Add_NUM_to_sentence(log_sentence, 2, "%d", c);

@@ -31,7 +31,7 @@
 
 
 // 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
-#define opt_optimal_improved_value_border 100
+#define opt_optimal_improved_value_border 1000
 
 // ストローク開始位置のウィンドウステップ幅（x,y共通）(Raster:1.2*t,Best:1)
 #define opt_StrokeWindowStep 2//1.2*t
@@ -62,12 +62,16 @@
 #define opt_USE_calcu_color_bi 0
 // 描画色の計算法においてKmeanによるカラーセットを用いるか
 #define opt_USE_calcu_Kmean_ColorSet 0
-    #define opt_Kmean_ClusterNum 6
+    #define opt_Kmean_ClusterNum 12
 // 描画色の計算法においてJIS規格のカラーセットを用いるか
 #define opt_USE_calcu_JIS_ColorSet 0
     #define opt_JIS_ClusterNum 36
 // 描画色の計算法においてJIS規格のCMYB４色を用いるか
-#define opt_USE_JIS_CMYB_ColorSet 1
+#define opt_USE_JIS_CMYB_ColorSet 0
+// 描画色の計算法においてJIS規格からKmeans法により選んだ一定数の色を使用
+#define opt_USE_JIS_KmeansSelect_ColorSet 1
+    #define opt_JIS_Kmean_ClusterNum 12
+    #define opt_JIS_Kmean_LabWeight 1.5
 
 
 // ストロークの半径ごとの繰り返し数。多いと丁寧に塗りつぶす
