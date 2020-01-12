@@ -6,7 +6,7 @@
 ////////////////////////////////////////
 
 // 描画手法を選択
-#define opt_Stroke_Method EveryColor_StrokeOrder
+#define opt_Stroke_Method Best_StrokeOrder
     #define Best_StrokeOrder 97431
     #define Raster_StrokeOrder 123456789
     #define EveryColor_StrokeOrder 789456123
@@ -19,7 +19,7 @@
 ////////////////	第一段階のパラメータ	/////////////////
 
 // ストローク半径の最大小値。この大きさの範囲でストロークを行う
-#define opt_thick_max 10
+#define opt_thick_max 40
 #define opt_thick_min 5
 // ストローク半径の種類の数（指定しないとき０）と指定の半径
 #define opt_num_thick 2
@@ -31,10 +31,10 @@
 
 
 // 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
-#define opt_optimal_improved_value_border 1000
+#define opt_optimal_improved_value_border 1
 
 // ストローク開始位置のウィンドウステップ幅（x,y共通）(Raster:1.2*t,Best:1)
-#define opt_StrokeWindowStep 2//1.2*t
+#define opt_StrokeWindowStep 1//1.2*t
 
 // ストロークの描画の濃さを変えるかどうか(RemoveFloatをオンにしたときRatioを水彩に用いないためエラー動作)
 #define opt_USE_best_ratio 0
@@ -64,12 +64,12 @@
 #define opt_USE_calcu_Kmean_ColorSet 0
     #define opt_Kmean_ClusterNum 12
 // 描画色の計算法においてJIS規格のカラーセットを用いるか
-#define opt_USE_calcu_JIS_ColorSet 0
+#define opt_USE_calcu_JIS_ColorSet 1
     #define opt_JIS_ClusterNum 36
 // 描画色の計算法においてJIS規格のCMYB４色を用いるか
 #define opt_USE_JIS_CMYB_ColorSet 0
 // 描画色の計算法においてJIS規格からKmeans法により選んだ一定数の色を使用
-#define opt_USE_JIS_KmeansSelect_ColorSet 1
+#define opt_USE_JIS_KmeansSelect_ColorSet 0
     #define opt_JIS_Kmean_ClusterNum 12
     #define opt_JIS_Kmean_LabWeight 1.5
 
@@ -81,9 +81,9 @@
 #define	opt_window_diff_border 1
 
 // キャンバスのスケーリングを行うか
-#define opt_USE_Canvas_Scaling_Method 0
+#define opt_USE_Canvas_Scaling_Method 1
     // キャンバスの拡大率
-    #define opt_canvas_scaling_ratio 4.0
+    #define opt_canvas_scaling_ratio 3.0
 
 // ストローク方向を決定する際の、方向の種類の数。小さいと大雑把な方向に線を引く
 #define opt_histogram_partition 31
@@ -92,17 +92,27 @@
 
 
 
-////////////////	第二段階のパラメータ	/////////////////
+////////////////　第二段階のパラメータ　/////////////////
+
+// 描画手法を選択
+#define opt2_Stroke_Method Best_StrokeOrder
+    #define Best_StrokeOrder 97431
+    #define Raster_StrokeOrder 123456789
+    #define EveryColor_StrokeOrder 789456123
+
 
 // ストローク半径の最大小値。この大きさの範囲でストロークを行う（最大0のとき第二段階は用いられない）
 #define opt2_thick_max 3
 #define opt2_thick_min 1
 
 // ストロークの最小長
-#define opt2_min_stroke 3
+#define opt2_min_stroke 4
 
 // ストロークの描画の濃さ。この値が大きいほど下地の色を無視して塗りつぶす
 #define opt2_ratio 0.2
+
+// 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
+#define opt2_optimal_improved_value_border 100
 
 // ストロークの半径ごとの繰り返し数。多いと丁寧に塗りつぶす
 #define opt2_loop_cont 1
