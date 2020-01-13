@@ -199,6 +199,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 		if(opt_USE_gause_histogram) strcat(log_sentence, "  # USE_gause_histogram\r\n");
 		if(opt_Stroke_Method==Best_StrokeOrder) Add_dictionary_to_sentence(log_sentence, "optimal_improved_value_border", opt_optimal_improved_value_border);
 		Add_dictionary_to_sentence_d(log_sentence, "StrokeWindowStep", opt_StrokeWindowStep*(double)t);
+		if(opt_USE_Canvas_Scaling_Method) Add_dictionary_to_sentence_d(log_sentence, "Canvas_Scaling_ratio", opt_canvas_scaling_ratio);
 		if(opt2_thick_max){
 			strcat(log_sentence, "\r\n[AddBrushing Option]\r\n");
 			if(opt2_Stroke_Method==Best_StrokeOrder) {
@@ -322,7 +323,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 	nimgC_Scaling->dataR = nimgR_Scaling->data;
 	nimgC_Scaling->dataG = nimgG_Scaling->data;
 	nimgC_Scaling->dataB = nimgB_Scaling->data;
-	double** h_Scaling = perlin_img(nimgC_Scaling->width, nimgC_Scaling->height, opt_perlin_freq, opt_perlin_depth);
+	double** h_Scaling = perlin_img(nimgC_Scaling->width, nimgC_Scaling->height, opt_perlin_freq/opt_canvas_scaling_ratio, opt_perlin_depth);
     double** grad_hx_Scaling = create_dally(nimgC_Scaling->width+1, nimgC_Scaling->height);
     double** grad_hy_Scaling = create_dally(nimgC_Scaling->width, nimgC_Scaling->height+1);
     calcu_grad_h(h_Scaling, grad_hx_Scaling, grad_hy_Scaling, nimgC_Scaling->width, nimgC_Scaling->height);
@@ -754,7 +755,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 				paint_count++;
 				nc++;
 				// if(nc%1==0)
-				if(nc%100==0 || nc<=100)
+				if(nc%100==0 || nc<=10)
 				{
 					strcpy(last_chara, "_s");
 					Add_num(last_chara, nc);
@@ -775,10 +776,10 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 				/// 制御点を全てとブラシサイズを拡大率に従いスケーリングし、拡大キャンバスに描画
 				if(opt_USE_Canvas_Scaling_Method){
 					scaling_p = scaling_point(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, opt_canvas_scaling_ratio);
-					SINGLE_Paint_Water_Stroke(scaling_p, best_stroke_map[best_x][best_y]->pnum, t_Scaling, best_stroke_map[best_x][best_y]->color, nimgR_Scaling->data, nimgG_Scaling->data, nimgB_Scaling->data, h_Scaling, grad_hx_Scaling, grad_hy_Scaling, gauce_filter_Scaling, nimgC_Scaling->width, nimgC_Scaling->height, ratio);
+					Paint_Water_Stroke(scaling_p, best_stroke_map[best_x][best_y]->pnum, t_Scaling, best_stroke_map[best_x][best_y]->color, nimgR_Scaling->data, nimgG_Scaling->data, nimgB_Scaling->data, h_Scaling, grad_hx_Scaling, grad_hy_Scaling, gauce_filter_Scaling, nimgC_Scaling->width, nimgC_Scaling->height, best_stroke_map[best_x][best_y]->ratio);
 					free(scaling_p);
 
-					if(nc%100==0 || nc<=100)
+					if(nc%100==0 || nc<=10)
 					{
 						strcpy(last_chara, "_SC");
 						strcat(last_chara, "_s");
@@ -978,7 +979,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 						// pd("PWS[s]",my_clock()-start_PWS);
 						paint_count++;
 
-						if(paint_count%500==0 || paint_count<100)
+						if(paint_count%500==0 || paint_count<10)
 						{
 							strcpy(last_chara, "_t");
 							Add_num(last_chara, t);
@@ -1252,7 +1253,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 					paint_count++;
 					nc++;
 					// if(nc%1==0)
-					if(nc%100==0 || nc<=100)
+					if(nc%100==0 || nc<=10)
 					{
 						strcpy(last_chara, "_s");
 						Add_num(last_chara, nc);
@@ -1522,6 +1523,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 				// 制御点を全てとブラシサイズを拡大率に従いスケーリングし、拡大キャンバスに描画
 				if(opt_USE_Canvas_Scaling_Method){
 					scaling_p = scaling_point(best_stroke_map[best_x][best_y]->p, best_stroke_map[best_x][best_y]->pnum, opt_canvas_scaling_ratio);
+					best_stroke_map[best_x][best_y]->ratio /= opt_canvas_scaling_ratio; //ブラシ半径に比例して濃くなってしまうのでスケーリング
 					Paint_Bezier_ex(scaling_p, best_stroke_map[best_x][best_y]->pnum, nimgR_Scaling, t*opt_canvas_scaling_ratio, best_stroke_map[best_x][best_y]->color.R, best_stroke_map[best_x][best_y]->ratio);
 					Paint_Bezier_ex(scaling_p, best_stroke_map[best_x][best_y]->pnum, nimgG_Scaling, t*opt_canvas_scaling_ratio, best_stroke_map[best_x][best_y]->color.G, best_stroke_map[best_x][best_y]->ratio);
 					Paint_Bezier_ex(scaling_p, best_stroke_map[best_x][best_y]->pnum, nimgB_Scaling, t*opt_canvas_scaling_ratio, best_stroke_map[best_x][best_y]->color.B, best_stroke_map[best_x][best_y]->ratio);
@@ -1529,8 +1531,8 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 
 				paint_count++;
 				nc++;
-				if(nc%100==0)
-				// if(nc%100==0 || nc<=100)
+				// if(nc%100==0)
+				if(nc%100==0 || nc<=10)
 				{
 					strcpy(last_chara, "_as");
 					Add_num(last_chara, nc);
@@ -1560,7 +1562,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 				Add_num(last_chara, t);
 				strcat(last_chara, "_lc");
 				Add_num(last_chara, lc);
-				MY__write_img(nimgC, dir_path, in_filename, last_chara, "png");
+				MY__write_img(nimgC_Scaling, dir_path, in_filename, last_chara, "png");
 			}
 		}
 	}

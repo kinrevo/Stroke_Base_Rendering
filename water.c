@@ -150,16 +150,21 @@ void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** C
     static int** M;
     static double **u,**v,**p,**gR,**gG,**gB,**dR,**dG,**dB;
     if(first_flag){
-        u = create_dally(width+1, height);
-        v = create_dally(width, height+1);
-        M = create_ally(width, height);
-        p = create_dally(width, height);
-        gR = create_dally(width, height);
-        gG = create_dally(width, height);
-        gB = create_dally(width, height);
-        dR = create_dally(width, height);
-        dG = create_dally(width, height);
-        dB = create_dally(width, height);
+        int ally_w=width, ally_h=height;
+        if(opt_USE_Canvas_Scaling_Method){
+            ally_w *= opt_canvas_scaling_ratio;
+            ally_h *= opt_canvas_scaling_ratio;
+        }
+        u = create_dally(ally_w+1, ally_h);
+        v = create_dally(ally_w, ally_h+1);
+        M = create_ally(ally_w, ally_h);
+        p = create_dally(ally_w, ally_h);
+        gR = create_dally(ally_w, ally_h);
+        gG = create_dally(ally_w, ally_h);
+        gB = create_dally(ally_w, ally_h);
+        dR = create_dally(ally_w, ally_h);
+        dG = create_dally(ally_w, ally_h);
+        dB = create_dally(ally_w, ally_h);
 
         first_flag=0;
     }
@@ -347,7 +352,12 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
             }
         }
 
-        s = create_dally(width, height);
+        int ally_w=width, ally_h=height;
+        if(opt_USE_Canvas_Scaling_Method){
+            ally_w *= opt_canvas_scaling_ratio;
+            ally_h *= opt_canvas_scaling_ratio;
+        }
+        s = create_dally(ally_w, ally_h);
 
         first_flag=0;
     }
@@ -452,10 +462,15 @@ double UpdateVelocities(int** M,  double** u, double** v, double** p, double var
 
     static double **new_u,**new_v;
     if(first_flag){
-        new_u = create_dally(width+1, height);
-        new_v = create_dally(width, height+1);
-        format_dally(new_u, width+1, height, 0);
-        format_dally(new_v, width, height+1, 0);
+        int ally_w=width, ally_h=height;
+        if(opt_USE_Canvas_Scaling_Method){
+            ally_w *= opt_canvas_scaling_ratio;
+            ally_h *= opt_canvas_scaling_ratio;
+        }
+        new_u = create_dally(ally_w+1, ally_h);
+        new_v = create_dally(ally_w, ally_h+1);
+        format_dally(new_u, ally_w+1, ally_h, 0);
+        format_dally(new_v, ally_w, ally_h+1, 0);
 
         first_flag=0;
     }
@@ -545,8 +560,13 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
     double delta;
     static double **new_u,**new_v;
     if(first_flag){
-        new_u = create_dally(width+1, height);
-        new_v = create_dally(width, height+1);
+        int ally_w=width, ally_h=height;
+        if(opt_USE_Canvas_Scaling_Method){
+            ally_w *= opt_canvas_scaling_ratio;
+            ally_h *= opt_canvas_scaling_ratio;
+        }
+        new_u = create_dally(ally_w+1, ally_h);
+        new_v = create_dally(ally_w, ally_h+1);
 
         first_flag=0;
     }
@@ -636,7 +656,12 @@ void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t
     static double **gauss_M;
     double sum, fil_sum;
     if(first_flag){
-        gauss_M = create_dally(width, height);
+        int ally_w=width, ally_h=height;
+        if(opt_USE_Canvas_Scaling_Method){
+            ally_w *= opt_canvas_scaling_ratio;
+            ally_h *= opt_canvas_scaling_ratio;
+        }
+        gauss_M = create_dally(ally_w, ally_h);
 
         first_flag=0;
     }
@@ -716,9 +741,14 @@ void MovePigment(int** M,  double** u, double** v, double** gR, double** gG, dou
     int i,j;
     static double **new_gR,**new_gG,**new_gB;
     if(first_flag){
-        new_gR = create_dally(width, height);
-        new_gG = create_dally(width, height);
-        new_gB = create_dally(width, height);
+        int ally_w=width, ally_h=height;
+        if(opt_USE_Canvas_Scaling_Method){
+            ally_w *= opt_canvas_scaling_ratio;
+            ally_h *= opt_canvas_scaling_ratio;
+        }
+        new_gR = create_dally(ally_w, ally_h);
+        new_gG = create_dally(ally_w, ally_h);
+        new_gB = create_dally(ally_w, ally_h);
 
         first_flag=0;
     }
@@ -890,7 +920,12 @@ void SimulateCapillaryFlow(int** M, double** p, double** c, double** s, double v
     int i,j,k,l,t;
     static double **new_s;
     if(first_flag){
-        new_s = create_dally(width, height);
+        int ally_w=width, ally_h=height;
+        if(opt_USE_Canvas_Scaling_Method){
+            ally_w *= opt_canvas_scaling_ratio;
+            ally_h *= opt_canvas_scaling_ratio;
+        }
+        new_s = create_dally(ally_w, ally_h);
         first_flag=0;
     }
     double var_s;
