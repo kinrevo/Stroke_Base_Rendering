@@ -20,6 +20,7 @@ PPM *c_Illust_brush_Water(PPM *in, char *filename);
 PPM *c_Illust_brush_Water_best(PPM *in, char *filename);
 
 PGM* GLOBAL_improved_value_map;
+WaterPara WaterOpt;
 // extern const int opt_Stroke_Method;
 
 int main(int argc, char *argv[])
@@ -509,6 +510,16 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 	///////////////////preprocess終了/////////////////
 
 
+	// WaterOpt.USE_Backrun = 1;
+	// WaterOpt.mhu = 0.01;
+	// WaterOpt.tau = 0.03;
+	// WaterOpt.rho = 0.1;
+	// WaterOpt.omega = 3.0;
+	// WaterOpt.SoakTime = 50;
+	// WaterOpt.SoakTimeStep = 0.5;
+	// WaterOpt.RemovePigmentInWater = 0;
+	// WaterOpt.FloatPigmentOnPaper = 0;
+	// printf("ST:%f, USE_BR:%d \n", WaterOpt.SoakTime,WaterOpt.USE_Backrun);
 
 	// 最も誤差の減らせるストロークから順に配置して行く
 	if(opt_Stroke_Method==Best_StrokeOrder)
@@ -1532,7 +1543,7 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 				paint_count++;
 				nc++;
 				// if(nc%100==0)
-				if(nc%100==0 || nc<=10)
+				if(nc%500==0 || nc<=10)
 				{
 					strcpy(last_chara, "_as");
 					Add_num(last_chara, nc);
@@ -1569,7 +1580,8 @@ PPM *c_Illust_brush_Water_INTEGRATED(PPM *in, char *filename)
 
 	
 	// ラスター順に端からストロークを配置して行く
-	if(opt2_Stroke_Method==Raster_StrokeOrder){
+	if(opt2_Stroke_Method==Raster_StrokeOrder)
+	{
 		for(t=thick_max; t>=thick_min; t--){
 			paint_count=0;
 

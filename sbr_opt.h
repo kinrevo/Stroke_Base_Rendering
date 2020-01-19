@@ -12,8 +12,8 @@
     #define EveryColor_StrokeOrder 789456123
 
 // キャンバスを描画途中画像から始めるかどうかとそのアドレス
-#define opt_USE_input_progress_image 0
-    #define opt_progress_image_address "test_img/tomato320_shitae.png"
+#define opt_USE_input_progress_image 1
+    #define opt_progress_image_address "tomato_Dif_BR.png"
 
 
 ////////////////	第一段階のパラメータ	/////////////////
@@ -22,19 +22,19 @@
 #define opt_thick_max 40
 #define opt_thick_min 5
 // ストローク半径の種類の数（指定しないとき０）と指定の半径
-#define opt_num_thick 2
-#define opt_thick_assignment {10,5}
+#define opt_num_thick 1
+#define opt_thick_assignment {5}
 
 // ストロークの最大小長
 #define opt_max_stroke 10
-#define opt_min_stroke 4
+#define opt_min_stroke 3
 
 
 // 最適ストローク手法においてのストローク半径切り替えに用いるしきい値
-#define opt_optimal_improved_value_border 1
+#define opt_optimal_improved_value_border 1000
 
 // ストローク開始位置のウィンドウステップ幅（x,y共通）(Raster:1.2*t,Best:1)
-#define opt_StrokeWindowStep 1//1.2*t
+#define opt_StrokeWindowStep 1
 
 // ストロークの描画の濃さを変えるかどうか(RemoveFloatをオンにしたときRatioを水彩に用いないためエラー動作)
 #define opt_USE_best_ratio 0
@@ -81,7 +81,7 @@
 #define	opt_window_diff_border 1
 
 // キャンバスのスケーリングを行うか
-#define opt_USE_Canvas_Scaling_Method 1
+#define opt_USE_Canvas_Scaling_Method 0
     // キャンバスの拡大率
     #define opt_canvas_scaling_ratio 3.0
 

@@ -47,7 +47,7 @@
 #define opt_USE_MoveWater 0
 #define opt_USE_Backrun 0
     #define exp_DiffuseNum 1
-#define opt_USE_DETAIL_TP 0     //paperでの変数設定法 (diffuse:0.05,0.05,0.8)
+#define opt_USE_DETAIL_TP 1    //paperでの変数設定法 (diffuse:0.05,0.05,0.8)
     #define opt_deposit 0.05
     #define opt_lift 0.05
     #define opt_exposure 0.8
@@ -59,6 +59,33 @@
 #define opt_RemovePigmentInWater 1
 #define opt_FloatPigmentOnPaper 1
 // #define _DEBUG_PaintWater
+
+
+///// Waterパラメータ構造体
+typedef struct {
+	double mhu;
+    double kappa;
+    int N;
+    double tau;
+    double xi;
+    int K;
+    double eta;
+    double gamma;
+    double rho;
+    double omega;
+    double alpha;
+    double epsilon;
+    double delta;
+    double sigma;
+    double variance_ratio;
+    double SoakTime;
+    double SoakTimeStep;
+    int USE_Backrun;
+    int RemovePigmentInWater;
+    int FloatPigmentOnPaper;
+}WaterPara;
+
+extern WaterPara WaterOpt;
 
 
 

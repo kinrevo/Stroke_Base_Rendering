@@ -8,6 +8,29 @@
 #include "sbr_opt.h"
 
 PGM* GLOBAL_improved_value_map;
+WaterPara WaterOpt = {
+    opt_mhu,
+    opt_kappa,
+    opt_N,
+    opt_tau,
+    opt_xi,
+    opt_K,
+    opt_eta,
+    opt_gamma,
+    opt_rho,
+    opt_omega,
+    opt_alpha,
+    opt_epsilon,
+    opt_delta,
+    opt_sigma,
+    opt_variance_ratio,
+    opt_SoakTime,
+    opt_SoakTimeStep,
+    opt_USE_Backrun,
+    opt_RemovePigmentInWater,
+    opt_FloatPigmentOnPaper
+};
+
 
 void SINGLE_Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** CanR, int** CanG, int** CanB, double** h, double** grad_hx, double** grad_hy, double** gauce_filter, int width, int height, double ratio);
 void SINGLE_Paint_Water(int** M, double** u, double** v, double** p, double** h, double** grad_hx, double** grad_hy, double** gR, double** gG, double** gB, double** dR, double** dG, double** dB, int width, int height, Point rectangleP[]);
@@ -136,7 +159,7 @@ void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** C
 
     Point rectangleP[2];
     set_Stroke_rectangle(&rectangleP[0], &rectangleP[1], StrokeP, pnum, thick, width, height);
-    if(opt_USE_Backrun){
+    if(WaterOpt.USE_Backrun){
         rectangleP[0].x -= 2*thick;
         rectangleP[0].y -= 2*thick;
         rectangleP[1].x += 2*thick;
@@ -178,7 +201,7 @@ void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** C
     format_dally(gB, width, height, 0);
 
     // シミュレーション中に紙面の顔料を浮かせるか
-    if(opt_FloatPigmentOnPaper){
+    if(WaterOpt.FloatPigmentOnPaper){
         // キャンバスの色をCMYに変換し堆積顔料を計算
         #pragma omp parallel for private(i,j)
         for(i=0; i<width; i++) {
@@ -190,7 +213,7 @@ void Paint_Water_Stroke(Point StrokeP[], int pnum, int thick, RGB color, int** C
         }
 
         // シミュレーション終了時に水中の顔料を落とすか拭き取るか
-        if(opt_RemovePigmentInWater){
+        if(WaterOpt.RemovePigmentInWater){
             set_WetStroke(M, p, gR, gG, gB, StrokeP, pnum, thick, color, gauce_filter, width, height);   //ストロークのエリアと水量を計算
             Paint_Water(M, u, v, p, h, grad_hx, grad_hy, gR, gG, gB, dR, dG, dB, width, height, rectangleP);    //水と顔料の移動を計算
 
@@ -379,9 +402,9 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
         }
     }
 
-    var_t = opt_SoakTimeStep;
+    var_t = WaterOpt.SoakTimeStep;
 
-    for ( t = 0; t < opt_SoakTime; t=t+var_t)
+    for ( t = 0; t < WaterOpt.SoakTime; t=t+var_t)
     {
         // double start = my_clock();
         if( UpdateVelocities(M, u, v, p, var_t, width, height, rectangleP) > opt_StopSoakVero) break;
@@ -399,7 +422,7 @@ void Paint_Water(int** M, double** u, double** v, double** p, double** h, double
         // start = my_clock();
         TransferPigment(M, h, gR, gG, gB, dR, dG, dB, var_t, width, height);
         // pd("    TP[s]",my_clock()-start);
-        if(opt_USE_Backrun) SimulateCapillaryFlow(M, p, h, s, var_t, width, height);
+        if(WaterOpt.USE_Backrun) SimulateCapillaryFlow(M, p, h, s, var_t, width, height);
 
         #ifdef _DEBUG_PaintWater
             paint_count++;
@@ -507,7 +530,7 @@ double UpdateVelocities(int** M,  double** u, double** v, double** p, double var
                         B = u[i+2][j] + u[i][j] + u[i+1][j+1] + u[i+1][j-1] - 4*u[i+1][j];
                         p_grad = p[i][j] - p[i+1][j];
                         // LIMIT_RANGE(p_grad, -1,1);
-                        new_u[i+1][j] = u[i+1][j] + UV_var_t*(A - opt_mhu*B + p_grad - opt_kappa*exp(-0.1*(p[i][j]+p[i+1][j])/2)*u[i+1][j]);
+                        new_u[i+1][j] = u[i+1][j] + UV_var_t*(A - WaterOpt.mhu*B + p_grad - WaterOpt.kappa*exp(-0.1*(p[i][j]+p[i+1][j])/2)*u[i+1][j]);
                     }else{   //ウェットエリア外を速度０に
                         new_u[i+1][j] = 0;
                     }
@@ -525,7 +548,7 @@ double UpdateVelocities(int** M,  double** u, double** v, double** p, double var
                         B = v[i+1][j+1] + v[i-1][j+1] + v[i][j+2] + v[i][j] - 4*v[i][j+1];
                         p_grad = p[i][j] - p[i][j+1];
                         // LIMIT_RANGE(p_grad, -1,1);
-                        new_v[i][j+1] = v[i][j+1] + UV_var_t*(A - opt_mhu*B + p_grad - opt_kappa*exp(-0.1*(p[i][j]+p[i][j+1])/2)*v[i][j+1]);
+                        new_v[i][j+1] = v[i][j+1] + UV_var_t*(A - WaterOpt.mhu*B + p_grad - WaterOpt.kappa*exp(-0.1*(p[i][j]+p[i][j+1])/2)*v[i][j+1]);
                     }else{   //ウェットエリア外を速度０に
                         new_v[i][j+1] = 0;
                     }
@@ -572,7 +595,7 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
     }
 
 
-    for (t = 0; t < opt_N; t++)
+    for (t = 0; t < WaterOpt.N; t++)
     {
         rect_copy_dally(u, new_u, (int)rectangleP[0].x, (int)rectangleP[1].x+1, (int)rectangleP[0].y, (int)rectangleP[1].y);
         rect_copy_dally(v, new_v, (int)rectangleP[0].x, (int)rectangleP[1].x, (int)rectangleP[0].y, (int)rectangleP[1].y+1);
@@ -587,13 +610,13 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
             for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x -1; i++){   // INDEX+1の計算をするので－1
                 for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y -1; j++){
                     if(M[i][j]==1){
-                        delta = opt_xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
+                        delta = WaterOpt.xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
                         // p[i][j] =  fmax(0, p[i][j] - delta);     // 計算符号正負不明、fmaxがないと水量が負になる
                         p[i][j] =  p[i][j] - delta;
                         if(i!=0 && M[i-1][j]==1) new_u[i][j] = new_u[i][j] + delta;
                         if(j!=height-1 && M[i][j+1]==1) new_v[i][j+1] = new_v[i][j+1] - delta;
                         if(j!=0 && M[i][j-1]==1)new_v[i][j] = new_v[i][j] + delta;
-                        if(opt_tau < fabs(delta)) {
+                        if(WaterOpt.tau < fabs(delta)) {
                             Break_flag=0; // 発散の大きなセルが一つでもあるなら続行
                         }
                     }
@@ -603,7 +626,7 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
             for(i=(int)rectangleP[0].x; i<=(int)rectangleP[1].x -1; i++){  // INDEX+1の計算をするので－1
                 for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y -1; j++){
                     if(M[i][j]==1){
-                        delta = opt_xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
+                        delta = WaterOpt.xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
                         if(i!=width-1 && M[i+1][j]==1) new_u[i+1][j] = new_u[i+1][j] - delta;
                     }
                 }
@@ -617,7 +640,7 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
             for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
                 if(M[i][j]==1){
                     // delta = opt_xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
-                    delta = opt_xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
+                    delta = WaterOpt.xi*(u[i+1][j] - u[i][j] + v[i][j+1] - v[i][j]);
                     // if(i==width) delta -= opt_xi*u[i+1][j] ;
                     // if(i==0) delta += opt_xi*u[i][j] ;
                     // if(j==height) delta -= opt_xi*v[i][j+1] ;
@@ -637,7 +660,7 @@ void RelaxDivergence(int** M, double** u, double** v, double** p, double var_t, 
                 }
             }
         }
-        if(delta_MAX<opt_tau) break;
+        if(delta_MAX<WaterOpt.tau) break;
         // printf("t%d:%f \n", t,delta_MAX);
         #endif
 
@@ -714,7 +737,7 @@ void FlowOutward(int** M, double** p, int c, double** gause_filter, double var_t
         for(j=(int)rectangleP[0].y; j<=(int)rectangleP[1].y; j++){
             if(M[i][j]==1){
                 // p[i][j] = fmax(0, p[i][j] - opt_eta*var_t*(1-gauss_M[i][j])*M[i][j]);
-                p[i][j] = p[i][j] - opt_eta*var_t*(1-gauss_M[i][j])*M[i][j];
+                p[i][j] = p[i][j] - WaterOpt.eta*var_t*(1-gauss_M[i][j])*M[i][j];
                 min_p = fmin(min_p,p[i][j]);
             }
         }
@@ -862,9 +885,9 @@ void TransferPigment(int** M, double** h, double** gR, double** gG, double** gB,
 {
     int i,j;
     double down, up, down_ratio, up_ratio;
-    double gamma=opt_gamma; //gammaR=0.5, gammaG=0.5, gammaB=0.5;
-    double rho=opt_rho; //rhoR=0.05, rhoG=0.05, rhoB=0.05;
-    double omega=opt_omega; //omegaR=1.0, omegaG=1.0, omegaB=1.0;
+    double gamma=WaterOpt.gamma; //gammaR=0.5, gammaG=0.5, gammaB=0.5;
+    double rho=WaterOpt.rho; //rhoR=0.05, rhoG=0.05, rhoB=0.05;
+    double omega=WaterOpt.omega; //omegaR=1.0, omegaG=1.0, omegaB=1.0;
 
     #pragma omp parallel for private(i,j,down,up) schedule(static, 1)
     for(i=0; i<width; i++){
@@ -929,7 +952,7 @@ void SimulateCapillaryFlow(int** M, double** p, double** c, double** s, double v
         first_flag=0;
     }
     double var_s;
-    double alpha=opt_alpha, epsilon=opt_epsilon, delta=opt_delta, sigma=opt_sigma;
+    double alpha=WaterOpt.alpha, epsilon=WaterOpt.epsilon, delta=WaterOpt.delta, sigma=WaterOpt.sigma;
 
     #pragma omp parallel for private(i,j)
     for(i=0; i<width; i++){
